@@ -1,0 +1,37 @@
+{
+  "name": "compressor",
+  "version": "0.1.0",
+  "description": "Token optimization for AI coding agents: mode-switchable instruction packs, tool-output compression, measured savings",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "compressor": "dist/cli/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./engine": "./dist/engine/index.js",
+    "./tokens": "./dist/tokens/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && npm run bundle:hook",
+    "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --outfile=dist/hook.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "commander": "^15.0.0",
+    "js-tiktoken": "^1.0.21"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "esbuild": "^0.28.0",
+    "typescript": "^6.0.3"
+  }
+}

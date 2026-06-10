@@ -1,0 +1,6 @@
+{"type":"assistant","sessionId":"sess-fixture-1","requestId":"req_1","timestamp":"2026-06-09T10:00:00.000Z","message":{"id":"msg_1","model":"claude-sonnet-4-6","usage":{"input_tokens":100,"output_tokens":1,"cache_creation_input_tokens":5,"cache_read_input_tokens":50}}}
+this line is not json {{{
+{"type":"user","sessionId":"sess-fixture-1","timestamp":"2026-06-09T10:00:05.000Z","message":{"role":"user","content":"hello"}}
+{"type":"assistant","sessionId":"sess-fixture-1","requestId":"req_1","timestamp":"2026-06-09T10:00:10.000Z","message":{"id":"msg_1","model":"claude-sonnet-4-6","usage":{"input_tokens":100,"output_tokens":42,"cache_creation_input_tokens":5,"cache_read_input_tokens":50}}}
+{"type":"assistant","sessionId":"sess-fixture-1","requestId":"req_2","isSidechain":true,"timestamp":"2026-06-09T10:01:00.000Z","message":{"id":"msg_2","model":"claude-haiku-4-5","usage":{"input_tokens":20,"output_tokens":5,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}
+{"type":"assistant","sessionId":"sess-fixture-1","requestId":"req_3","timestamp":"2026-06-09T10:02:00.000Z","message":{"id":"msg_3","model":"claude-sonnet-4-6"}}
