@@ -36,6 +36,7 @@ function zeroedResult(runId: string, cell: CellSpec, error: string): CellResult 
     costUsd: null,
     durationMs: 0,
     numTurns: 0,
+    permissionDenials: 0,
     toolCalls: {},
     sessionId: null,
     error,

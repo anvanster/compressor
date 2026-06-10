@@ -23,6 +23,7 @@ function row(partial: Partial<CellResult> & { variantId: string }): CellResult {
     costUsd: 0.01,
     durationMs: 100,
     numTurns: 1,
+    permissionDenials: 0,
     toolCalls: {},
     sessionId: 's',
     timestamp: '2026-01-01T00:00:00.000Z',
@@ -137,6 +138,20 @@ test('true model substitution is still flagged; missing modelUsage is reported a
     row({ variantId: 'full', model: 'claude-sonnet-4-6', servedModels: [] }),
   ]);
   assert.match(formatReport(report, 'table'), /SERVED MODEL UNKNOWN/);
+});
+
+test('cells with permission denials are flagged — denial retries inflate usage', () => {
+  const issues = findIssues([
+    row({ variantId: 'full', permissionDenials: 3 }),
+    row({ variantId: 'full', trial: 2 }),
+  ]);
+  assert.equal(issues.deniedCells.length, 1);
+  assert.match(issues.deniedCells[0] ?? '', /3 permission denial/);
+
+  const report = buildRunReport('bench-test', null, [
+    row({ variantId: 'full', permissionDenials: 1 }),
+  ]);
+  assert.match(formatReport(report, 'table'), /PERMISSION DENIALS/);
 });
 
 test('budget-skipped cells are a distinct category, not lumped under infra errors', () => {

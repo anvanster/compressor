@@ -25,6 +25,7 @@ function row(partial: Partial<CellResult> & { variantId: string }): CellResult {
     costUsd: 0.01,
     durationMs: 100,
     numTurns: 1,
+    permissionDenials: 0,
     toolCalls: {},
     sessionId: 's',
     timestamp: '2026-01-01T00:00:00.000Z',

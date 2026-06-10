@@ -42,6 +42,7 @@ if (settingsPath !== undefined) {
   }
 }
 const outputStyle = typeof settings.outputStyle === 'string' ? settings.outputStyle : 'none';
+const permMode = settings.permissions?.defaultMode ?? 'none';
 const configDir = process.env.CLAUDE_CONFIG_DIR ?? 'none';
 
 // A patch "fits" the workspace when every non-create entry's target exists in
@@ -103,7 +104,7 @@ function hash36(text) {
 const rawTokens = Number.parseInt(process.env.FAKE_CLAUDE_OUTPUT_TOKENS ?? '', 10);
 const outputTokens = Number.isFinite(rawTokens) ? rawTokens : 400;
 const sessionId = `fake-${hash36(prompt + model + outputStyle)}`;
-const resultText = `fake answer style=${outputStyle} configDir=${configDir}`;
+const resultText = `fake answer style=${outputStyle} configDir=${configDir} permMode=${permMode}`;
 
 // transcript mirrors Claude Code: $CLAUDE_CONFIG_DIR/projects/<encoded cwd>/
 if (configDir !== 'none') {
@@ -174,6 +175,14 @@ const result = {
     cache_read_input_tokens: 30000,
   },
   modelUsage: { [model]: {} },
+  permission_denials:
+    Number(process.env.FAKE_CLAUDE_DENIALS ?? 0) > 0
+      ? Array.from({ length: Number(process.env.FAKE_CLAUDE_DENIALS) }, () => ({
+          tool_name: 'Edit',
+          tool_use_id: 'toolu_denied',
+          tool_input: {},
+        }))
+      : [],
   result: resultText,
 };
 if (process.env.FAKE_CLAUDE_NO_COST === '1') {

@@ -66,6 +66,12 @@ export interface CellResult {
   costUsd: number | null;
   durationMs: number;
   numTurns: number;
+  /**
+   * Count of permission_denials in the result JSON. Non-zero denials corrupt
+   * the measurement (the model burns turns retrying instead of working) —
+   * the report flags them as a data-quality problem.
+   */
+  permissionDenials: number;
   /** tool_use counts by tool name, from the session transcript */
   toolCalls: Record<string, number>;
   sessionId: string | null;

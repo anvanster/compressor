@@ -41,6 +41,8 @@ export interface DataQualityIssues {
   skippedCells: string[];
   /** infra failures — separate from task failures, excluded from success% */
   errorCells: string[];
+  /** cells with permission denials — the model burned turns on retries, numbers are inflated */
+  deniedCells: string[];
 }
 
 export interface RunReport {
@@ -136,10 +138,14 @@ export function findIssues(results: CellResult[]): DataQualityIssues {
   const unknownServed: string[] = [];
   const skipped: string[] = [];
   const errors: string[] = [];
+  const denied: string[] = [];
   for (const row of results) {
     const cell = `${row.taskId} × ${row.variantId} trial ${row.trial}`;
     if (row.baselineCheckPassed === true) {
       vacuous.add(row.taskId);
+    }
+    if (row.permissionDenials > 0) {
+      denied.push(`${cell}: ${row.permissionDenials} permission denial(s) — usage inflated by retries`);
     }
     if (row.error !== undefined && row.error !== null) {
       if (row.error.startsWith('skipped: ')) {
@@ -161,6 +167,7 @@ export function findIssues(results: CellResult[]): DataQualityIssues {
     unknownServedCells: unknownServed,
     skippedCells: skipped,
     errorCells: errors,
+    deniedCells: denied,
   };
 }
 
@@ -318,6 +325,9 @@ function issueLines(issues: DataQualityIssues): string[] {
   }
   for (const cell of issues.unknownServedCells) {
     lines.push(`SERVED MODEL UNKNOWN: ${cell}`);
+  }
+  for (const cell of issues.deniedCells) {
+    lines.push(`PERMISSION DENIALS: ${cell}`);
   }
   if (issues.skippedCells.length > 0) {
     lines.push(

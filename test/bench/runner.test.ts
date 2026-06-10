@@ -75,7 +75,9 @@ test('happy path: 2 tasks × 2 variants, checks judged, settings reach the binar
         fixture: 'qa',
         check: {
           kind: 'answer-regex',
-          pattern: `fake answer style=compressor-slim configDir=(?!${escapeRegExp(realConfigDir)}$)\\S+`,
+          // also proves headless cells run with bypassPermissions — without it
+          // the model burns turns on Edit/Bash denials (observed live)
+          pattern: `fake answer style=compressor-slim configDir=(?!${escapeRegExp(realConfigDir)}\\s)\\S+ permMode=bypassPermissions`,
         },
       },
     ],
@@ -113,6 +115,7 @@ test('happy path: 2 tasks × 2 variants, checks judged, settings reach the binar
   assert.equal(fixFull.costUsd, 0.01);
   assert.equal(fixFull.durationMs, 1200);
   assert.equal(fixFull.numTurns, 3);
+  assert.equal(fixFull.permissionDenials, 0);
   assert.ok(fixFull.sessionId?.startsWith('fake-'));
 
   // answer-regex task: styled variant matches, full (style=none) does not

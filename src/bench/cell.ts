@@ -62,7 +62,13 @@ async function writeVariantArtifacts(
     await writeFile(path.join(scratchDir, fileName), variant.styleBody, 'utf8');
   }
 
-  const settings: Record<string, unknown> = {};
+  const settings: Record<string, unknown> = {
+    // Headless cells must work unprompted inside their throwaway workspace;
+    // denied Edit/Bash calls otherwise corrupt the measurement (the model
+    // spins on retries instead of doing the task — observed live: 16 turns
+    // of denial loops with the correct fix in hand).
+    permissions: { defaultMode: 'bypassPermissions' },
+  };
   if (variant.styleName !== null) {
     settings['outputStyle'] = variant.styleName;
   }
@@ -166,6 +172,7 @@ interface ParsedResult {
   costUsd: number | null;
   durationMs: number;
   numTurns: number;
+  permissionDenials: number;
   resultText: string;
 }
 
@@ -193,6 +200,9 @@ function parseResultJson(stdout: string): ParsedResult {
     costUsd: typeof parsed['total_cost_usd'] === 'number' ? parsed['total_cost_usd'] : null,
     durationMs: num(parsed['duration_ms']),
     numTurns: num(parsed['num_turns']),
+    permissionDenials: Array.isArray(parsed['permission_denials'])
+      ? parsed['permission_denials'].length
+      : 0,
     resultText: typeof parsed['result'] === 'string' ? parsed['result'] : '',
   };
 }
@@ -316,6 +326,7 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
       costUsd: parsed.costUsd,
       durationMs: parsed.durationMs,
       numTurns: parsed.numTurns,
+      permissionDenials: parsed.permissionDenials,
       toolCalls,
       sessionId: parsed.sessionId,
       ...(checkError !== null ? { error: checkError } : {}),
@@ -331,6 +342,7 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
       costUsd: null,
       durationMs: 0,
       numTurns: 0,
+      permissionDenials: 0,
       toolCalls: {},
       sessionId: null,
       error: errorMessage(error),
