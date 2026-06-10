@@ -50,6 +50,7 @@ test('offline e2e: real suite + fixtures through runner, aggregation, and report
     modes: ['full', 'slim'],
     ablate: [],
     ablateAdd: [],
+    ablateGroups: [],
     hook: false,
   });
 

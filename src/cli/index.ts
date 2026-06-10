@@ -102,6 +102,10 @@ program
     'comma-separated atom ids: adds optimized-minus-<id> variants (slim-minus-<id> for slim-only atoms)',
   )
   .option('--ablate-add <ids>', 'comma-separated REJECTED atom ids: adds optimized-plus-<id> variants')
+  .option(
+    '--ablate-group <groups>',
+    'comma-separated atom categories (output|behavior): adds optimized-minus-<group>-atoms variants with every atom of that category removed',
+  )
   .option('--no-hook', 'skip the compression hook in optimized/slim cells')
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
@@ -114,6 +118,7 @@ program
       model: string;
       ablate?: string;
       ablateAdd?: string;
+      ablateGroup?: string;
       hook: boolean;
       concurrency: string;
       maxBudgetUsd: string;

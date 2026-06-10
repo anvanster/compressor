@@ -2,7 +2,7 @@ import { tierResult } from './structural.ts';
 import type { TierResult } from './structural.ts';
 
 const TEST_PASS_RES: readonly RegExp[] = [
-  /^\s*[✓√]\s/,
+  /^\s*[✓✔√]\s/,
   /^PASS\s/,
   /^\s*--- PASS:/,
   /^test\s+\S+\s+\.\.\.\s+ok\s*$/,
@@ -11,7 +11,7 @@ const TEST_PASS_RES: readonly RegExp[] = [
 ];
 
 const TEST_FAIL_RES: readonly RegExp[] = [
-  /^\s*[✗✘×]\s/,
+  /^\s*[✗✘✖×]\s/,
   /^FAIL\b/,
   /--- FAIL/,
   /\bFAILED\b/,
@@ -29,6 +29,8 @@ const TEST_SUMMARY_RES: readonly RegExp[] = [
   /^test result:/,
   /^Ran all test suites/,
   /^=+ .* =+$/,
+  // node:test spec ('ℹ pass 118') and tap ('# pass 118') summary counters
+  /^(?:ℹ|#) (?:tests|suites|pass|fail|cancelled|skipped|todo|duration_ms) \d+\s*$/,
 ];
 
 export function filterTestLog(content: string): TierResult {

@@ -29,6 +29,22 @@ test('go test output is test-log', () => {
   assert.equal(detectKind('--- FAIL: TestThing (0.00s)\nFAIL\nexit status 1'), 'test-log');
 });
 
+test('node:test spec/tap output is test-log', () => {
+  const spec = [
+    '▶ zone quotes',
+    '  ✔ quote batch 1 (0.4ms)',
+    '  ✖ letter rate holds (0.4ms)',
+    'ℹ tests 121',
+    'ℹ pass 118',
+    'ℹ fail 3',
+  ].join('\n');
+  assert.equal(detectKind(spec), 'test-log');
+  const tap = ['ok 1 - adds', 'not ok 2 - subtracts', '# tests 2', '# pass 1', '# fail 1'].join('\n');
+  assert.equal(detectKind(tap), 'test-log');
+  // a markdown heading like '# pass' without a counter is NOT a runner summary
+  assert.equal(detectKind('# pass the salt\nplease and thank you'), 'generic');
+});
+
 test('rustc errors are build-log', () => {
   assert.equal(detectKind('error[E0308]: mismatched types\n --> src/main.rs:2:13'), 'build-log');
 });

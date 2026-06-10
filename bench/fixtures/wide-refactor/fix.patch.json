@@ -1,0 +1,252 @@
+[
+  {
+    "file": "util.mjs",
+    "find": "export const PACK_STYLE = 'positional';",
+    "replace": "export const PACK_STYLE = 'options';"
+  },
+  {
+    "file": "util.mjs",
+    "find": "export function packField(name, value, width) {",
+    "replace": "export function packField({ name, value, width }) {"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('seq', wire, 6)",
+    "replace": "packField({ name: 'seq', value: wire, width: 6 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('uptime', wire, 8)",
+    "replace": "packField({ name: 'uptime', value: wire, width: 8 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('node', wire, 4)",
+    "replace": "packField({ name: 'node', value: wire, width: 4 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('temp', wire, 5)",
+    "replace": "packField({ name: 'temp', value: wire, width: 5 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('pressure', wire, 6)",
+    "replace": "packField({ name: 'pressure', value: wire, width: 6 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('humidity', wire, 3)",
+    "replace": "packField({ name: 'humidity', value: wire, width: 3 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('battery', wire, 3)",
+    "replace": "packField({ name: 'battery', value: wire, width: 3 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('rssi', wire, 3)",
+    "replace": "packField({ name: 'rssi', value: wire, width: 3 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('lat', wire, 8)",
+    "replace": "packField({ name: 'lat', value: wire, width: 8 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('lon', wire, 8)",
+    "replace": "packField({ name: 'lon', value: wire, width: 8 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('alt', wire, 6)",
+    "replace": "packField({ name: 'alt', value: wire, width: 6 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('fanrpm', wire, 5)",
+    "replace": "packField({ name: 'fanrpm', value: wire, width: 5 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('mode', wire, 2)",
+    "replace": "packField({ name: 'mode', value: wire, width: 2 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('faults', mask, 4)",
+    "replace": "packField({ name: 'faults', value: mask, width: 4 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('fw', wire, 6)",
+    "replace": "packField({ name: 'fw', value: wire, width: 6 })"
+  },
+  {
+    "file": "telemetry.mjs",
+    "find": "packField('crc', crc, 4)",
+    "replace": "packField({ name: 'crc', value: crc, width: 4 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('rev', wire, 6)",
+    "replace": "packField({ name: 'rev', value: wire, width: 6 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('shipment', wire, 8)",
+    "replace": "packField({ name: 'shipment', value: wire, width: 8 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('pieces', wire, 4)",
+    "replace": "packField({ name: 'pieces', value: wire, width: 4 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('gross', wire, 7)",
+    "replace": "packField({ name: 'gross', value: wire, width: 7 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('net', wire, 7)",
+    "replace": "packField({ name: 'net', value: wire, width: 7 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('volume', wire, 6)",
+    "replace": "packField({ name: 'volume', value: wire, width: 6 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('declared', wire, 9)",
+    "replace": "packField({ name: 'declared', value: wire, width: 9 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('insured', wire, 9)",
+    "replace": "packField({ name: 'insured', value: wire, width: 9 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('origin', wire, 4)",
+    "replace": "packField({ name: 'origin', value: wire, width: 4 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('dest', wire, 4)",
+    "replace": "packField({ name: 'dest', value: wire, width: 4 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('seals', wire, 3)",
+    "replace": "packField({ name: 'seals', value: wire, width: 3 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('customs', wire, 6)",
+    "replace": "packField({ name: 'customs', value: wire, width: 6 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('priority', wire, 2)",
+    "replace": "packField({ name: 'priority', value: wire, width: 2 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('docs', mask, 3)",
+    "replace": "packField({ name: 'docs', value: mask, width: 3 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('spec', wire, 6)",
+    "replace": "packField({ name: 'spec', value: wire, width: 6 })"
+  },
+  {
+    "file": "manifest.mjs",
+    "find": "packField('crc', crc, 4)",
+    "replace": "packField({ name: 'crc', value: crc, width: 4 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('beat', wire, 8)",
+    "replace": "packField({ name: 'beat', value: wire, width: 8 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('station', wire, 5)",
+    "replace": "packField({ name: 'station', value: wire, width: 5 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('channel', wire, 3)",
+    "replace": "packField({ name: 'channel', value: wire, width: 3 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('power', wire, 4)",
+    "replace": "packField({ name: 'power', value: wire, width: 4 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('freq', wire, 7)",
+    "replace": "packField({ name: 'freq', value: wire, width: 7 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('duty', wire, 3)",
+    "replace": "packField({ name: 'duty', value: wire, width: 3 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('drift', wire, 5)",
+    "replace": "packField({ name: 'drift', value: wire, width: 5 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('lock', wire, 2)",
+    "replace": "packField({ name: 'lock', value: wire, width: 2 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('sats', wire, 3)",
+    "replace": "packField({ name: 'sats', value: wire, width: 3 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('temp', wire, 5)",
+    "replace": "packField({ name: 'temp', value: wire, width: 5 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('volt', wire, 5)",
+    "replace": "packField({ name: 'volt', value: wire, width: 5 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('region', wire, 2)",
+    "replace": "packField({ name: 'region', value: wire, width: 2 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('errs', mask, 3)",
+    "replace": "packField({ name: 'errs', value: mask, width: 3 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('build', wire, 6)",
+    "replace": "packField({ name: 'build', value: wire, width: 6 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('hours', wire, 6)",
+    "replace": "packField({ name: 'hours', value: wire, width: 6 })"
+  },
+  {
+    "file": "beacon.mjs",
+    "find": "packField('crc', crc, 4)",
+    "replace": "packField({ name: 'crc', value: crc, width: 4 })"
+  }
+]

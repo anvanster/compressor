@@ -45,6 +45,34 @@ export interface DataQualityIssues {
   deniedCells: string[];
 }
 
+/** One taskId × variantId cell of the per-task breakdown. */
+export interface TaskVariantCell {
+  taskId: string;
+  variantId: string;
+  /** all rows for this pair, including infra errors */
+  cells: number;
+  /** non-error rows — medians below are over these */
+  valid: number;
+  /** valid rows with a boolean success verdict */
+  judged: number;
+  successes: number;
+  /** successes / judged; null when nothing was judged */
+  successFraction: number | null;
+  /** median output tokens over valid rows */
+  medianOutput: number;
+  /** median input + cacheCreation + cacheRead (context volume) over valid rows */
+  medianContext: number;
+}
+
+/** taskIds × variantIds matrix; cells[i][j] = taskIds[i] × variantIds[j], null = no rows. */
+export interface ByTaskBreakdown {
+  /** sorted ascending */
+  taskIds: string[];
+  /** 'full' first when present, then alphabetical */
+  variantIds: string[];
+  cells: (TaskVariantCell | null)[][];
+}
+
 export interface RunReport {
   runId: string;
   meta: RunMeta | null;
@@ -53,6 +81,7 @@ export interface RunReport {
   deltas: VariantDelta[] | null;
   /** per-atom marginal deltas vs each ablation baseline; null when no ablation variants */
   ablationDeltas: AblationDeltas[] | null;
+  byTask: ByTaskBreakdown;
   issues: DataQualityIssues;
 }
 
@@ -126,6 +155,74 @@ export function computeAblationDeltas(
   return groups.length === 0 ? null : groups;
 }
 
+/** Linear-interpolated median (matches results.ts aggregation); 0 on empty input. */
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((x, y) => x - y);
+  if (sorted.length === 0) return 0;
+  const pos = (sorted.length - 1) * 0.5;
+  const lo = Math.floor(pos);
+  const a = sorted[lo] ?? 0;
+  const b = sorted[Math.ceil(pos)] ?? a;
+  return a + (b - a) * (pos - lo);
+}
+
+function orderVariantIds(ids: Iterable<string>): string[] {
+  const unique = [...new Set(ids)];
+  const rest = unique.filter((id) => id !== 'full').sort();
+  return unique.includes('full') ? ['full', ...rest] : rest;
+}
+
+/**
+ * Composite map key for a task x variant pair. taskIds may legally contain
+ * spaces (tasks.ts only requires a non-empty string), so the separator must
+ * be a character that cannot appear in either id: NUL - always written as
+ * the escape '\u0000', never a raw byte (a raw NUL makes this file binary
+ * to git and invisibly fragile to retyping).
+ */
+function pairKey(taskId: string, variantId: string): string {
+  return `${taskId}\u0000${variantId}`;
+}
+
+export function computeByTask(results: CellResult[]): ByTaskBreakdown {
+  const byPair = new Map<string, CellResult[]>();
+  for (const row of results) {
+    const key = pairKey(row.taskId, row.variantId);
+    const rows = byPair.get(key);
+    if (rows === undefined) {
+      byPair.set(key, [row]);
+    } else {
+      rows.push(row);
+    }
+  }
+  const taskIds = [...new Set(results.map((r) => r.taskId))].sort();
+  const variantIds = orderVariantIds(results.map((r) => r.variantId));
+  const cells = taskIds.map((taskId) =>
+    variantIds.map((variantId): TaskVariantCell | null => {
+      const rows = byPair.get(pairKey(taskId, variantId));
+      if (rows === undefined) {
+        return null;
+      }
+      const valid = rows.filter((r) => r.error === undefined || r.error === null);
+      const judged = valid.filter((r) => typeof r.success === 'boolean');
+      const successes = judged.filter((r) => r.success === true).length;
+      return {
+        taskId,
+        variantId,
+        cells: rows.length,
+        valid: valid.length,
+        judged: judged.length,
+        successes,
+        successFraction: judged.length === 0 ? null : successes / judged.length,
+        medianOutput: medianOf(valid.map((r) => r.usage.output)),
+        medianContext: medianOf(
+          valid.map((r) => r.usage.input + r.usage.cacheCreation + r.usage.cacheRead),
+        ),
+      };
+    }),
+  );
+  return { taskIds, variantIds, cells };
+}
+
 /** A served model matching the requested one, allowing alias→dated-ID forms
  * (requested 'claude-haiku-4-5' served 'claude-haiku-4-5-20251001'). */
 function servedMatchesRequested(served: string[], requested: string): boolean {
@@ -183,6 +280,7 @@ export function buildRunReport(
     aggregates,
     deltas: computeDeltas(aggregates),
     ablationDeltas: computeAblationDeltas(aggregates),
+    byTask: computeByTask(results),
     issues: findIssues(results),
   };
 }
@@ -358,6 +456,22 @@ function toolCallLines(aggregates: VariantAggregate[]): string[] {
   return lines;
 }
 
+function byTaskMatrix(
+  byTask: ByTaskBreakdown,
+  pick: (cell: TaskVariantCell) => string,
+): { headers: string[]; rows: string[][] } {
+  const headers = ['task', ...byTask.variantIds];
+  const rows = byTask.taskIds.map((taskId, i) => [
+    taskId,
+    ...byTask.variantIds.map((_, j) => {
+      const cell = byTask.cells[i]?.[j] ?? null;
+      // a pair with no rows, or whose every row errored, has nothing to report
+      return cell === null || cell.valid === 0 ? '—' : pick(cell);
+    }),
+  ]);
+  return { headers, rows };
+}
+
 function headerLines(report: RunReport): string[] {
   const lines = [`run ${report.runId}`];
   if (report.meta !== null) {
@@ -379,6 +493,7 @@ export function formatReport(report: RunReport, format: ReportFormat): string {
         aggregates: report.aggregates,
         deltas: report.deltas,
         ablationDeltas: report.ablationDeltas,
+        byTask: report.byTask,
         issues: report.issues,
       },
       null,
@@ -391,6 +506,21 @@ export function formatReport(report: RunReport, format: ReportFormat): string {
     headerLines(report).join('\n'),
     `${table(TABLE_HEADERS, rows)}\n\n${USAGE_NOTE}`,
   ];
+  if (report.byTask.taskIds.length > 0) {
+    const out = byTaskMatrix(
+      report.byTask,
+      (c) => `${fmtInt(c.medianOutput)} (${c.successes}/${c.judged})`,
+    );
+    const ctx = byTaskMatrix(report.byTask, (c) => fmtInt(c.medianContext));
+    sections.push(
+      format === 'md'
+        ? `## per-task median output tokens (success)\n\n${table(out.headers, out.rows)}`
+        : `per-task median output tokens (success):\n${table(out.headers, out.rows)}`,
+      format === 'md'
+        ? `## per-task median context volume\n\n${table(ctx.headers, ctx.rows)}`
+        : `per-task median context volume:\n${table(ctx.headers, ctx.rows)}`,
+    );
+  }
   const toolCalls = toolCallLines(report.aggregates);
   if (toolCalls.length > 0) {
     sections.push(

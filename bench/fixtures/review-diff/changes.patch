@@ -1,0 +1,118 @@
+diff --git a/checkout.mjs b/checkout.mjs
+index 26b41aa..7a8983c 100644
+--- a/checkout.mjs
++++ b/checkout.mjs
+@@ -1,11 +1,12 @@
+ import {
+   applyCoupon,
++  applyVolumePricing,
+   computeSubtotal,
+   computeTax,
+   roundMoney,
+   taxableSubtotal,
+ } from './pricing.mjs';
+-import { authorizePayment, createPaymentIntent } from './payments.mjs';
++import { chargeWithRetry, createPaymentIntent, createRetryQueue } from './payments.mjs';
+ import { isEmpty } from './cart.mjs';
+ 
+ export function receiptLines(cart) {
+@@ -18,7 +19,7 @@ export function receiptLines(cart) {
+ }
+ 
+ export function checkout(cart, options) {
+-  const { region, couponCode = null, reference } = options;
++  const { region, couponCode = null, reference, retryQueue = createRetryQueue() } = options;
+   if (isEmpty(cart)) {
+     throw new Error('cannot check out an empty cart');
+   }
+@@ -27,7 +28,9 @@ export function checkout(cart, options) {
+   }
+ 
+   const subtotal = computeSubtotal(cart.items);
+-  const { subtotal: discounted, discount } = applyCoupon(subtotal, couponCode);
++  const volumePriced = applyVolumePricing(subtotal);
++  const volumeDiscount = roundMoney(subtotal - volumePriced);
++  const { subtotal: discounted, discount } = applyCoupon(volumePriced, couponCode);
+ 
+   // Tax applies to the taxable share of the discounted amount, scaled by the
+   // same ratio the discount applied to the whole order.
+@@ -37,13 +40,14 @@ export function checkout(cart, options) {
+ 
+   const total = roundMoney(discounted + tax);
+   const intent = createPaymentIntent(total, cart.currency, reference);
+-  const payment = authorizePayment(intent);
++  const payment = chargeWithRetry(retryQueue, intent);
+ 
+   return {
+     reference,
+     currency: cart.currency,
+     lines: receiptLines(cart),
+     subtotal,
++    volumeDiscount,
+     discount,
+     tax,
+     total,
+diff --git a/payments.mjs b/payments.mjs
+index 6e2bd3d..bb881a7 100644
+--- a/payments.mjs
++++ b/payments.mjs
+@@ -57,3 +57,24 @@ export function authorizePayment(intent) {
+   }
+   return { status: 'captured', capturedTotal: intent.total };
+ }
++
++/**
++ * Authorize a payment, queueing a retry with exponential backoff when the
++ * gateway reports a transient failure. Hard declines are never retried.
++ */
++export function chargeWithRetry(queue, intent, attempt = 0) {
++  const result = authorizePayment(intent);
++  if (result.status !== 'transient_failure') {
++    return result;
++  }
++  const scheduled = scheduleRetry(
++    queue,
++    { id: intent.id, intent },
++    computeBackoff(attempt),
++    attempt + 1,
++  );
++  if (!scheduled) {
++    return { status: 'failed', code: result.code };
++  }
++  return { status: 'retry_scheduled', code: result.code, nextAttempt: attempt + 1 };
++}
+diff --git a/pricing.mjs b/pricing.mjs
+index 6374419..f8c973c 100644
+--- a/pricing.mjs
++++ b/pricing.mjs
+@@ -14,6 +14,30 @@ export function taxableSubtotal(items) {
+   return roundMoney(raw);
+ }
+ 
++const TIER_TABLE = [
++  { minSubtotal: 100, rate: 0.05 },
++  { minSubtotal: 250, rate: 0.1 },
++  { minSubtotal: 500, rate: 0.15 },
++];
++
++function applyTierDiscount(subtotal, tiers) {
++  let rate = 0;
++  for (let i = 0; i <= tiers.length; i += 1) {
++    const tier = tiers[i];
++    if (subtotal >= tier.minSubtotal) {
++      rate = tier.rate;
++    }
++  }
++  return roundMoney(subtotal * (1 - rate));
++}
++
++export function applyVolumePricing(subtotal) {
++  if (subtotal < TIER_TABLE[0].minSubtotal) {
++    return subtotal;
++  }
++  return applyTierDiscount(subtotal, TIER_TABLE);
++}
++
+ const COUPONS = new Map([
+   ['WELCOME10', { kind: 'percent', value: 10 }],
+   ['FREESHIP', { kind: 'flat', value: 7.5 }],

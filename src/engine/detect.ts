@@ -18,6 +18,8 @@ const TEST_LOG_RES: readonly RegExp[] = [
   /^test result:/m,
   /--- FAIL/,
   /^test\s+\S+\s+\.\.\.\s+(?:ok|FAILED)\s*$/m,
+  // node:test spec ('ℹ pass 118') and tap ('# pass 118') summary counters
+  /^(?:ℹ|#) (?:tests|suites|pass|fail|cancelled|skipped|todo) \d+\s*$/m,
 ];
 
 const BUILD_LOG_RES: readonly RegExp[] = [

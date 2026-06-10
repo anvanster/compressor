@@ -19,6 +19,8 @@ export interface BenchmarkCliOptions {
   model: string;
   ablate?: string;
   ablateAdd?: string;
+  /** comma-separated atom categories (output|behavior) for group ablation */
+  ablateGroup?: string;
   /** commander --no-hook: defaults true */
   hook: boolean;
   concurrency: string;
@@ -123,6 +125,7 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     modes,
     ablate: parseIdList(opts.ablate),
     ablateAdd: parseIdList(opts.ablateAdd),
+    ablateGroups: parseIdList(opts.ablateGroup),
     hook: opts.hook,
   });
 

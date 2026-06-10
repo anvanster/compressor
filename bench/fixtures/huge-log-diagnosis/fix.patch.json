@@ -1,0 +1,7 @@
+[
+  {
+    "file": "util.mjs",
+    "find": "  if (grams < 500) return 'letter';",
+    "replace": "  if (grams <= 500) return 'letter';"
+  }
+]

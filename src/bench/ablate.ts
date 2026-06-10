@@ -2,7 +2,15 @@ import type { Mode } from '../engine/types.ts';
 import { getAtom } from '../packs/atoms.ts';
 import { atomsForMode, MODE_DESCRIPTIONS } from '../packs/modes.ts';
 import { renderOutputStyle, renderOutputStyleFromAtoms } from '../packs/render.ts';
+import type { AtomCategory } from '../packs/types.ts';
 import type { Variant } from './types.ts';
+
+/** Atom categories ablatable wholesale via --ablate-group. */
+export const ABLATE_GROUPS: readonly AtomCategory[] = ['output', 'behavior'];
+
+function isAblateGroup(value: string): value is AtomCategory {
+  return (ABLATE_GROUPS as readonly string[]).includes(value);
+}
 
 export interface BuildVariantsOptions {
   modes: Mode[];
@@ -10,6 +18,8 @@ export interface BuildVariantsOptions {
   ablate: string[];
   /** REJECTED atom ids added one at a time to the optimized baseline */
   ablateAdd: string[];
+  /** atom categories ('output' | 'behavior') removed wholesale from the optimized baseline */
+  ablateGroups: string[];
   hook: boolean;
 }
 
@@ -78,6 +88,36 @@ export function buildVariants(opts: BuildVariantsOptions): Variant[] {
       baseMode,
       styleBody: rendered.body,
       styleName: `compressor-${variantId}`,
+      hook: opts.hook,
+    });
+  }
+
+  for (const group of opts.ablateGroups) {
+    if (!isAblateGroup(group)) {
+      throw new Error(
+        `--ablate-group: unknown group '${group}' (valid groups: ${ABLATE_GROUPS.join(', ')})`,
+      );
+    }
+    if (!opts.modes.includes('optimized')) {
+      throw new Error(
+        `--ablate-group: group '${group}' is measured against the optimized baseline — include 'optimized' in --modes`,
+      );
+    }
+    const variantId = `optimized-minus-${group}-atoms`;
+    const styleName = `compressor-ablate-no-${group}`;
+    // No empty-result guard needed: if removing the group leaves zero atoms,
+    // renderOutputStyleFromAtoms still emits frontmatter + empty sections —
+    // the variant measures "style file present but says nothing of that category".
+    const rendered = renderOutputStyleFromAtoms(
+      baseline.filter((atom) => atom.category !== group),
+      styleName,
+      `${MODE_DESCRIPTIONS.optimized} (minus all ${group} atoms)`,
+    );
+    variants.push({
+      id: variantId,
+      baseMode: 'optimized',
+      styleBody: rendered.body,
+      styleName,
       hook: opts.hook,
     });
   }

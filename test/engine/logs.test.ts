@@ -62,6 +62,39 @@ test('filterTestLog keeps cargo failures and result line, drops ok lines', () =>
   assert.ok(result.content.includes('[compressor: 3 passing-test lines omitted]'));
 });
 
+const NODE_TEST_LOG = [
+  '[inv-01] case 1/10: sku=SKU-00001',
+  '[inv-01]   got grams=77',
+  '▶ inventory weights',
+  '  ✔ batch 1 (0.4ms)',
+  '  ✔ batch 2 (0.4ms)',
+  '  ✖ batch 3 (0.4ms)',
+  '✖ inventory weights (0.4ms)',
+  'ℹ tests 3',
+  'ℹ pass 2',
+  'ℹ fail 1',
+  '',
+  '✖ failing tests:',
+  '',
+  'test at test-inventory.mjs:12:3',
+  '✖ batch 3 (0.4ms)',
+  "  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:",
+].join('\n');
+
+test('filterTestLog keeps node:test failures, console noise, and summary; drops ✔ passes', () => {
+  const result = filterTestLog(NODE_TEST_LOG);
+  assert.ok(result.content.includes('✖ batch 3 (0.4ms)'));
+  assert.ok(result.content.includes('✖ failing tests:'));
+  assert.ok(result.content.includes('AssertionError [ERR_ASSERTION]'));
+  assert.ok(result.content.includes('ℹ fail 1'));
+  // console output is kept conservatively — it is not a recognized pass line
+  assert.ok(result.content.includes('[inv-01]   got grams=77'));
+  assert.ok(!result.content.includes('✔ batch 1'));
+  assert.ok(!result.content.includes('✔ batch 2'));
+  assert.ok(result.content.includes('[compressor: 2 passing-test lines omitted]'));
+  assert.equal(result.transform?.id, 'log-filter');
+});
+
 test('filterTestLog never drops unrecognized content', () => {
   const input = 'hello there\nsome output lines\nnothing test-like at all';
   const result = filterTestLog(input);

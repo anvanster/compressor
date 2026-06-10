@@ -1,0 +1,3807 @@
+[inv-01] case 1/10: sku=SKU-00001
+[inv-01]   got grams=77
+[inv-01]   want grams=77
+[inv-01] case 2/10: sku=SKU-00002
+[inv-01]   got grams=114
+[inv-01]   want grams=114
+[inv-01] case 3/10: sku=SKU-00003
+[inv-01]   got grams=151
+[inv-01]   want grams=151
+[inv-01] case 4/10: sku=SKU-00004
+[inv-01]   got grams=188
+[inv-01]   want grams=188
+[inv-01] case 5/10: sku=SKU-00005
+[inv-01]   got grams=225
+[inv-01]   want grams=225
+[inv-01] case 6/10: sku=SKU-00006
+[inv-01]   got grams=262
+[inv-01]   want grams=262
+[inv-01] case 7/10: sku=SKU-00007
+[inv-01]   got grams=299
+[inv-01]   want grams=299
+[inv-01] case 8/10: sku=SKU-00008
+[inv-01]   got grams=336
+[inv-01]   want grams=336
+[inv-01] case 9/10: sku=SKU-00009
+[inv-01]   got grams=373
+[inv-01]   want grams=373
+[inv-01] case 10/10: sku=SKU-00010
+[inv-01]   got grams=410
+[inv-01]   want grams=410
+[inv-02] case 1/10: sku=SKU-00011
+[inv-02]   got grams=447
+[inv-02]   want grams=447
+[inv-02] case 2/10: sku=SKU-00012
+[inv-02]   got grams=484
+[inv-02]   want grams=484
+[inv-02] case 3/10: sku=SKU-00013
+[inv-02]   got grams=521
+[inv-02]   want grams=521
+[inv-02] case 4/10: sku=SKU-00014
+[inv-02]   got grams=558
+[inv-02]   want grams=558
+[inv-02] case 5/10: sku=SKU-00015
+[inv-02]   got grams=595
+[inv-02]   want grams=595
+[inv-02] case 6/10: sku=SKU-00016
+[inv-02]   got grams=632
+[inv-02]   want grams=632
+[inv-02] case 7/10: sku=SKU-00017
+[inv-02]   got grams=669
+[inv-02]   want grams=669
+[inv-02] case 8/10: sku=SKU-00018
+[inv-02]   got grams=706
+[inv-02]   want grams=706
+[inv-02] case 9/10: sku=SKU-00019
+[inv-02]   got grams=743
+[inv-02]   want grams=743
+[inv-02] case 10/10: sku=SKU-00020
+[inv-02]   got grams=780
+[inv-02]   want grams=780
+[inv-03] case 1/10: sku=SKU-00021
+[inv-03]   got grams=817
+[inv-03]   want grams=817
+[inv-03] case 2/10: sku=SKU-00022
+[inv-03]   got grams=854
+[inv-03]   want grams=854
+[inv-03] case 3/10: sku=SKU-00023
+[inv-03]   got grams=891
+[inv-03]   want grams=891
+[inv-03] case 4/10: sku=SKU-00024
+[inv-03]   got grams=928
+[inv-03]   want grams=928
+[inv-03] case 5/10: sku=SKU-00025
+[inv-03]   got grams=965
+[inv-03]   want grams=965
+[inv-03] case 6/10: sku=SKU-00026
+[inv-03]   got grams=1002
+[inv-03]   want grams=1002
+[inv-03] case 7/10: sku=SKU-00027
+[inv-03]   got grams=1039
+[inv-03]   want grams=1039
+[inv-03] case 8/10: sku=SKU-00028
+[inv-03]   got grams=1076
+[inv-03]   want grams=1076
+[inv-03] case 9/10: sku=SKU-00029
+[inv-03]   got grams=1113
+[inv-03]   want grams=1113
+[inv-03] case 10/10: sku=SKU-00030
+[inv-03]   got grams=1150
+[inv-03]   want grams=1150
+[inv-04] case 1/10: sku=SKU-00031
+[inv-04]   got grams=1187
+[inv-04]   want grams=1187
+[inv-04] case 2/10: sku=SKU-00032
+[inv-04]   got grams=1224
+[inv-04]   want grams=1224
+[inv-04] case 3/10: sku=SKU-00033
+[inv-04]   got grams=1261
+[inv-04]   want grams=1261
+[inv-04] case 4/10: sku=SKU-00034
+[inv-04]   got grams=1298
+[inv-04]   want grams=1298
+[inv-04] case 5/10: sku=SKU-00035
+[inv-04]   got grams=1335
+[inv-04]   want grams=1335
+[inv-04] case 6/10: sku=SKU-00036
+[inv-04]   got grams=1372
+[inv-04]   want grams=1372
+[inv-04] case 7/10: sku=SKU-00037
+[inv-04]   got grams=1409
+[inv-04]   want grams=1409
+[inv-04] case 8/10: sku=SKU-00038
+[inv-04]   got grams=1446
+[inv-04]   want grams=1446
+[inv-04] case 9/10: sku=SKU-00039
+[inv-04]   got grams=1483
+[inv-04]   want grams=1483
+[inv-04] case 10/10: sku=SKU-00040
+[inv-04]   got grams=1520
+[inv-04]   want grams=1520
+[inv-05] case 1/10: sku=SKU-00001
+[inv-05]   got grams=77
+[inv-05]   want grams=77
+[inv-05] case 2/10: sku=SKU-00002
+[inv-05]   got grams=114
+[inv-05]   want grams=114
+[inv-05] case 3/10: sku=SKU-00003
+[inv-05]   got grams=151
+[inv-05]   want grams=151
+[inv-05] case 4/10: sku=SKU-00004
+[inv-05]   got grams=188
+[inv-05]   want grams=188
+[inv-05] case 5/10: sku=SKU-00005
+[inv-05]   got grams=225
+[inv-05]   want grams=225
+[inv-05] case 6/10: sku=SKU-00006
+[inv-05]   got grams=262
+[inv-05]   want grams=262
+[inv-05] case 7/10: sku=SKU-00007
+[inv-05]   got grams=299
+[inv-05]   want grams=299
+[inv-05] case 8/10: sku=SKU-00008
+[inv-05]   got grams=336
+[inv-05]   want grams=336
+[inv-05] case 9/10: sku=SKU-00009
+[inv-05]   got grams=373
+[inv-05]   want grams=373
+[inv-05] case 10/10: sku=SKU-00010
+[inv-05]   got grams=410
+[inv-05]   want grams=410
+[inv-06] case 1/10: sku=SKU-00011
+[inv-06]   got grams=447
+[inv-06]   want grams=447
+[inv-06] case 2/10: sku=SKU-00012
+[inv-06]   got grams=484
+[inv-06]   want grams=484
+[inv-06] case 3/10: sku=SKU-00013
+[inv-06]   got grams=521
+[inv-06]   want grams=521
+[inv-06] case 4/10: sku=SKU-00014
+[inv-06]   got grams=558
+[inv-06]   want grams=558
+[inv-06] case 5/10: sku=SKU-00015
+[inv-06]   got grams=595
+[inv-06]   want grams=595
+[inv-06] case 6/10: sku=SKU-00016
+[inv-06]   got grams=632
+[inv-06]   want grams=632
+[inv-06] case 7/10: sku=SKU-00017
+[inv-06]   got grams=669
+[inv-06]   want grams=669
+[inv-06] case 8/10: sku=SKU-00018
+[inv-06]   got grams=706
+[inv-06]   want grams=706
+[inv-06] case 9/10: sku=SKU-00019
+[inv-06]   got grams=743
+[inv-06]   want grams=743
+[inv-06] case 10/10: sku=SKU-00020
+[inv-06]   got grams=780
+[inv-06]   want grams=780
+[inv-07] case 1/10: sku=SKU-00001
+[inv-07]   got cents=205
+[inv-07]   want cents=205
+[inv-07] case 2/10: sku=SKU-00004
+[inv-07]   got cents=370
+[inv-07]   want cents=370
+[inv-07] case 3/10: sku=SKU-00007
+[inv-07]   got cents=535
+[inv-07]   want cents=535
+[inv-07] case 4/10: sku=SKU-00010
+[inv-07]   got cents=700
+[inv-07]   want cents=700
+[inv-07] case 5/10: sku=SKU-00013
+[inv-07]   got cents=865
+[inv-07]   want cents=865
+[inv-07] case 6/10: sku=SKU-00016
+[inv-07]   got cents=1030
+[inv-07]   want cents=1030
+[inv-07] case 7/10: sku=SKU-00019
+[inv-07]   got cents=1195
+[inv-07]   want cents=1195
+[inv-07] case 8/10: sku=SKU-00022
+[inv-07]   got cents=1360
+[inv-07]   want cents=1360
+[inv-07] case 9/10: sku=SKU-00025
+[inv-07]   got cents=1525
+[inv-07]   want cents=1525
+[inv-07] case 10/10: sku=SKU-00028
+[inv-07]   got cents=1690
+[inv-07]   want cents=1690
+[inv-08] case 1/10: sku=SKU-00011
+[inv-08]   got cents=755
+[inv-08]   want cents=755
+[inv-08] case 2/10: sku=SKU-00014
+[inv-08]   got cents=920
+[inv-08]   want cents=920
+[inv-08] case 3/10: sku=SKU-00017
+[inv-08]   got cents=1085
+[inv-08]   want cents=1085
+[inv-08] case 4/10: sku=SKU-00020
+[inv-08]   got cents=1250
+[inv-08]   want cents=1250
+[inv-08] case 5/10: sku=SKU-00023
+[inv-08]   got cents=1415
+[inv-08]   want cents=1415
+[inv-08] case 6/10: sku=SKU-00026
+[inv-08]   got cents=1580
+[inv-08]   want cents=1580
+[inv-08] case 7/10: sku=SKU-00029
+[inv-08]   got cents=1745
+[inv-08]   want cents=1745
+[inv-08] case 8/10: sku=SKU-00032
+[inv-08]   got cents=1910
+[inv-08]   want cents=1910
+[inv-08] case 9/10: sku=SKU-00035
+[inv-08]   got cents=2075
+[inv-08]   want cents=2075
+[inv-08] case 10/10: sku=SKU-00038
+[inv-08]   got cents=2240
+[inv-08]   want cents=2240
+[inv-09] case 1/10: sku=SKU-00021
+[inv-09]   got cents=1305
+[inv-09]   want cents=1305
+[inv-09] case 2/10: sku=SKU-00024
+[inv-09]   got cents=1470
+[inv-09]   want cents=1470
+[inv-09] case 3/10: sku=SKU-00027
+[inv-09]   got cents=1635
+[inv-09]   want cents=1635
+[inv-09] case 4/10: sku=SKU-00030
+[inv-09]   got cents=1800
+[inv-09]   want cents=1800
+[inv-09] case 5/10: sku=SKU-00033
+[inv-09]   got cents=1965
+[inv-09]   want cents=1965
+[inv-09] case 6/10: sku=SKU-00036
+[inv-09]   got cents=2130
+[inv-09]   want cents=2130
+[inv-09] case 7/10: sku=SKU-00039
+[inv-09]   got cents=2295
+[inv-09]   want cents=2295
+[inv-09] case 8/10: sku=SKU-00002
+[inv-09]   got cents=260
+[inv-09]   want cents=260
+[inv-09] case 9/10: sku=SKU-00005
+[inv-09]   got cents=425
+[inv-09]   want cents=425
+[inv-09] case 10/10: sku=SKU-00008
+[inv-09]   got cents=590
+[inv-09]   want cents=590
+[inv-10] case 1/10: sku=SKU-00031
+[inv-10]   got cents=1855
+[inv-10]   want cents=1855
+[inv-10] case 2/10: sku=SKU-00034
+[inv-10]   got cents=2020
+[inv-10]   want cents=2020
+[inv-10] case 3/10: sku=SKU-00037
+[inv-10]   got cents=2185
+[inv-10]   want cents=2185
+[inv-10] case 4/10: sku=SKU-00040
+[inv-10]   got cents=2350
+[inv-10]   want cents=2350
+[inv-10] case 5/10: sku=SKU-00003
+[inv-10]   got cents=315
+[inv-10]   want cents=315
+[inv-10] case 6/10: sku=SKU-00006
+[inv-10]   got cents=480
+[inv-10]   want cents=480
+[inv-10] case 7/10: sku=SKU-00009
+[inv-10]   got cents=645
+[inv-10]   want cents=645
+[inv-10] case 8/10: sku=SKU-00012
+[inv-10]   got cents=810
+[inv-10]   want cents=810
+[inv-10] case 9/10: sku=SKU-00015
+[inv-10]   got cents=975
+[inv-10]   want cents=975
+[inv-10] case 10/10: sku=SKU-00018
+[inv-10]   got cents=1140
+[inv-10]   want cents=1140
+[inv-11] case 1/10: sku=SKU-00001
+[inv-11]   got cents=205
+[inv-11]   want cents=205
+[inv-11] case 2/10: sku=SKU-00004
+[inv-11]   got cents=370
+[inv-11]   want cents=370
+[inv-11] case 3/10: sku=SKU-00007
+[inv-11]   got cents=535
+[inv-11]   want cents=535
+[inv-11] case 4/10: sku=SKU-00010
+[inv-11]   got cents=700
+[inv-11]   want cents=700
+[inv-11] case 5/10: sku=SKU-00013
+[inv-11]   got cents=865
+[inv-11]   want cents=865
+[inv-11] case 6/10: sku=SKU-00016
+[inv-11]   got cents=1030
+[inv-11]   want cents=1030
+[inv-11] case 7/10: sku=SKU-00019
+[inv-11]   got cents=1195
+[inv-11]   want cents=1195
+[inv-11] case 8/10: sku=SKU-00022
+[inv-11]   got cents=1360
+[inv-11]   want cents=1360
+[inv-11] case 9/10: sku=SKU-00025
+[inv-11]   got cents=1525
+[inv-11]   want cents=1525
+[inv-11] case 10/10: sku=SKU-00028
+[inv-11]   got cents=1690
+[inv-11]   want cents=1690
+[inv-12] case 1/10: sku=SKU-00011
+[inv-12]   got cents=755
+[inv-12]   want cents=755
+[inv-12] case 2/10: sku=SKU-00014
+[inv-12]   got cents=920
+[inv-12]   want cents=920
+[inv-12] case 3/10: sku=SKU-00017
+[inv-12]   got cents=1085
+[inv-12]   want cents=1085
+[inv-12] case 4/10: sku=SKU-00020
+[inv-12]   got cents=1250
+[inv-12]   want cents=1250
+[inv-12] case 5/10: sku=SKU-00023
+[inv-12]   got cents=1415
+[inv-12]   want cents=1415
+[inv-12] case 6/10: sku=SKU-00026
+[inv-12]   got cents=1580
+[inv-12]   want cents=1580
+[inv-12] case 7/10: sku=SKU-00029
+[inv-12]   got cents=1745
+[inv-12]   want cents=1745
+[inv-12] case 8/10: sku=SKU-00032
+[inv-12]   got cents=1910
+[inv-12]   want cents=1910
+[inv-12] case 9/10: sku=SKU-00035
+[inv-12]   got cents=2075
+[inv-12]   want cents=2075
+[inv-12] case 10/10: sku=SKU-00038
+[inv-12]   got cents=2240
+[inv-12]   want cents=2240
+[inv-13] case 1/10: sku=SKU-00001 qty=1
+[inv-13]   got grams=77
+[inv-13]   want grams=77
+[inv-13] case 2/10: sku=SKU-00004 qty=2
+[inv-13]   got grams=376
+[inv-13]   want grams=376
+[inv-13] case 3/10: sku=SKU-00007 qty=3
+[inv-13]   got grams=897
+[inv-13]   want grams=897
+[inv-13] case 4/10: sku=SKU-00010 qty=4
+[inv-13]   got grams=1640
+[inv-13]   want grams=1640
+[inv-13] case 5/10: sku=SKU-00013 qty=1
+[inv-13]   got grams=521
+[inv-13]   want grams=521
+[inv-13] case 6/10: sku=SKU-00016 qty=2
+[inv-13]   got grams=1264
+[inv-13]   want grams=1264
+[inv-13] case 7/10: sku=SKU-00019 qty=3
+[inv-13]   got grams=2229
+[inv-13]   want grams=2229
+[inv-13] case 8/10: sku=SKU-00022 qty=4
+[inv-13]   got grams=3416
+[inv-13]   want grams=3416
+[inv-13] case 9/10: sku=SKU-00025 qty=1
+[inv-13]   got grams=965
+[inv-13]   want grams=965
+[inv-13] case 10/10: sku=SKU-00028 qty=2
+[inv-13]   got grams=2152
+[inv-13]   want grams=2152
+[inv-14] case 1/10: sku=SKU-00008 qty=1
+[inv-14]   got grams=336
+[inv-14]   want grams=336
+[inv-14] case 2/10: sku=SKU-00011 qty=2
+[inv-14]   got grams=894
+[inv-14]   want grams=894
+[inv-14] case 3/10: sku=SKU-00014 qty=3
+[inv-14]   got grams=1674
+[inv-14]   want grams=1674
+[inv-14] case 4/10: sku=SKU-00017 qty=4
+[inv-14]   got grams=2676
+[inv-14]   want grams=2676
+[inv-14] case 5/10: sku=SKU-00020 qty=1
+[inv-14]   got grams=780
+[inv-14]   want grams=780
+[inv-14] case 6/10: sku=SKU-00023 qty=2
+[inv-14]   got grams=1782
+[inv-14]   want grams=1782
+[inv-14] case 7/10: sku=SKU-00026 qty=3
+[inv-14]   got grams=3006
+[inv-14]   want grams=3006
+[inv-14] case 8/10: sku=SKU-00029 qty=4
+[inv-14]   got grams=4452
+[inv-14]   want grams=4452
+[inv-14] case 9/10: sku=SKU-00032 qty=1
+[inv-14]   got grams=1224
+[inv-14]   want grams=1224
+[inv-14] case 10/10: sku=SKU-00035 qty=2
+[inv-14]   got grams=2670
+[inv-14]   want grams=2670
+[inv-15] case 1/10: sku=SKU-00015 qty=1
+[inv-15]   got grams=595
+[inv-15]   want grams=595
+[inv-15] case 2/10: sku=SKU-00018 qty=2
+[inv-15]   got grams=1412
+[inv-15]   want grams=1412
+[inv-15] case 3/10: sku=SKU-00021 qty=3
+[inv-15]   got grams=2451
+[inv-15]   want grams=2451
+[inv-15] case 4/10: sku=SKU-00024 qty=4
+[inv-15]   got grams=3712
+[inv-15]   want grams=3712
+[inv-15] case 5/10: sku=SKU-00027 qty=1
+[inv-15]   got grams=1039
+[inv-15]   want grams=1039
+[inv-15] case 6/10: sku=SKU-00030 qty=2
+[inv-15]   got grams=2300
+[inv-15]   want grams=2300
+[inv-15] case 7/10: sku=SKU-00033 qty=3
+[inv-15]   got grams=3783
+[inv-15]   want grams=3783
+[inv-15] case 8/10: sku=SKU-00036 qty=4
+[inv-15]   got grams=5488
+[inv-15]   want grams=5488
+[inv-15] case 9/10: sku=SKU-00039 qty=1
+[inv-15]   got grams=1483
+[inv-15]   want grams=1483
+[inv-15] case 10/10: sku=SKU-00002 qty=2
+[inv-15]   got grams=228
+[inv-15]   want grams=228
+[inv-16] case 1/10: sku=SKU-00022 qty=1
+[inv-16]   got grams=854
+[inv-16]   want grams=854
+[inv-16] case 2/10: sku=SKU-00025 qty=2
+[inv-16]   got grams=1930
+[inv-16]   want grams=1930
+[inv-16] case 3/10: sku=SKU-00028 qty=3
+[inv-16]   got grams=3228
+[inv-16]   want grams=3228
+[inv-16] case 4/10: sku=SKU-00031 qty=4
+[inv-16]   got grams=4748
+[inv-16]   want grams=4748
+[inv-16] case 5/10: sku=SKU-00034 qty=1
+[inv-16]   got grams=1298
+[inv-16]   want grams=1298
+[inv-16] case 6/10: sku=SKU-00037 qty=2
+[inv-16]   got grams=2818
+[inv-16]   want grams=2818
+[inv-16] case 7/10: sku=SKU-00040 qty=3
+[inv-16]   got grams=4560
+[inv-16]   want grams=4560
+[inv-16] case 8/10: sku=SKU-00003 qty=4
+[inv-16]   got grams=604
+[inv-16]   want grams=604
+[inv-16] case 9/10: sku=SKU-00006 qty=1
+[inv-16]   got grams=262
+[inv-16]   want grams=262
+[inv-16] case 10/10: sku=SKU-00009 qty=2
+[inv-16]   got grams=746
+[inv-16]   want grams=746
+[inv-17] case 1/10: sku=SKU-00029 qty=1
+[inv-17]   got grams=1113
+[inv-17]   want grams=1113
+[inv-17] case 2/10: sku=SKU-00032 qty=2
+[inv-17]   got grams=2448
+[inv-17]   want grams=2448
+[inv-17] case 3/10: sku=SKU-00035 qty=3
+[inv-17]   got grams=4005
+[inv-17]   want grams=4005
+[inv-17] case 4/10: sku=SKU-00038 qty=4
+[inv-17]   got grams=5784
+[inv-17]   want grams=5784
+[inv-17] case 5/10: sku=SKU-00001 qty=1
+[inv-17]   got grams=77
+[inv-17]   want grams=77
+[inv-17] case 6/10: sku=SKU-00004 qty=2
+[inv-17]   got grams=376
+[inv-17]   want grams=376
+[inv-17] case 7/10: sku=SKU-00007 qty=3
+[inv-17]   got grams=897
+[inv-17]   want grams=897
+[inv-17] case 8/10: sku=SKU-00010 qty=4
+[inv-17]   got grams=1640
+[inv-17]   want grams=1640
+[inv-17] case 9/10: sku=SKU-00013 qty=1
+[inv-17]   got grams=521
+[inv-17]   want grams=521
+[inv-17] case 10/10: sku=SKU-00016 qty=2
+[inv-17]   got grams=1264
+[inv-17]   want grams=1264
+[inv-18] case 1/10: sku=SKU-00036 qty=1
+[inv-18]   got grams=1372
+[inv-18]   want grams=1372
+[inv-18] case 2/10: sku=SKU-00039 qty=2
+[inv-18]   got grams=2966
+[inv-18]   want grams=2966
+[inv-18] case 3/10: sku=SKU-00002 qty=3
+[inv-18]   got grams=342
+[inv-18]   want grams=342
+[inv-18] case 4/10: sku=SKU-00005 qty=4
+[inv-18]   got grams=900
+[inv-18]   want grams=900
+[inv-18] case 5/10: sku=SKU-00008 qty=1
+[inv-18]   got grams=336
+[inv-18]   want grams=336
+[inv-18] case 6/10: sku=SKU-00011 qty=2
+[inv-18]   got grams=894
+[inv-18]   want grams=894
+[inv-18] case 7/10: sku=SKU-00014 qty=3
+[inv-18]   got grams=1674
+[inv-18]   want grams=1674
+[inv-18] case 8/10: sku=SKU-00017 qty=4
+[inv-18]   got grams=2676
+[inv-18]   want grams=2676
+[inv-18] case 9/10: sku=SKU-00020 qty=1
+[inv-18]   got grams=780
+[inv-18]   want grams=780
+[inv-18] case 10/10: sku=SKU-00023 qty=2
+[inv-18]   got grams=1782
+[inv-18]   want grams=1782
+[inv-19] case 1/10: sku=SKU-00001 qty=2
+[inv-19]   got cents=410
+[inv-19]   want cents=410
+[inv-19] case 2/10: sku=SKU-00008 qty=3
+[inv-19]   got cents=1770
+[inv-19]   want cents=1770
+[inv-19] case 3/10: sku=SKU-00015 qty=4
+[inv-19]   got cents=3900
+[inv-19]   want cents=3900
+[inv-19] case 4/10: sku=SKU-00022 qty=2
+[inv-19]   got cents=2720
+[inv-19]   want cents=2720
+[inv-19] case 5/10: sku=SKU-00029 qty=3
+[inv-19]   got cents=5235
+[inv-19]   want cents=5235
+[inv-19] case 6/10: sku=SKU-00036 qty=4
+[inv-19]   got cents=8520
+[inv-19]   want cents=8520
+[inv-19] case 7/10: sku=SKU-00003 qty=2
+[inv-19]   got cents=630
+[inv-19]   want cents=630
+[inv-19] case 8/10: sku=SKU-00010 qty=3
+[inv-19]   got cents=2100
+[inv-19]   want cents=2100
+[inv-19] case 9/10: sku=SKU-00017 qty=4
+[inv-19]   got cents=4340
+[inv-19]   want cents=4340
+[inv-19] case 10/10: sku=SKU-00024 qty=2
+[inv-19]   got cents=2940
+[inv-19]   want cents=2940
+[inv-20] case 1/10: sku=SKU-00006 qty=2
+[inv-20]   got cents=960
+[inv-20]   want cents=960
+[inv-20] case 2/10: sku=SKU-00013 qty=3
+[inv-20]   got cents=2595
+[inv-20]   want cents=2595
+[inv-20] case 3/10: sku=SKU-00020 qty=4
+[inv-20]   got cents=5000
+[inv-20]   want cents=5000
+[inv-20] case 4/10: sku=SKU-00027 qty=2
+[inv-20]   got cents=3270
+[inv-20]   want cents=3270
+[inv-20] case 5/10: sku=SKU-00034 qty=3
+[inv-20]   got cents=6060
+[inv-20]   want cents=6060
+[inv-20] case 6/10: sku=SKU-00001 qty=4
+[inv-20]   got cents=820
+[inv-20]   want cents=820
+[inv-20] case 7/10: sku=SKU-00008 qty=2
+[inv-20]   got cents=1180
+[inv-20]   want cents=1180
+[inv-20] case 8/10: sku=SKU-00015 qty=3
+[inv-20]   got cents=2925
+[inv-20]   want cents=2925
+[inv-20] case 9/10: sku=SKU-00022 qty=4
+[inv-20]   got cents=5440
+[inv-20]   want cents=5440
+[inv-20] case 10/10: sku=SKU-00029 qty=2
+[inv-20]   got cents=3490
+[inv-20]   want cents=3490
+[inv-21] case 1/10: sku=SKU-00011 qty=2
+[inv-21]   got cents=1510
+[inv-21]   want cents=1510
+[inv-21] case 2/10: sku=SKU-00018 qty=3
+[inv-21]   got cents=3420
+[inv-21]   want cents=3420
+[inv-21] case 3/10: sku=SKU-00025 qty=4
+[inv-21]   got cents=6100
+[inv-21]   want cents=6100
+[inv-21] case 4/10: sku=SKU-00032 qty=2
+[inv-21]   got cents=3820
+[inv-21]   want cents=3820
+[inv-21] case 5/10: sku=SKU-00039 qty=3
+[inv-21]   got cents=6885
+[inv-21]   want cents=6885
+[inv-21] case 6/10: sku=SKU-00006 qty=4
+[inv-21]   got cents=1920
+[inv-21]   want cents=1920
+[inv-21] case 7/10: sku=SKU-00013 qty=2
+[inv-21]   got cents=1730
+[inv-21]   want cents=1730
+[inv-21] case 8/10: sku=SKU-00020 qty=3
+[inv-21]   got cents=3750
+[inv-21]   want cents=3750
+[inv-21] case 9/10: sku=SKU-00027 qty=4
+[inv-21]   got cents=6540
+[inv-21]   want cents=6540
+[inv-21] case 10/10: sku=SKU-00034 qty=2
+[inv-21]   got cents=4040
+[inv-21]   want cents=4040
+[inv-22] case 1/10: sku=SKU-00016 qty=2
+[inv-22]   got cents=2060
+[inv-22]   want cents=2060
+[inv-22] case 2/10: sku=SKU-00023 qty=3
+[inv-22]   got cents=4245
+[inv-22]   want cents=4245
+[inv-22] case 3/10: sku=SKU-00030 qty=4
+[inv-22]   got cents=7200
+[inv-22]   want cents=7200
+[inv-22] case 4/10: sku=SKU-00037 qty=2
+[inv-22]   got cents=4370
+[inv-22]   want cents=4370
+[inv-22] case 5/10: sku=SKU-00004 qty=3
+[inv-22]   got cents=1110
+[inv-22]   want cents=1110
+[inv-22] case 6/10: sku=SKU-00011 qty=4
+[inv-22]   got cents=3020
+[inv-22]   want cents=3020
+[inv-22] case 7/10: sku=SKU-00018 qty=2
+[inv-22]   got cents=2280
+[inv-22]   want cents=2280
+[inv-22] case 8/10: sku=SKU-00025 qty=3
+[inv-22]   got cents=4575
+[inv-22]   want cents=4575
+[inv-22] case 9/10: sku=SKU-00032 qty=4
+[inv-22]   got cents=7640
+[inv-22]   want cents=7640
+[inv-22] case 10/10: sku=SKU-00039 qty=2
+[inv-22]   got cents=4590
+[inv-22]   want cents=4590
+[inv-23] case 1/10: sku=SKU-00021 qty=2
+[inv-23]   got cents=2610
+[inv-23]   want cents=2610
+[inv-23] case 2/10: sku=SKU-00028 qty=3
+[inv-23]   got cents=5070
+[inv-23]   want cents=5070
+[inv-23] case 3/10: sku=SKU-00035 qty=4
+[inv-23]   got cents=8300
+[inv-23]   want cents=8300
+[inv-23] case 4/10: sku=SKU-00002 qty=2
+[inv-23]   got cents=520
+[inv-23]   want cents=520
+[inv-23] case 5/10: sku=SKU-00009 qty=3
+[inv-23]   got cents=1935
+[inv-23]   want cents=1935
+[inv-23] case 6/10: sku=SKU-00016 qty=4
+[inv-23]   got cents=4120
+[inv-23]   want cents=4120
+[inv-23] case 7/10: sku=SKU-00023 qty=2
+[inv-23]   got cents=2830
+[inv-23]   want cents=2830
+[inv-23] case 8/10: sku=SKU-00030 qty=3
+[inv-23]   got cents=5400
+[inv-23]   want cents=5400
+[inv-23] case 9/10: sku=SKU-00037 qty=4
+[inv-23]   got cents=8740
+[inv-23]   want cents=8740
+[inv-23] case 10/10: sku=SKU-00004 qty=2
+[inv-23]   got cents=740
+[inv-23]   want cents=740
+[inv-24] case 1/10: sku=SKU-00026 qty=2
+[inv-24]   got cents=3160
+[inv-24]   want cents=3160
+[inv-24] case 2/10: sku=SKU-00033 qty=3
+[inv-24]   got cents=5895
+[inv-24]   want cents=5895
+[inv-24] case 3/10: sku=SKU-00040 qty=4
+[inv-24]   got cents=9400
+[inv-24]   want cents=9400
+[inv-24] case 4/10: sku=SKU-00007 qty=2
+[inv-24]   got cents=1070
+[inv-24]   want cents=1070
+[inv-24] case 5/10: sku=SKU-00014 qty=3
+[inv-24]   got cents=2760
+[inv-24]   want cents=2760
+[inv-24] case 6/10: sku=SKU-00021 qty=4
+[inv-24]   got cents=5220
+[inv-24]   want cents=5220
+[inv-24] case 7/10: sku=SKU-00028 qty=2
+[inv-24]   got cents=3380
+[inv-24]   want cents=3380
+[inv-24] case 8/10: sku=SKU-00035 qty=3
+[inv-24]   got cents=6225
+[inv-24]   want cents=6225
+[inv-24] case 9/10: sku=SKU-00002 qty=4
+[inv-24]   got cents=1040
+[inv-24]   want cents=1040
+[inv-24] case 10/10: sku=SKU-00009 qty=2
+[inv-24]   got cents=1290
+[inv-24]   want cents=1290
+▶ catalog weights
+  ✔ catalog weight batch 1 (0.4ms)
+  ✔ catalog weight batch 2 (0.4ms)
+  ✔ catalog weight batch 3 (0.4ms)
+  ✔ catalog weight batch 4 (0.4ms)
+  ✔ catalog weight batch 5 (0.4ms)
+  ✔ catalog weight batch 6 (0.4ms)
+✔ catalog weights (0.4ms)
+▶ catalog prices
+  ✔ catalog price batch 1 (0.4ms)
+  ✔ catalog price batch 2 (0.4ms)
+  ✔ catalog price batch 3 (0.4ms)
+  ✔ catalog price batch 4 (0.4ms)
+  ✔ catalog price batch 5 (0.4ms)
+  ✔ catalog price batch 6 (0.4ms)
+✔ catalog prices (0.4ms)
+▶ line weights scale with quantity
+  ✔ line weight batch 1 (0.4ms)
+  ✔ line weight batch 2 (0.4ms)
+  ✔ line weight batch 3 (0.4ms)
+  ✔ line weight batch 4 (0.4ms)
+  ✔ line weight batch 5 (0.4ms)
+  ✔ line weight batch 6 (0.4ms)
+✔ line weights scale with quantity (0.4ms)
+▶ line totals scale with quantity
+  ✔ line cents batch 1 (0.4ms)
+  ✔ line cents batch 2 (0.4ms)
+  ✔ line cents batch 3 (0.4ms)
+  ✔ line cents batch 4 (0.4ms)
+  ✔ line cents batch 5 (0.4ms)
+  ✔ line cents batch 6 (0.4ms)
+✔ line totals scale with quantity (0.4ms)
+✔ catalog holds exactly 40 skus (0.4ms)
+[led-01] case 1/10: cents=-31000
+[led-01]   got text=-$310.00
+[led-01]   want text=-$310.00
+[led-01] case 2/10: cents=-29248
+[led-01]   got text=-$292.48
+[led-01]   want text=-$292.48
+[led-01] case 3/10: cents=-27522
+[led-01]   got text=-$275.22
+[led-01]   want text=-$275.22
+[led-01] case 4/10: cents=-25770
+[led-01]   got text=-$257.70
+[led-01]   want text=-$257.70
+[led-01] case 5/10: cents=-24044
+[led-01]   got text=-$240.44
+[led-01]   want text=-$240.44
+[led-01] case 6/10: cents=-22292
+[led-01]   got text=-$222.92
+[led-01]   want text=-$222.92
+[led-01] case 7/10: cents=-20566
+[led-01]   got text=-$205.66
+[led-01]   want text=-$205.66
+[led-01] case 8/10: cents=-18814
+[led-01]   got text=-$188.14
+[led-01]   want text=-$188.14
+[led-01] case 9/10: cents=-17088
+[led-01]   got text=-$170.88
+[led-01]   want text=-$170.88
+[led-01] case 10/10: cents=-15336
+[led-01]   got text=-$153.36
+[led-01]   want text=-$153.36
+[led-02] case 1/10: cents=-13610
+[led-02]   got text=-$136.10
+[led-02]   want text=-$136.10
+[led-02] case 2/10: cents=-11858
+[led-02]   got text=-$118.58
+[led-02]   want text=-$118.58
+[led-02] case 3/10: cents=-10132
+[led-02]   got text=-$101.32
+[led-02]   want text=-$101.32
+[led-02] case 4/10: cents=-8380
+[led-02]   got text=-$83.80
+[led-02]   want text=-$83.80
+[led-02] case 5/10: cents=-6654
+[led-02]   got text=-$66.54
+[led-02]   want text=-$66.54
+[led-02] case 6/10: cents=-4902
+[led-02]   got text=-$49.02
+[led-02]   want text=-$49.02
+[led-02] case 7/10: cents=-3176
+[led-02]   got text=-$31.76
+[led-02]   want text=-$31.76
+[led-02] case 8/10: cents=-1424
+[led-02]   got text=-$14.24
+[led-02]   want text=-$14.24
+[led-02] case 9/10: cents=302
+[led-02]   got text=$3.02
+[led-02]   want text=$3.02
+[led-02] case 10/10: cents=2054
+[led-02]   got text=$20.54
+[led-02]   want text=$20.54
+[led-03] case 1/10: cents=3780
+[led-03]   got text=$37.80
+[led-03]   want text=$37.80
+[led-03] case 2/10: cents=5532
+[led-03]   got text=$55.32
+[led-03]   want text=$55.32
+[led-03] case 3/10: cents=7258
+[led-03]   got text=$72.58
+[led-03]   want text=$72.58
+[led-03] case 4/10: cents=9010
+[led-03]   got text=$90.10
+[led-03]   want text=$90.10
+[led-03] case 5/10: cents=10736
+[led-03]   got text=$107.36
+[led-03]   want text=$107.36
+[led-03] case 6/10: cents=12488
+[led-03]   got text=$124.88
+[led-03]   want text=$124.88
+[led-03] case 7/10: cents=14214
+[led-03]   got text=$142.14
+[led-03]   want text=$142.14
+[led-03] case 8/10: cents=15966
+[led-03]   got text=$159.66
+[led-03]   want text=$159.66
+[led-03] case 9/10: cents=17692
+[led-03]   got text=$176.92
+[led-03]   want text=$176.92
+[led-03] case 10/10: cents=19444
+[led-03]   got text=$194.44
+[led-03]   want text=$194.44
+[led-04] case 1/10: cents=21170
+[led-04]   got text=$211.70
+[led-04]   want text=$211.70
+[led-04] case 2/10: cents=22922
+[led-04]   got text=$229.22
+[led-04]   want text=$229.22
+[led-04] case 3/10: cents=24648
+[led-04]   got text=$246.48
+[led-04]   want text=$246.48
+[led-04] case 4/10: cents=26400
+[led-04]   got text=$264.00
+[led-04]   want text=$264.00
+[led-04] case 5/10: cents=28126
+[led-04]   got text=$281.26
+[led-04]   want text=$281.26
+[led-04] case 6/10: cents=29878
+[led-04]   got text=$298.78
+[led-04]   want text=$298.78
+[led-04] case 7/10: cents=31604
+[led-04]   got text=$316.04
+[led-04]   want text=$316.04
+[led-04] case 8/10: cents=33356
+[led-04]   got text=$333.56
+[led-04]   want text=$333.56
+[led-04] case 9/10: cents=35082
+[led-04]   got text=$350.82
+[led-04]   want text=$350.82
+[led-04] case 10/10: cents=36834
+[led-04]   got text=$368.34
+[led-04]   want text=$368.34
+[led-05] case 1/10: cents=38560
+[led-05]   got text=$385.60
+[led-05]   want text=$385.60
+[led-05] case 2/10: cents=40312
+[led-05]   got text=$403.12
+[led-05]   want text=$403.12
+[led-05] case 3/10: cents=42038
+[led-05]   got text=$420.38
+[led-05]   want text=$420.38
+[led-05] case 4/10: cents=43790
+[led-05]   got text=$437.90
+[led-05]   want text=$437.90
+[led-05] case 5/10: cents=45516
+[led-05]   got text=$455.16
+[led-05]   want text=$455.16
+[led-05] case 6/10: cents=47268
+[led-05]   got text=$472.68
+[led-05]   want text=$472.68
+[led-05] case 7/10: cents=48994
+[led-05]   got text=$489.94
+[led-05]   want text=$489.94
+[led-05] case 8/10: cents=50746
+[led-05]   got text=$507.46
+[led-05]   want text=$507.46
+[led-05] case 9/10: cents=52472
+[led-05]   got text=$524.72
+[led-05]   want text=$524.72
+[led-05] case 10/10: cents=54224
+[led-05]   got text=$542.24
+[led-05]   want text=$542.24
+[led-06] case 1/10: cents=55950
+[led-06]   got text=$559.50
+[led-06]   want text=$559.50
+[led-06] case 2/10: cents=57702
+[led-06]   got text=$577.02
+[led-06]   want text=$577.02
+[led-06] case 3/10: cents=59428
+[led-06]   got text=$594.28
+[led-06]   want text=$594.28
+[led-06] case 4/10: cents=61180
+[led-06]   got text=$611.80
+[led-06]   want text=$611.80
+[led-06] case 5/10: cents=62906
+[led-06]   got text=$629.06
+[led-06]   want text=$629.06
+[led-06] case 6/10: cents=64658
+[led-06]   got text=$646.58
+[led-06]   want text=$646.58
+[led-06] case 7/10: cents=66384
+[led-06]   got text=$663.84
+[led-06]   want text=$663.84
+[led-06] case 8/10: cents=68136
+[led-06]   got text=$681.36
+[led-06]   want text=$681.36
+[led-06] case 9/10: cents=69862
+[led-06]   got text=$698.62
+[led-06]   want text=$698.62
+[led-06] case 10/10: cents=71614
+[led-06]   got text=$716.14
+[led-06]   want text=$716.14
+[led-07] case 1/10: entries=3
+[led-07]   got balance=2559
+[led-07]   want balance=2559
+[led-07] case 2/10: entries=4
+[led-07]   got balance=27466
+[led-07]   want balance=27466
+[led-07] case 3/10: entries=5
+[led-07]   got balance=64400
+[led-07]   want balance=64400
+[led-07] case 4/10: entries=3
+[led-07]   got balance=34842
+[led-07]   want balance=34842
+[led-07] case 5/10: entries=4
+[led-07]   got balance=70510
+[led-07]   want balance=70510
+[led-07] case 6/10: entries=5
+[led-07]   got balance=118205
+[led-07]   want balance=118205
+[led-07] case 7/10: entries=3
+[led-07]   got balance=67125
+[led-07]   want balance=67125
+[led-07] case 8/10: entries=4
+[led-07]   got balance=113554
+[led-07]   want balance=113554
+[led-07] case 9/10: entries=5
+[led-07]   got balance=172010
+[led-07]   want balance=172010
+[led-07] case 10/10: entries=3
+[led-07]   got balance=99408
+[led-07]   want balance=99408
+[led-08] case 1/10: entries=3
+[led-08]   got balance=22182
+[led-08]   want balance=22182
+[led-08] case 2/10: entries=4
+[led-08]   got balance=53630
+[led-08]   want balance=53630
+[led-08] case 3/10: entries=5
+[led-08]   got balance=97105
+[led-08]   want balance=97105
+[led-08] case 4/10: entries=3
+[led-08]   got balance=54465
+[led-08]   want balance=54465
+[led-08] case 5/10: entries=4
+[led-08]   got balance=96674
+[led-08]   want balance=96674
+[led-08] case 6/10: entries=5
+[led-08]   got balance=150910
+[led-08]   want balance=150910
+[led-08] case 7/10: entries=3
+[led-08]   got balance=86748
+[led-08]   want balance=86748
+[led-08] case 8/10: entries=4
+[led-08]   got balance=139718
+[led-08]   want balance=139718
+[led-08] case 9/10: entries=5
+[led-08]   got balance=204715
+[led-08]   want balance=204715
+[led-08] case 10/10: entries=3
+[led-08]   got balance=119031
+[led-08]   want balance=119031
+[led-09] case 1/10: entries=3
+[led-09]   got balance=41805
+[led-09]   want balance=41805
+[led-09] case 2/10: entries=4
+[led-09]   got balance=79794
+[led-09]   want balance=79794
+[led-09] case 3/10: entries=5
+[led-09]   got balance=129810
+[led-09]   want balance=129810
+[led-09] case 4/10: entries=3
+[led-09]   got balance=74088
+[led-09]   want balance=74088
+[led-09] case 5/10: entries=4
+[led-09]   got balance=122838
+[led-09]   want balance=122838
+[led-09] case 6/10: entries=5
+[led-09]   got balance=183615
+[led-09]   want balance=183615
+[led-09] case 7/10: entries=3
+[led-09]   got balance=106371
+[led-09]   want balance=106371
+[led-09] case 8/10: entries=4
+[led-09]   got balance=165882
+[led-09]   want balance=165882
+[led-09] case 9/10: entries=5
+[led-09]   got balance=237420
+[led-09]   want balance=237420
+[led-09] case 10/10: entries=3
+[led-09]   got balance=138654
+[led-09]   want balance=138654
+[led-10] case 1/10: entries=3
+[led-10]   got balance=61428
+[led-10]   want balance=61428
+[led-10] case 2/10: entries=4
+[led-10]   got balance=105958
+[led-10]   want balance=105958
+[led-10] case 3/10: entries=5
+[led-10]   got balance=162515
+[led-10]   want balance=162515
+[led-10] case 4/10: entries=3
+[led-10]   got balance=93711
+[led-10]   want balance=93711
+[led-10] case 5/10: entries=4
+[led-10]   got balance=149002
+[led-10]   want balance=149002
+[led-10] case 6/10: entries=5
+[led-10]   got balance=216320
+[led-10]   want balance=216320
+[led-10] case 7/10: entries=3
+[led-10]   got balance=125994
+[led-10]   want balance=125994
+[led-10] case 8/10: entries=4
+[led-10]   got balance=192046
+[led-10]   want balance=192046
+[led-10] case 9/10: entries=5
+[led-10]   got balance=270125
+[led-10]   want balance=270125
+[led-10] case 10/10: entries=3
+[led-10]   got balance=158277
+[led-10]   want balance=158277
+[led-11] case 1/10: entries=3
+[led-11]   got balance=81051
+[led-11]   want balance=81051
+[led-11] case 2/10: entries=4
+[led-11]   got balance=132122
+[led-11]   want balance=132122
+[led-11] case 3/10: entries=5
+[led-11]   got balance=195220
+[led-11]   want balance=195220
+[led-11] case 4/10: entries=3
+[led-11]   got balance=113334
+[led-11]   want balance=113334
+[led-11] case 5/10: entries=4
+[led-11]   got balance=175166
+[led-11]   want balance=175166
+[led-11] case 6/10: entries=5
+[led-11]   got balance=249025
+[led-11]   want balance=249025
+[led-11] case 7/10: entries=3
+[led-11]   got balance=145617
+[led-11]   want balance=145617
+[led-11] case 8/10: entries=4
+[led-11]   got balance=218210
+[led-11]   want balance=218210
+[led-11] case 9/10: entries=5
+[led-11]   got balance=302830
+[led-11]   want balance=302830
+[led-11] case 10/10: entries=3
+[led-11]   got balance=177900
+[led-11]   want balance=177900
+[led-12] case 1/10: entries=3
+[led-12]   got balance=100674
+[led-12]   want balance=100674
+[led-12] case 2/10: entries=4
+[led-12]   got balance=158286
+[led-12]   want balance=158286
+[led-12] case 3/10: entries=5
+[led-12]   got balance=227925
+[led-12]   want balance=227925
+[led-12] case 4/10: entries=3
+[led-12]   got balance=132957
+[led-12]   want balance=132957
+[led-12] case 5/10: entries=4
+[led-12]   got balance=201330
+[led-12]   want balance=201330
+[led-12] case 6/10: entries=5
+[led-12]   got balance=281730
+[led-12]   want balance=281730
+[led-12] case 7/10: entries=3
+[led-12]   got balance=165240
+[led-12]   want balance=165240
+[led-12] case 8/10: entries=4
+[led-12]   got balance=244374
+[led-12]   want balance=244374
+[led-12] case 9/10: entries=5
+[led-12]   got balance=335535
+[led-12]   want balance=335535
+[led-12] case 10/10: entries=3
+[led-12]   got balance=197523
+[led-12]   want balance=197523
+[led-13] case 1/10: entries=3
+[led-13]   got lines=5 last=  total $418.05
+[led-13]   want lines=5 last=  total $418.05
+[led-13] case 2/10: entries=4
+[led-13]   got lines=6 last=  total $797.94
+[led-13]   want lines=6 last=  total $797.94
+[led-13] case 3/10: entries=5
+[led-13]   got lines=7 last=  total $1298.10
+[led-13]   want lines=7 last=  total $1298.10
+[led-13] case 4/10: entries=3
+[led-13]   got lines=5 last=  total $740.88
+[led-13]   want lines=5 last=  total $740.88
+[led-13] case 5/10: entries=4
+[led-13]   got lines=6 last=  total $1228.38
+[led-13]   want lines=6 last=  total $1228.38
+[led-13] case 6/10: entries=5
+[led-13]   got lines=7 last=  total $1836.15
+[led-13]   want lines=7 last=  total $1836.15
+[led-13] case 7/10: entries=3
+[led-13]   got lines=5 last=  total $1063.71
+[led-13]   want lines=5 last=  total $1063.71
+[led-13] case 8/10: entries=4
+[led-13]   got lines=6 last=  total $1658.82
+[led-13]   want lines=6 last=  total $1658.82
+[led-13] case 9/10: entries=5
+[led-13]   got lines=7 last=  total $2374.20
+[led-13]   want lines=7 last=  total $2374.20
+[led-13] case 10/10: entries=3
+[led-13]   got lines=5 last=  total $1386.54
+[led-13]   want lines=5 last=  total $1386.54
+[led-14] case 1/10: entries=3
+[led-14]   got lines=5 last=  total $614.28
+[led-14]   want lines=5 last=  total $614.28
+[led-14] case 2/10: entries=4
+[led-14]   got lines=6 last=  total $1059.58
+[led-14]   want lines=6 last=  total $1059.58
+[led-14] case 3/10: entries=5
+[led-14]   got lines=7 last=  total $1625.15
+[led-14]   want lines=7 last=  total $1625.15
+[led-14] case 4/10: entries=3
+[led-14]   got lines=5 last=  total $937.11
+[led-14]   want lines=5 last=  total $937.11
+[led-14] case 5/10: entries=4
+[led-14]   got lines=6 last=  total $1490.02
+[led-14]   want lines=6 last=  total $1490.02
+[led-14] case 6/10: entries=5
+[led-14]   got lines=7 last=  total $2163.20
+[led-14]   want lines=7 last=  total $2163.20
+[led-14] case 7/10: entries=3
+[led-14]   got lines=5 last=  total $1259.94
+[led-14]   want lines=5 last=  total $1259.94
+[led-14] case 8/10: entries=4
+[led-14]   got lines=6 last=  total $1920.46
+[led-14]   want lines=6 last=  total $1920.46
+[led-14] case 9/10: entries=5
+[led-14]   got lines=7 last=  total $2701.25
+[led-14]   want lines=7 last=  total $2701.25
+[led-14] case 10/10: entries=3
+[led-14]   got lines=5 last=  total $1582.77
+[led-14]   want lines=5 last=  total $1582.77
+[led-15] case 1/10: entries=3
+[led-15]   got lines=5 last=  total $810.51
+[led-15]   want lines=5 last=  total $810.51
+[led-15] case 2/10: entries=4
+[led-15]   got lines=6 last=  total $1321.22
+[led-15]   want lines=6 last=  total $1321.22
+[led-15] case 3/10: entries=5
+[led-15]   got lines=7 last=  total $1952.20
+[led-15]   want lines=7 last=  total $1952.20
+[led-15] case 4/10: entries=3
+[led-15]   got lines=5 last=  total $1133.34
+[led-15]   want lines=5 last=  total $1133.34
+[led-15] case 5/10: entries=4
+[led-15]   got lines=6 last=  total $1751.66
+[led-15]   want lines=6 last=  total $1751.66
+[led-15] case 6/10: entries=5
+[led-15]   got lines=7 last=  total $2490.25
+[led-15]   want lines=7 last=  total $2490.25
+[led-15] case 7/10: entries=3
+[led-15]   got lines=5 last=  total $1456.17
+[led-15]   want lines=5 last=  total $1456.17
+[led-15] case 8/10: entries=4
+[led-15]   got lines=6 last=  total $2182.10
+[led-15]   want lines=6 last=  total $2182.10
+[led-15] case 9/10: entries=5
+[led-15]   got lines=7 last=  total $3028.30
+[led-15]   want lines=7 last=  total $3028.30
+[led-15] case 10/10: entries=3
+[led-15]   got lines=5 last=  total $1779.00
+[led-15]   want lines=5 last=  total $1779.00
+[led-16] case 1/10: entries=3
+[led-16]   got lines=5 last=  total $1006.74
+[led-16]   want lines=5 last=  total $1006.74
+[led-16] case 2/10: entries=4
+[led-16]   got lines=6 last=  total $1582.86
+[led-16]   want lines=6 last=  total $1582.86
+[led-16] case 3/10: entries=5
+[led-16]   got lines=7 last=  total $2279.25
+[led-16]   want lines=7 last=  total $2279.25
+[led-16] case 4/10: entries=3
+[led-16]   got lines=5 last=  total $1329.57
+[led-16]   want lines=5 last=  total $1329.57
+[led-16] case 5/10: entries=4
+[led-16]   got lines=6 last=  total $2013.30
+[led-16]   want lines=6 last=  total $2013.30
+[led-16] case 6/10: entries=5
+[led-16]   got lines=7 last=  total $2817.30
+[led-16]   want lines=7 last=  total $2817.30
+[led-16] case 7/10: entries=3
+[led-16]   got lines=5 last=  total $1652.40
+[led-16]   want lines=5 last=  total $1652.40
+[led-16] case 8/10: entries=4
+[led-16]   got lines=6 last=  total $2443.74
+[led-16]   want lines=6 last=  total $2443.74
+[led-16] case 9/10: entries=5
+[led-16]   got lines=7 last=  total $3355.35
+[led-16]   want lines=7 last=  total $3355.35
+[led-16] case 10/10: entries=3
+[led-16]   got lines=5 last=  total $1975.23
+[led-16]   want lines=5 last=  total $1975.23
+[led-17] case 1/10: entries=3
+[led-17]   got lines=5 last=  total $1202.97
+[led-17]   want lines=5 last=  total $1202.97
+[led-17] case 2/10: entries=4
+[led-17]   got lines=6 last=  total $1844.50
+[led-17]   want lines=6 last=  total $1844.50
+[led-17] case 3/10: entries=5
+[led-17]   got lines=7 last=  total $2606.30
+[led-17]   want lines=7 last=  total $2606.30
+[led-17] case 4/10: entries=3
+[led-17]   got lines=5 last=  total $1525.80
+[led-17]   want lines=5 last=  total $1525.80
+[led-17] case 5/10: entries=4
+[led-17]   got lines=6 last=  total $2274.94
+[led-17]   want lines=6 last=  total $2274.94
+[led-17] case 6/10: entries=5
+[led-17]   got lines=7 last=  total $3144.35
+[led-17]   want lines=7 last=  total $3144.35
+[led-17] case 7/10: entries=3
+[led-17]   got lines=5 last=  total $1848.63
+[led-17]   want lines=5 last=  total $1848.63
+[led-17] case 8/10: entries=4
+[led-17]   got lines=6 last=  total $2705.38
+[led-17]   want lines=6 last=  total $2705.38
+[led-17] case 9/10: entries=5
+[led-17]   got lines=7 last=  total $3682.40
+[led-17]   want lines=7 last=  total $3682.40
+[led-17] case 10/10: entries=3
+[led-17]   got lines=5 last=  total $2171.46
+[led-17]   want lines=5 last=  total $2171.46
+[led-18] case 1/10: entries=3
+[led-18]   got lines=5 last=  total $1399.20
+[led-18]   want lines=5 last=  total $1399.20
+[led-18] case 2/10: entries=4
+[led-18]   got lines=6 last=  total $2106.14
+[led-18]   want lines=6 last=  total $2106.14
+[led-18] case 3/10: entries=5
+[led-18]   got lines=7 last=  total $2933.35
+[led-18]   want lines=7 last=  total $2933.35
+[led-18] case 4/10: entries=3
+[led-18]   got lines=5 last=  total $1722.03
+[led-18]   want lines=5 last=  total $1722.03
+[led-18] case 5/10: entries=4
+[led-18]   got lines=6 last=  total $2536.58
+[led-18]   want lines=6 last=  total $2536.58
+[led-18] case 6/10: entries=5
+[led-18]   got lines=7 last=  total $3471.40
+[led-18]   want lines=7 last=  total $3471.40
+[led-18] case 7/10: entries=3
+[led-18]   got lines=5 last=  total $2044.86
+[led-18]   want lines=5 last=  total $2044.86
+[led-18] case 8/10: entries=4
+[led-18]   got lines=6 last=  total $2967.02
+[led-18]   want lines=6 last=  total $2967.02
+[led-18] case 9/10: entries=5
+[led-18]   got lines=7 last=  total $4009.45
+[led-18]   want lines=7 last=  total $4009.45
+[led-18] case 10/10: entries=3
+[led-18]   got lines=5 last=  total $2367.69
+[led-18]   want lines=5 last=  total $2367.69
+[led-19] case 1/10: entries=3
+[led-19]   got count=3
+[led-19]   want count=3
+[led-19] case 2/10: entries=4
+[led-19]   got count=4
+[led-19]   want count=4
+[led-19] case 3/10: entries=5
+[led-19]   got count=5
+[led-19]   want count=5
+[led-19] case 4/10: entries=3
+[led-19]   got count=3
+[led-19]   want count=3
+[led-19] case 5/10: entries=4
+[led-19]   got count=4
+[led-19]   want count=4
+[led-19] case 6/10: entries=5
+[led-19]   got count=5
+[led-19]   want count=5
+[led-19] case 7/10: entries=3
+[led-19]   got count=3
+[led-19]   want count=3
+[led-19] case 8/10: entries=4
+[led-19]   got count=4
+[led-19]   want count=4
+[led-19] case 9/10: entries=5
+[led-19]   got count=5
+[led-19]   want count=5
+[led-19] case 10/10: entries=3
+[led-19]   got count=3
+[led-19]   want count=3
+[led-20] case 1/10: entries=3
+[led-20]   got count=3
+[led-20]   want count=3
+[led-20] case 2/10: entries=4
+[led-20]   got count=4
+[led-20]   want count=4
+[led-20] case 3/10: entries=5
+[led-20]   got count=5
+[led-20]   want count=5
+[led-20] case 4/10: entries=3
+[led-20]   got count=3
+[led-20]   want count=3
+[led-20] case 5/10: entries=4
+[led-20]   got count=4
+[led-20]   want count=4
+[led-20] case 6/10: entries=5
+[led-20]   got count=5
+[led-20]   want count=5
+[led-20] case 7/10: entries=3
+[led-20]   got count=3
+[led-20]   want count=3
+[led-20] case 8/10: entries=4
+[led-20]   got count=4
+[led-20]   want count=4
+[led-20] case 9/10: entries=5
+[led-20]   got count=5
+[led-20]   want count=5
+[led-20] case 10/10: entries=3
+[led-20]   got count=3
+[led-20]   want count=3
+[led-21] case 1/10: entries=3
+[led-21]   got count=3
+[led-21]   want count=3
+[led-21] case 2/10: entries=4
+[led-21]   got count=4
+[led-21]   want count=4
+[led-21] case 3/10: entries=5
+[led-21]   got count=5
+[led-21]   want count=5
+[led-21] case 4/10: entries=3
+[led-21]   got count=3
+[led-21]   want count=3
+[led-21] case 5/10: entries=4
+[led-21]   got count=4
+[led-21]   want count=4
+[led-21] case 6/10: entries=5
+[led-21]   got count=5
+[led-21]   want count=5
+[led-21] case 7/10: entries=3
+[led-21]   got count=3
+[led-21]   want count=3
+[led-21] case 8/10: entries=4
+[led-21]   got count=4
+[led-21]   want count=4
+[led-21] case 9/10: entries=5
+[led-21]   got count=5
+[led-21]   want count=5
+[led-21] case 10/10: entries=3
+[led-21]   got count=3
+[led-21]   want count=3
+[led-22] case 1/10: entries=3
+[led-22]   got count=3
+[led-22]   want count=3
+[led-22] case 2/10: entries=4
+[led-22]   got count=4
+[led-22]   want count=4
+[led-22] case 3/10: entries=5
+[led-22]   got count=5
+[led-22]   want count=5
+[led-22] case 4/10: entries=3
+[led-22]   got count=3
+[led-22]   want count=3
+[led-22] case 5/10: entries=4
+[led-22]   got count=4
+[led-22]   want count=4
+[led-22] case 6/10: entries=5
+[led-22]   got count=5
+[led-22]   want count=5
+[led-22] case 7/10: entries=3
+[led-22]   got count=3
+[led-22]   want count=3
+[led-22] case 8/10: entries=4
+[led-22]   got count=4
+[led-22]   want count=4
+[led-22] case 9/10: entries=5
+[led-22]   got count=5
+[led-22]   want count=5
+[led-22] case 10/10: entries=3
+[led-22]   got count=3
+[led-22]   want count=3
+[led-23] case 1/10: entries=3
+[led-23]   got count=3
+[led-23]   want count=3
+[led-23] case 2/10: entries=4
+[led-23]   got count=4
+[led-23]   want count=4
+[led-23] case 3/10: entries=5
+[led-23]   got count=5
+[led-23]   want count=5
+[led-23] case 4/10: entries=3
+[led-23]   got count=3
+[led-23]   want count=3
+[led-23] case 5/10: entries=4
+[led-23]   got count=4
+[led-23]   want count=4
+[led-23] case 6/10: entries=5
+[led-23]   got count=5
+[led-23]   want count=5
+[led-23] case 7/10: entries=3
+[led-23]   got count=3
+[led-23]   want count=3
+[led-23] case 8/10: entries=4
+[led-23]   got count=4
+[led-23]   want count=4
+[led-23] case 9/10: entries=5
+[led-23]   got count=5
+[led-23]   want count=5
+[led-23] case 10/10: entries=3
+[led-23]   got count=3
+[led-23]   want count=3
+[led-24] case 1/10: entries=3
+[led-24]   got count=3
+[led-24]   want count=3
+[led-24] case 2/10: entries=4
+[led-24]   got count=4
+[led-24]   want count=4
+[led-24] case 3/10: entries=5
+[led-24]   got count=5
+[led-24]   want count=5
+[led-24] case 4/10: entries=3
+[led-24]   got count=3
+[led-24]   want count=3
+[led-24] case 5/10: entries=4
+[led-24]   got count=4
+[led-24]   want count=4
+[led-24] case 6/10: entries=5
+[led-24]   got count=5
+[led-24]   want count=5
+[led-24] case 7/10: entries=3
+[led-24]   got count=3
+[led-24]   want count=3
+[led-24] case 8/10: entries=4
+[led-24]   got count=4
+[led-24]   want count=4
+[led-24] case 9/10: entries=5
+[led-24]   got count=5
+[led-24]   want count=5
+[led-24] case 10/10: entries=3
+[led-24]   got count=3
+[led-24]   want count=3
+▶ cents formatting
+  ✔ formatCents batch 1 (0.4ms)
+  ✔ formatCents batch 2 (0.4ms)
+  ✔ formatCents batch 3 (0.4ms)
+  ✔ formatCents batch 4 (0.4ms)
+  ✔ formatCents batch 5 (0.4ms)
+  ✔ formatCents batch 6 (0.4ms)
+✔ cents formatting (0.4ms)
+▶ balances accumulate entries
+  ✔ balance batch 1 (0.4ms)
+  ✔ balance batch 2 (0.4ms)
+  ✔ balance batch 3 (0.4ms)
+  ✔ balance batch 4 (0.4ms)
+  ✔ balance batch 5 (0.4ms)
+  ✔ balance batch 6 (0.4ms)
+✔ balances accumulate entries (0.4ms)
+▶ statements close with the running total
+  ✔ statement batch 1 (0.4ms)
+  ✔ statement batch 2 (0.4ms)
+  ✔ statement batch 3 (0.4ms)
+  ✔ statement batch 4 (0.4ms)
+  ✔ statement batch 5 (0.4ms)
+  ✔ statement batch 6 (0.4ms)
+✔ statements close with the running total (0.4ms)
+▶ entry counting
+  ✔ entry count batch 1 (0.4ms)
+  ✔ entry count batch 2 (0.4ms)
+  ✔ entry count batch 3 (0.4ms)
+  ✔ entry count batch 4 (0.4ms)
+  ✔ entry count batch 5 (0.4ms)
+  ✔ entry count batch 6 (0.4ms)
+✔ entry counting (0.4ms)
+[ord-01] case 1/10: lines=2
+[ord-01]   got grams=1045
+[ord-01]   want grams=1045
+[ord-01] case 2/10: lines=3
+[ord-01]   got grams=4051
+[ord-01]   want grams=4051
+[ord-01] case 3/10: lines=2
+[ord-01]   got grams=2787
+[ord-01]   want grams=2787
+[ord-01] case 4/10: lines=3
+[ord-01]   got grams=3940
+[ord-01]   want grams=3940
+[ord-01] case 5/10: lines=2
+[ord-01]   got grams=6786
+[ord-01]   want grams=6786
+[ord-01] case 6/10: lines=3
+[ord-01]   got grams=5827
+[ord-01]   want grams=5827
+[ord-01] case 7/10: lines=2
+[ord-01]   got grams=1267
+[ord-01]   want grams=1267
+[ord-01] case 8/10: lines=3
+[ord-01]   got grams=4495
+[ord-01]   want grams=4495
+[ord-01] case 9/10: lines=2
+[ord-01]   got grams=3083
+[ord-01]   want grams=3083
+[ord-01] case 10/10: lines=3
+[ord-01]   got grams=4384
+[ord-01]   want grams=4384
+[ord-02] case 1/10: lines=2
+[ord-02]   got grams=2488
+[ord-02]   want grams=2488
+[ord-02] case 2/10: lines=3
+[ord-02]   got grams=5457
+[ord-02]   want grams=5457
+[ord-02] case 3/10: lines=2
+[ord-02]   got grams=4711
+[ord-02]   want grams=4711
+[ord-02] case 4/10: lines=3
+[ord-02]   got grams=3866
+[ord-02]   want grams=3866
+[ord-02] case 5/10: lines=2
+[ord-02]   got grams=1791
+[ord-02]   want grams=1791
+[ord-02] case 6/10: lines=3
+[ord-02]   got grams=4273
+[ord-02]   want grams=4273
+[ord-02] case 7/10: lines=2
+[ord-02]   got grams=2710
+[ord-02]   want grams=2710
+[ord-02] case 8/10: lines=3
+[ord-02]   got grams=5901
+[ord-02]   want grams=5901
+[ord-02] case 9/10: lines=2
+[ord-02]   got grams=3527
+[ord-02]   want grams=3527
+[ord-02] case 10/10: lines=3
+[ord-02]   got grams=4310
+[ord-02]   want grams=4310
+[ord-03] case 1/10: lines=2
+[ord-03]   got grams=3931
+[ord-03]   want grams=3931
+[ord-03] case 2/10: lines=3
+[ord-03]   got grams=3903
+[ord-03]   want grams=3903
+[ord-03] case 3/10: lines=2
+[ord-03]   got grams=715
+[ord-03]   want grams=715
+[ord-03] case 4/10: lines=3
+[ord-03]   got grams=5272
+[ord-03]   want grams=5272
+[ord-03] case 5/10: lines=2
+[ord-03]   got grams=4196
+[ord-03]   want grams=4196
+[ord-03] case 6/10: lines=3
+[ord-03]   got grams=4199
+[ord-03]   want grams=4199
+[ord-03] case 7/10: lines=2
+[ord-03]   got grams=4153
+[ord-03]   want grams=4153
+[ord-03] case 8/10: lines=3
+[ord-03]   got grams=4347
+[ord-03]   want grams=4347
+[ord-03] case 9/10: lines=2
+[ord-03]   got grams=1011
+[ord-03]   want grams=1011
+[ord-03] case 10/10: lines=3
+[ord-03]   got grams=5716
+[ord-03]   want grams=5716
+[ord-04] case 1/10: lines=2
+[ord-04]   got grams=2414
+[ord-04]   want grams=2414
+[ord-04] case 2/10: lines=3
+[ord-04]   got grams=3829
+[ord-04]   want grams=3829
+[ord-04] case 3/10: lines=2
+[ord-04]   got grams=2639
+[ord-04]   want grams=2639
+[ord-04] case 4/10: lines=3
+[ord-04]   got grams=3718
+[ord-04]   want grams=3718
+[ord-04] case 5/10: lines=2
+[ord-04]   got grams=6601
+[ord-04]   want grams=6601
+[ord-04] case 6/10: lines=3
+[ord-04]   got grams=5605
+[ord-04]   want grams=5605
+[ord-04] case 7/10: lines=2
+[ord-04]   got grams=1156
+[ord-04]   want grams=1156
+[ord-04] case 8/10: lines=3
+[ord-04]   got grams=4273
+[ord-04]   want grams=4273
+[ord-04] case 9/10: lines=2
+[ord-04]   got grams=2935
+[ord-04]   want grams=2935
+[ord-04] case 10/10: lines=3
+[ord-04]   got grams=4162
+[ord-04]   want grams=4162
+[ord-05] case 1/10: lines=2
+[ord-05]   got grams=2377
+[ord-05]   want grams=2377
+[ord-05] case 2/10: lines=3
+[ord-05]   got grams=5235
+[ord-05]   want grams=5235
+[ord-05] case 3/10: lines=2
+[ord-05]   got grams=4563
+[ord-05]   want grams=4563
+[ord-05] case 4/10: lines=3
+[ord-05]   got grams=3644
+[ord-05]   want grams=3644
+[ord-05] case 5/10: lines=2
+[ord-05]   got grams=1606
+[ord-05]   want grams=1606
+[ord-05] case 6/10: lines=3
+[ord-05]   got grams=4051
+[ord-05]   want grams=4051
+[ord-05] case 7/10: lines=2
+[ord-05]   got grams=2599
+[ord-05]   want grams=2599
+[ord-05] case 8/10: lines=3
+[ord-05]   got grams=5679
+[ord-05]   want grams=5679
+[ord-05] case 9/10: lines=2
+[ord-05]   got grams=4859
+[ord-05]   want grams=4859
+[ord-05] case 10/10: lines=3
+[ord-05]   got grams=4088
+[ord-05]   want grams=4088
+[ord-06] case 1/10: lines=2
+[ord-06]   got grams=3820
+[ord-06]   want grams=3820
+[ord-06] case 2/10: lines=3
+[ord-06]   got grams=3681
+[ord-06]   want grams=3681
+[ord-06] case 3/10: lines=2
+[ord-06]   got grams=5007
+[ord-06]   want grams=5007
+[ord-06] case 4/10: lines=3
+[ord-06]   got grams=5050
+[ord-06]   want grams=5050
+[ord-06] case 5/10: lines=2
+[ord-06]   got grams=4011
+[ord-06]   want grams=4011
+[ord-06] case 6/10: lines=3
+[ord-06]   got grams=3977
+[ord-06]   want grams=3977
+[ord-06] case 7/10: lines=2
+[ord-06]   got grams=4042
+[ord-06]   want grams=4042
+[ord-06] case 8/10: lines=3
+[ord-06]   got grams=4125
+[ord-06]   want grams=4125
+[ord-06] case 9/10: lines=2
+[ord-06]   got grams=863
+[ord-06]   want grams=863
+[ord-06] case 10/10: lines=3
+[ord-06]   got grams=5494
+[ord-06]   want grams=5494
+[ord-07] case 1/10: seq=1 grams=60
+[ord-07]   got id=PKG-00001 tier=letter
+[ord-07]   want id=PKG-00001 tier=letter
+[ord-07] case 2/10: seq=2 grams=325
+[ord-07]   got id=PKG-00002 tier=letter
+[ord-07]   want id=PKG-00002 tier=letter
+[ord-07] case 3/10: seq=3 grams=590
+[ord-07]   got id=PKG-00003 tier=parcel
+[ord-07]   want id=PKG-00003 tier=parcel
+[ord-07] case 4/10: seq=4 grams=855
+[ord-07]   got id=PKG-00004 tier=parcel
+[ord-07]   want id=PKG-00004 tier=parcel
+[ord-07] case 5/10: seq=5 grams=1120
+[ord-07]   got id=PKG-00005 tier=parcel
+[ord-07]   want id=PKG-00005 tier=parcel
+[ord-07] case 6/10: seq=6 grams=1385
+[ord-07]   got id=PKG-00006 tier=parcel
+[ord-07]   want id=PKG-00006 tier=parcel
+[ord-07] case 7/10: seq=7 grams=4054
+[ord-07]   got id=PKG-00007 tier=freight
+[ord-07]   want id=PKG-00007 tier=freight
+[ord-07] case 8/10: seq=8 grams=8939
+[ord-07]   got id=PKG-00008 tier=freight
+[ord-07]   want id=PKG-00008 tier=freight
+[ord-07] case 9/10: seq=9 grams=13824
+[ord-07]   got id=PKG-00009 tier=freight
+[ord-07]   want id=PKG-00009 tier=freight
+[ord-07] case 10/10: seq=10 grams=30251
+[ord-07]   got id=PKG-00010 tier=pallet
+[ord-07]   want id=PKG-00010 tier=pallet
+[ord-08] case 1/10: seq=11 grams=537
+[ord-08]   got id=PKG-00011 tier=parcel
+[ord-08]   want id=PKG-00011 tier=parcel
+[ord-08] case 2/10: seq=12 grams=802
+[ord-08]   got id=PKG-00012 tier=parcel
+[ord-08]   want id=PKG-00012 tier=parcel
+[ord-08] case 3/10: seq=13 grams=1067
+[ord-08]   got id=PKG-00013 tier=parcel
+[ord-08]   want id=PKG-00013 tier=parcel
+[ord-08] case 4/10: seq=14 grams=1332
+[ord-08]   got id=PKG-00014 tier=parcel
+[ord-08]   want id=PKG-00014 tier=parcel
+[ord-08] case 5/10: seq=15 grams=3077
+[ord-08]   got id=PKG-00015 tier=freight
+[ord-08]   want id=PKG-00015 tier=freight
+[ord-08] case 6/10: seq=16 grams=7962
+[ord-08]   got id=PKG-00016 tier=freight
+[ord-08]   want id=PKG-00016 tier=freight
+[ord-08] case 7/10: seq=17 grams=12847
+[ord-08]   got id=PKG-00017 tier=freight
+[ord-08]   want id=PKG-00017 tier=freight
+[ord-08] case 8/10: seq=18 grams=26334
+[ord-08]   got id=PKG-00018 tier=pallet
+[ord-08]   want id=PKG-00018 tier=pallet
+[ord-08] case 9/10: seq=19 grams=45919
+[ord-08]   got id=PKG-00019 tier=pallet
+[ord-08]   want id=PKG-00019 tier=pallet
+[ord-08] case 10/10: seq=20 grams=272
+[ord-08]   got id=PKG-00020 tier=letter
+[ord-08]   want id=PKG-00020 tier=letter
+[ord-09] case 1/10: seq=21 grams=1014
+[ord-09]   got id=PKG-00021 tier=parcel
+[ord-09]   want id=PKG-00021 tier=parcel
+[ord-09] case 2/10: seq=22 grams=1279
+[ord-09]   got id=PKG-00022 tier=parcel
+[ord-09]   want id=PKG-00022 tier=parcel
+[ord-09] case 3/10: seq=23 grams=2100
+[ord-09]   got id=PKG-00023 tier=freight
+[ord-09]   want id=PKG-00023 tier=freight
+[ord-09] case 4/10: seq=24 grams=6985
+[ord-09]   got id=PKG-00024 tier=freight
+[ord-09]   want id=PKG-00024 tier=freight
+[ord-09] case 5/10: seq=25 grams=11870
+[ord-09]   got id=PKG-00025 tier=freight
+[ord-09]   want id=PKG-00025 tier=freight
+[ord-09] case 6/10: seq=26 grams=22417
+[ord-09]   got id=PKG-00026 tier=pallet
+[ord-09]   want id=PKG-00026 tier=pallet
+[ord-09] case 7/10: seq=27 grams=42002
+[ord-09]   got id=PKG-00027 tier=pallet
+[ord-09]   want id=PKG-00027 tier=pallet
+[ord-09] case 8/10: seq=28 grams=219
+[ord-09]   got id=PKG-00028 tier=letter
+[ord-09]   want id=PKG-00028 tier=letter
+[ord-09] case 9/10: seq=29 grams=484
+[ord-09]   got id=PKG-00029 tier=letter
+[ord-09]   want id=PKG-00029 tier=letter
+[ord-09] case 10/10: seq=30 grams=749
+[ord-09]   got id=PKG-00030 tier=parcel
+[ord-09]   want id=PKG-00030 tier=parcel
+[ord-10] case 1/10: seq=31 grams=1491
+[ord-10]   got id=PKG-00031 tier=parcel
+[ord-10]   want id=PKG-00031 tier=parcel
+[ord-10] case 2/10: seq=32 grams=6008
+[ord-10]   got id=PKG-00032 tier=freight
+[ord-10]   want id=PKG-00032 tier=freight
+[ord-10] case 3/10: seq=33 grams=10893
+[ord-10]   got id=PKG-00033 tier=freight
+[ord-10]   want id=PKG-00033 tier=freight
+[ord-10] case 4/10: seq=34 grams=18500
+[ord-10]   got id=PKG-00034 tier=freight
+[ord-10]   want id=PKG-00034 tier=freight
+[ord-10] case 5/10: seq=35 grams=38085
+[ord-10]   got id=PKG-00035 tier=pallet
+[ord-10]   want id=PKG-00035 tier=pallet
+[ord-10] case 6/10: seq=36 grams=166
+[ord-10]   got id=PKG-00036 tier=letter
+[ord-10]   want id=PKG-00036 tier=letter
+[ord-10] case 7/10: seq=37 grams=431
+[ord-10]   got id=PKG-00037 tier=letter
+[ord-10]   want id=PKG-00037 tier=letter
+[ord-10] case 8/10: seq=38 grams=696
+[ord-10]   got id=PKG-00038 tier=parcel
+[ord-10]   want id=PKG-00038 tier=parcel
+[ord-10] case 9/10: seq=39 grams=961
+[ord-10]   got id=PKG-00039 tier=parcel
+[ord-10]   want id=PKG-00039 tier=parcel
+[ord-10] case 10/10: seq=40 grams=1226
+[ord-10]   got id=PKG-00040 tier=parcel
+[ord-10]   want id=PKG-00040 tier=parcel
+[ord-11] case 1/10: seq=41 grams=455
+[ord-11]   got id=PKG-00041 tier=letter
+[ord-11]   want id=PKG-00041 tier=letter
+[ord-11] case 2/10: seq=42 grams=461
+[ord-11]   got id=PKG-00042 tier=letter
+[ord-11]   want id=PKG-00042 tier=letter
+[ord-11] case 3/10: seq=43 grams=468
+[ord-11]   got id=PKG-00043 tier=letter
+[ord-11]   want id=PKG-00043 tier=letter
+[ord-11] case 4/10: seq=44 grams=473
+[ord-11]   got id=PKG-00044 tier=letter
+[ord-11]   want id=PKG-00044 tier=letter
+[ord-11] case 5/10: seq=45 grams=480
+[ord-11]   got id=PKG-00045 tier=letter
+[ord-11]   want id=PKG-00045 tier=letter
+[ord-11] case 6/10: seq=46 grams=487
+[ord-11]   got id=PKG-00046 tier=letter
+[ord-11]   want id=PKG-00046 tier=letter
+[ord-11] case 7/10: seq=47 grams=500
+[ord-11]   got id=PKG-00047 tier=parcel
+[ord-11]   want id=PKG-00047 tier=letter
+[ord-12] case 1/10: seq=51 grams=30251
+[ord-12]   got id=PKG-00051 tier=pallet
+[ord-12]   want id=PKG-00051 tier=pallet
+[ord-12] case 2/10: seq=52 grams=60
+[ord-12]   got id=PKG-00052 tier=letter
+[ord-12]   want id=PKG-00052 tier=letter
+[ord-12] case 3/10: seq=53 grams=325
+[ord-12]   got id=PKG-00053 tier=letter
+[ord-12]   want id=PKG-00053 tier=letter
+[ord-12] case 4/10: seq=54 grams=590
+[ord-12]   got id=PKG-00054 tier=parcel
+[ord-12]   want id=PKG-00054 tier=parcel
+[ord-12] case 5/10: seq=55 grams=855
+[ord-12]   got id=PKG-00055 tier=parcel
+[ord-12]   want id=PKG-00055 tier=parcel
+[ord-12] case 6/10: seq=56 grams=1120
+[ord-12]   got id=PKG-00056 tier=parcel
+[ord-12]   want id=PKG-00056 tier=parcel
+[ord-12] case 7/10: seq=57 grams=1385
+[ord-12]   got id=PKG-00057 tier=parcel
+[ord-12]   want id=PKG-00057 tier=parcel
+[ord-12] case 8/10: seq=58 grams=4054
+[ord-12]   got id=PKG-00058 tier=freight
+[ord-12]   want id=PKG-00058 tier=freight
+[ord-12] case 9/10: seq=59 grams=8939
+[ord-12]   got id=PKG-00059 tier=freight
+[ord-12]   want id=PKG-00059 tier=freight
+[ord-12] case 10/10: seq=60 grams=13824
+[ord-12]   got id=PKG-00060 tier=freight
+[ord-12]   want id=PKG-00060 tier=freight
+[ord-13] case 1/10: lines=2
+[ord-13]   got grams=2414 tier=freight
+[ord-13]   want grams=2414 tier=freight
+[ord-13] case 2/10: lines=3
+[ord-13]   got grams=3829 tier=freight
+[ord-13]   want grams=3829 tier=freight
+[ord-13] case 3/10: lines=2
+[ord-13]   got grams=2639 tier=freight
+[ord-13]   want grams=2639 tier=freight
+[ord-13] case 4/10: lines=3
+[ord-13]   got grams=3718 tier=freight
+[ord-13]   want grams=3718 tier=freight
+[ord-13] case 5/10: lines=2
+[ord-13]   got grams=6601 tier=freight
+[ord-13]   want grams=6601 tier=freight
+[ord-13] case 6/10: lines=3
+[ord-13]   got grams=5605 tier=freight
+[ord-13]   want grams=5605 tier=freight
+[ord-13] case 7/10: lines=2
+[ord-13]   got grams=1156 tier=parcel
+[ord-13]   want grams=1156 tier=parcel
+[ord-13] case 8/10: lines=3
+[ord-13]   got grams=4273 tier=freight
+[ord-13]   want grams=4273 tier=freight
+[ord-13] case 9/10: lines=2
+[ord-13]   got grams=2935 tier=freight
+[ord-13]   want grams=2935 tier=freight
+[ord-13] case 10/10: lines=3
+[ord-13]   got grams=4162 tier=freight
+[ord-13]   want grams=4162 tier=freight
+[ord-14] case 1/10: lines=2
+[ord-14]   got grams=2377 tier=freight
+[ord-14]   want grams=2377 tier=freight
+[ord-14] case 2/10: lines=3
+[ord-14]   got grams=5235 tier=freight
+[ord-14]   want grams=5235 tier=freight
+[ord-14] case 3/10: lines=2
+[ord-14]   got grams=4563 tier=freight
+[ord-14]   want grams=4563 tier=freight
+[ord-14] case 4/10: lines=3
+[ord-14]   got grams=3644 tier=freight
+[ord-14]   want grams=3644 tier=freight
+[ord-14] case 5/10: lines=2
+[ord-14]   got grams=1606 tier=parcel
+[ord-14]   want grams=1606 tier=parcel
+[ord-14] case 6/10: lines=3
+[ord-14]   got grams=4051 tier=freight
+[ord-14]   want grams=4051 tier=freight
+[ord-14] case 7/10: lines=2
+[ord-14]   got grams=2599 tier=freight
+[ord-14]   want grams=2599 tier=freight
+[ord-14] case 8/10: lines=3
+[ord-14]   got grams=5679 tier=freight
+[ord-14]   want grams=5679 tier=freight
+[ord-14] case 9/10: lines=2
+[ord-14]   got grams=4859 tier=freight
+[ord-14]   want grams=4859 tier=freight
+[ord-14] case 10/10: lines=3
+[ord-14]   got grams=4088 tier=freight
+[ord-14]   want grams=4088 tier=freight
+[ord-15] case 1/10: lines=2
+[ord-15]   got grams=3820 tier=freight
+[ord-15]   want grams=3820 tier=freight
+[ord-15] case 2/10: lines=3
+[ord-15]   got grams=3681 tier=freight
+[ord-15]   want grams=3681 tier=freight
+[ord-15] case 3/10: lines=2
+[ord-15]   got grams=5007 tier=freight
+[ord-15]   want grams=5007 tier=freight
+[ord-15] case 4/10: lines=3
+[ord-15]   got grams=5050 tier=freight
+[ord-15]   want grams=5050 tier=freight
+[ord-15] case 5/10: lines=2
+[ord-15]   got grams=4011 tier=freight
+[ord-15]   want grams=4011 tier=freight
+[ord-15] case 6/10: lines=3
+[ord-15]   got grams=3977 tier=freight
+[ord-15]   want grams=3977 tier=freight
+[ord-15] case 7/10: lines=2
+[ord-15]   got grams=4042 tier=freight
+[ord-15]   want grams=4042 tier=freight
+[ord-15] case 8/10: lines=3
+[ord-15]   got grams=4125 tier=freight
+[ord-15]   want grams=4125 tier=freight
+[ord-15] case 9/10: lines=2
+[ord-15]   got grams=863 tier=parcel
+[ord-15]   want grams=863 tier=parcel
+[ord-15] case 10/10: lines=3
+[ord-15]   got grams=5494 tier=freight
+[ord-15]   want grams=5494 tier=freight
+[ord-16] case 1/10: lines=2
+[ord-16]   got grams=2303 tier=freight
+[ord-16]   want grams=2303 tier=freight
+[ord-16] case 2/10: lines=3
+[ord-16]   got grams=3607 tier=freight
+[ord-16]   want grams=3607 tier=freight
+[ord-16] case 3/10: lines=2
+[ord-16]   got grams=2491 tier=freight
+[ord-16]   want grams=2491 tier=freight
+[ord-16] case 4/10: lines=3
+[ord-16]   got grams=3496 tier=freight
+[ord-16]   want grams=3496 tier=freight
+[ord-16] case 5/10: lines=2
+[ord-16]   got grams=6416 tier=freight
+[ord-16]   want grams=6416 tier=freight
+[ord-16] case 6/10: lines=3
+[ord-16]   got grams=5383 tier=freight
+[ord-16]   want grams=5383 tier=freight
+[ord-16] case 7/10: lines=2
+[ord-16]   got grams=1045 tier=parcel
+[ord-16]   want grams=1045 tier=parcel
+[ord-16] case 8/10: lines=3
+[ord-16]   got grams=4051 tier=freight
+[ord-16]   want grams=4051 tier=freight
+[ord-16] case 9/10: lines=2
+[ord-16]   got grams=2787 tier=freight
+[ord-16]   want grams=2787 tier=freight
+[ord-16] case 10/10: lines=3
+[ord-16]   got grams=3940 tier=freight
+[ord-16]   want grams=3940 tier=freight
+[ord-17] case 1/10: lines=2
+[ord-17]   got grams=2266 tier=freight
+[ord-17]   want grams=2266 tier=freight
+[ord-17] case 2/10: lines=3
+[ord-17]   got grams=5013 tier=freight
+[ord-17]   want grams=5013 tier=freight
+[ord-17] case 3/10: lines=2
+[ord-17]   got grams=4415 tier=freight
+[ord-17]   want grams=4415 tier=freight
+[ord-17] case 4/10: lines=3
+[ord-17]   got grams=3422 tier=freight
+[ord-17]   want grams=3422 tier=freight
+[ord-17] case 5/10: lines=2
+[ord-17]   got grams=4381 tier=freight
+[ord-17]   want grams=4381 tier=freight
+[ord-17] case 6/10: lines=3
+[ord-17]   got grams=3829 tier=freight
+[ord-17]   want grams=3829 tier=freight
+[ord-17] case 7/10: lines=2
+[ord-17]   got grams=2488 tier=freight
+[ord-17]   want grams=2488 tier=freight
+[ord-17] case 8/10: lines=3
+[ord-17]   got grams=5457 tier=freight
+[ord-17]   want grams=5457 tier=freight
+[ord-17] case 9/10: lines=2
+[ord-17]   got grams=4711 tier=freight
+[ord-17]   want grams=4711 tier=freight
+[ord-17] case 10/10: lines=3
+[ord-17]   got grams=3866 tier=freight
+[ord-17]   want grams=3866 tier=freight
+[ord-18] case 1/10: lines=2
+[ord-18]   got grams=3709 tier=freight
+[ord-18]   want grams=3709 tier=freight
+[ord-18] case 2/10: lines=3
+[ord-18]   got grams=3459 tier=freight
+[ord-18]   want grams=3459 tier=freight
+[ord-18] case 3/10: lines=2
+[ord-18]   got grams=4859 tier=freight
+[ord-18]   want grams=4859 tier=freight
+[ord-18] case 4/10: lines=3
+[ord-18]   got grams=4828 tier=freight
+[ord-18]   want grams=4828 tier=freight
+[ord-18] case 5/10: lines=2
+[ord-18]   got grams=3826 tier=freight
+[ord-18]   want grams=3826 tier=freight
+[ord-18] case 6/10: lines=3
+[ord-18]   got grams=3755 tier=freight
+[ord-18]   want grams=3755 tier=freight
+[ord-18] case 7/10: lines=2
+[ord-18]   got grams=3931 tier=freight
+[ord-18]   want grams=3931 tier=freight
+[ord-18] case 8/10: lines=3
+[ord-18]   got grams=3903 tier=freight
+[ord-18]   want grams=3903 tier=freight
+[ord-18] case 9/10: lines=2
+[ord-18]   got grams=715 tier=parcel
+[ord-18]   want grams=715 tier=parcel
+[ord-18] case 10/10: lines=3
+[ord-18]   got grams=5272 tier=freight
+[ord-18]   want grams=5272 tier=freight
+[ord-19] case 1/10: lines=2
+[ord-19]   got cents=3695
+[ord-19]   want cents=3695
+[ord-19] case 2/10: lines=3
+[ord-19]   got cents=5905
+[ord-19]   want cents=5905
+[ord-19] case 3/10: lines=2
+[ord-19]   got cents=4065
+[ord-19]   want cents=4065
+[ord-19] case 4/10: lines=3
+[ord-19]   got cents=5740
+[ord-19]   want cents=5740
+[ord-19] case 5/10: lines=2
+[ord-19]   got cents=9990
+[ord-19]   want cents=9990
+[ord-19] case 6/10: lines=3
+[ord-19]   got cents=8545
+[ord-19]   want cents=8545
+[ord-19] case 7/10: lines=2
+[ord-19]   got cents=1825
+[ord-19]   want cents=1825
+[ord-19] case 8/10: lines=3
+[ord-19]   got cents=6565
+[ord-19]   want cents=6565
+[ord-19] case 9/10: lines=2
+[ord-19]   got cents=4505
+[ord-19]   want cents=4505
+[ord-19] case 10/10: lines=3
+[ord-19]   got cents=6400
+[ord-19]   want cents=6400
+[ord-20] case 1/10: lines=2
+[ord-20]   got cents=3640
+[ord-20]   want cents=3640
+[ord-20] case 2/10: lines=3
+[ord-20]   got cents=7995
+[ord-20]   want cents=7995
+[ord-20] case 3/10: lines=2
+[ord-20]   got cents=6925
+[ord-20]   want cents=6925
+[ord-20] case 4/10: lines=3
+[ord-20]   got cents=5630
+[ord-20]   want cents=5630
+[ord-20] case 5/10: lines=2
+[ord-20]   got cents=6965
+[ord-20]   want cents=6965
+[ord-20] case 6/10: lines=3
+[ord-20]   got cents=6235
+[ord-20]   want cents=6235
+[ord-20] case 7/10: lines=2
+[ord-20]   got cents=3970
+[ord-20]   want cents=3970
+[ord-20] case 8/10: lines=3
+[ord-20]   got cents=8655
+[ord-20]   want cents=8655
+[ord-20] case 9/10: lines=2
+[ord-20]   got cents=7365
+[ord-20]   want cents=7365
+[ord-20] case 10/10: lines=3
+[ord-20]   got cents=6290
+[ord-20]   want cents=6290
+[ord-21] case 1/10: lines=2
+[ord-21]   got cents=5785
+[ord-21]   want cents=5785
+[ord-21] case 2/10: lines=3
+[ord-21]   got cents=5685
+[ord-21]   want cents=5685
+[ord-21] case 3/10: lines=2
+[ord-21]   got cents=7585
+[ord-21]   want cents=7585
+[ord-21] case 4/10: lines=3
+[ord-21]   got cents=7720
+[ord-21]   want cents=7720
+[ord-21] case 5/10: lines=2
+[ord-21]   got cents=6140
+[ord-21]   want cents=6140
+[ord-21] case 6/10: lines=3
+[ord-21]   got cents=6125
+[ord-21]   want cents=6125
+[ord-21] case 7/10: lines=2
+[ord-21]   got cents=6115
+[ord-21]   want cents=6115
+[ord-21] case 8/10: lines=3
+[ord-21]   got cents=6345
+[ord-21]   want cents=6345
+[ord-21] case 9/10: lines=2
+[ord-21]   got cents=1425
+[ord-21]   want cents=1425
+[ord-21] case 10/10: lines=3
+[ord-21]   got cents=8380
+[ord-21]   want cents=8380
+[ord-22] case 1/10: lines=2
+[ord-22]   got cents=3530
+[ord-22]   want cents=3530
+[ord-22] case 2/10: lines=3
+[ord-22]   got cents=5575
+[ord-22]   want cents=5575
+[ord-22] case 3/10: lines=2
+[ord-22]   got cents=3845
+[ord-22]   want cents=3845
+[ord-22] case 4/10: lines=3
+[ord-22]   got cents=5410
+[ord-22]   want cents=5410
+[ord-22] case 5/10: lines=2
+[ord-22]   got cents=9715
+[ord-22]   want cents=9715
+[ord-22] case 6/10: lines=3
+[ord-22]   got cents=8215
+[ord-22]   want cents=8215
+[ord-22] case 7/10: lines=2
+[ord-22]   got cents=3860
+[ord-22]   want cents=3860
+[ord-22] case 8/10: lines=3
+[ord-22]   got cents=6235
+[ord-22]   want cents=6235
+[ord-22] case 9/10: lines=2
+[ord-22]   got cents=4285
+[ord-22]   want cents=4285
+[ord-22] case 10/10: lines=3
+[ord-22]   got cents=6070
+[ord-22]   want cents=6070
+[ord-23] case 1/10: lines=2
+[ord-23]   got cents=3475
+[ord-23]   want cents=3475
+[ord-23] case 2/10: lines=3
+[ord-23]   got cents=9865
+[ord-23]   want cents=9865
+[ord-23] case 3/10: lines=2
+[ord-23]   got cents=6705
+[ord-23]   want cents=6705
+[ord-23] case 4/10: lines=3
+[ord-23]   got cents=5300
+[ord-23]   want cents=5300
+[ord-23] case 5/10: lines=2
+[ord-23]   got cents=6690
+[ord-23]   want cents=6690
+[ord-23] case 6/10: lines=3
+[ord-23]   got cents=5905
+[ord-23]   want cents=5905
+[ord-23] case 7/10: lines=2
+[ord-23]   got cents=3805
+[ord-23]   want cents=3805
+[ord-23] case 8/10: lines=3
+[ord-23]   got cents=8325
+[ord-23]   want cents=8325
+[ord-23] case 9/10: lines=2
+[ord-23]   got cents=7145
+[ord-23]   want cents=7145
+[ord-23] case 10/10: lines=3
+[ord-23]   got cents=5960
+[ord-23]   want cents=5960
+[ord-24] case 1/10: lines=2
+[ord-24]   got cents=5620
+[ord-24]   want cents=5620
+[ord-24] case 2/10: lines=3
+[ord-24]   got cents=5355
+[ord-24]   want cents=5355
+[ord-24] case 3/10: lines=2
+[ord-24]   got cents=7365
+[ord-24]   want cents=7365
+[ord-24] case 4/10: lines=3
+[ord-24]   got cents=7390
+[ord-24]   want cents=7390
+[ord-24] case 5/10: lines=2
+[ord-24]   got cents=5865
+[ord-24]   want cents=5865
+[ord-24] case 6/10: lines=3
+[ord-24]   got cents=5795
+[ord-24]   want cents=5795
+[ord-24] case 7/10: lines=2
+[ord-24]   got cents=5950
+[ord-24]   want cents=5950
+[ord-24] case 8/10: lines=3
+[ord-24]   got cents=6015
+[ord-24]   want cents=6015
+[ord-24] case 9/10: lines=2
+[ord-24]   got cents=7805
+[ord-24]   want cents=7805
+[ord-24] case 10/10: lines=3
+[ord-24]   got cents=8050
+[ord-24]   want cents=8050
+▶ order weights
+  ✔ order weight batch 1 (0.4ms)
+  ✔ order weight batch 2 (0.4ms)
+  ✔ order weight batch 3 (0.4ms)
+  ✔ order weight batch 4 (0.4ms)
+  ✔ order weight batch 5 (0.4ms)
+  ✔ order weight batch 6 (0.4ms)
+✔ order weights (0.4ms)
+▶ hand-weighed packages
+  ✔ manual package batch 1 (0.4ms)
+  ✔ manual package batch 2 (0.4ms)
+  ✔ manual package batch 3 (0.4ms)
+  ✔ manual package batch 4 (0.4ms)
+  ✖ counter packages pack as letters through the 500 g handbook ceiling (0.4ms)
+  ✔ manual package batch 6 (0.4ms)
+✖ hand-weighed packages (0.4ms)
+▶ packing assigns tiers
+  ✔ pack order batch 1 (0.4ms)
+  ✔ pack order batch 2 (0.4ms)
+  ✔ pack order batch 3 (0.4ms)
+  ✔ pack order batch 4 (0.4ms)
+  ✔ pack order batch 5 (0.4ms)
+  ✔ pack order batch 6 (0.4ms)
+✔ packing assigns tiers (0.4ms)
+▶ order subtotals
+  ✔ subtotal batch 1 (0.4ms)
+  ✔ subtotal batch 2 (0.4ms)
+  ✔ subtotal batch 3 (0.4ms)
+  ✔ subtotal batch 4 (0.4ms)
+  ✔ subtotal batch 5 (0.4ms)
+  ✔ subtotal batch 6 (0.4ms)
+✔ order subtotals (0.4ms)
+[prc-01] case 1/10: cents=999 percent=0
+[prc-01]   got cents=999
+[prc-01]   want cents=999
+[prc-01] case 2/10: cents=1462 percent=7
+[prc-01]   got cents=1360
+[prc-01]   want cents=1360
+[prc-01] case 3/10: cents=1925 percent=14
+[prc-01]   got cents=1656
+[prc-01]   want cents=1656
+[prc-01] case 4/10: cents=2388 percent=21
+[prc-01]   got cents=1887
+[prc-01]   want cents=1887
+[prc-01] case 5/10: cents=2851 percent=28
+[prc-01]   got cents=2053
+[prc-01]   want cents=2053
+[prc-01] case 6/10: cents=3314 percent=35
+[prc-01]   got cents=2155
+[prc-01]   want cents=2155
+[prc-01] case 7/10: cents=3777 percent=42
+[prc-01]   got cents=2191
+[prc-01]   want cents=2191
+[prc-01] case 8/10: cents=4240 percent=49
+[prc-01]   got cents=2163
+[prc-01]   want cents=2163
+[prc-01] case 9/10: cents=4703 percent=56
+[prc-01]   got cents=2070
+[prc-01]   want cents=2070
+[prc-01] case 10/10: cents=5166 percent=63
+[prc-01]   got cents=1912
+[prc-01]   want cents=1912
+[prc-02] case 1/10: cents=5629 percent=10
+[prc-02]   got cents=5067
+[prc-02]   want cents=5067
+[prc-02] case 2/10: cents=6092 percent=17
+[prc-02]   got cents=5057
+[prc-02]   want cents=5057
+[prc-02] case 3/10: cents=6555 percent=24
+[prc-02]   got cents=4982
+[prc-02]   want cents=4982
+[prc-02] case 4/10: cents=7018 percent=31
+[prc-02]   got cents=4843
+[prc-02]   want cents=4843
+[prc-02] case 5/10: cents=7481 percent=38
+[prc-02]   got cents=4639
+[prc-02]   want cents=4639
+[prc-02] case 6/10: cents=7944 percent=45
+[prc-02]   got cents=4370
+[prc-02]   want cents=4370
+[prc-02] case 7/10: cents=8407 percent=52
+[prc-02]   got cents=4036
+[prc-02]   want cents=4036
+[prc-02] case 8/10: cents=8870 percent=59
+[prc-02]   got cents=3637
+[prc-02]   want cents=3637
+[prc-02] case 9/10: cents=9333 percent=66
+[prc-02]   got cents=3174
+[prc-02]   want cents=3174
+[prc-02] case 10/10: cents=9796 percent=73
+[prc-02]   got cents=2645
+[prc-02]   want cents=2645
+[prc-03] case 1/10: cents=10259 percent=20
+[prc-03]   got cents=8208
+[prc-03]   want cents=8208
+[prc-03] case 2/10: cents=10722 percent=27
+[prc-03]   got cents=7828
+[prc-03]   want cents=7828
+[prc-03] case 3/10: cents=11185 percent=34
+[prc-03]   got cents=7383
+[prc-03]   want cents=7383
+[prc-03] case 4/10: cents=11648 percent=41
+[prc-03]   got cents=6873
+[prc-03]   want cents=6873
+[prc-03] case 5/10: cents=12111 percent=48
+[prc-03]   got cents=6298
+[prc-03]   want cents=6298
+[prc-03] case 6/10: cents=12574 percent=55
+[prc-03]   got cents=5659
+[prc-03]   want cents=5659
+[prc-03] case 7/10: cents=13037 percent=62
+[prc-03]   got cents=4955
+[prc-03]   want cents=4955
+[prc-03] case 8/10: cents=13500 percent=69
+[prc-03]   got cents=4185
+[prc-03]   want cents=4185
+[prc-03] case 9/10: cents=13963 percent=76
+[prc-03]   got cents=3352
+[prc-03]   want cents=3352
+[prc-03] case 10/10: cents=14426 percent=83
+[prc-03]   got cents=2453
+[prc-03]   want cents=2453
+[prc-04] case 1/10: cents=14889 percent=30
+[prc-04]   got cents=10423
+[prc-04]   want cents=10423
+[prc-04] case 2/10: cents=15352 percent=37
+[prc-04]   got cents=9672
+[prc-04]   want cents=9672
+[prc-04] case 3/10: cents=15815 percent=44
+[prc-04]   got cents=8857
+[prc-04]   want cents=8857
+[prc-04] case 4/10: cents=16278 percent=51
+[prc-04]   got cents=7977
+[prc-04]   want cents=7977
+[prc-04] case 5/10: cents=16741 percent=58
+[prc-04]   got cents=7032
+[prc-04]   want cents=7032
+[prc-04] case 6/10: cents=17204 percent=65
+[prc-04]   got cents=6022
+[prc-04]   want cents=6022
+[prc-04] case 7/10: cents=17667 percent=72
+[prc-04]   got cents=4947
+[prc-04]   want cents=4947
+[prc-04] case 8/10: cents=18130 percent=79
+[prc-04]   got cents=3808
+[prc-04]   want cents=3808
+[prc-04] case 9/10: cents=18593 percent=86
+[prc-04]   got cents=2604
+[prc-04]   want cents=2604
+[prc-04] case 10/10: cents=19056 percent=2
+[prc-04]   got cents=18675
+[prc-04]   want cents=18675
+[prc-05] case 1/10: cents=19519 percent=40
+[prc-05]   got cents=11712
+[prc-05]   want cents=11712
+[prc-05] case 2/10: cents=19982 percent=47
+[prc-05]   got cents=10591
+[prc-05]   want cents=10591
+[prc-05] case 3/10: cents=20445 percent=54
+[prc-05]   got cents=9405
+[prc-05]   want cents=9405
+[prc-05] case 4/10: cents=20908 percent=61
+[prc-05]   got cents=8155
+[prc-05]   want cents=8155
+[prc-05] case 5/10: cents=21371 percent=68
+[prc-05]   got cents=6839
+[prc-05]   want cents=6839
+[prc-05] case 6/10: cents=21834 percent=75
+[prc-05]   got cents=5459
+[prc-05]   want cents=5459
+[prc-05] case 7/10: cents=22297 percent=82
+[prc-05]   got cents=4014
+[prc-05]   want cents=4014
+[prc-05] case 8/10: cents=22760 percent=89
+[prc-05]   got cents=2504
+[prc-05]   want cents=2504
+[prc-05] case 9/10: cents=23223 percent=5
+[prc-05]   got cents=22062
+[prc-05]   want cents=22062
+[prc-05] case 10/10: cents=23686 percent=12
+[prc-05]   got cents=20844
+[prc-05]   want cents=20844
+[prc-06] case 1/10: cents=24149 percent=50
+[prc-06]   got cents=12075
+[prc-06]   want cents=12075
+[prc-06] case 2/10: cents=24612 percent=57
+[prc-06]   got cents=10584
+[prc-06]   want cents=10584
+[prc-06] case 3/10: cents=25075 percent=64
+[prc-06]   got cents=9027
+[prc-06]   want cents=9027
+[prc-06] case 4/10: cents=25538 percent=71
+[prc-06]   got cents=7407
+[prc-06]   want cents=7407
+[prc-06] case 5/10: cents=26001 percent=78
+[prc-06]   got cents=5721
+[prc-06]   want cents=5721
+[prc-06] case 6/10: cents=26464 percent=85
+[prc-06]   got cents=3970
+[prc-06]   want cents=3970
+[prc-06] case 7/10: cents=26927 percent=1
+[prc-06]   got cents=26658
+[prc-06]   want cents=26658
+[prc-06] case 8/10: cents=27390 percent=8
+[prc-06]   got cents=25199
+[prc-06]   want cents=25199
+[prc-06] case 9/10: cents=27853 percent=15
+[prc-06]   got cents=23676
+[prc-06]   want cents=23676
+[prc-06] case 10/10: cents=28316 percent=22
+[prc-06]   got cents=22087
+[prc-06]   want cents=22087
+[prc-07] case 1/10: unit=205 qty=1
+[prc-07]   got cents=205
+[prc-07]   want cents=205
+[prc-07] case 2/10: unit=594 qty=2
+[prc-07]   got cents=1188
+[prc-07]   want cents=1188
+[prc-07] case 3/10: unit=983 qty=3
+[prc-07]   got cents=2949
+[prc-07]   want cents=2949
+[prc-07] case 4/10: unit=1372 qty=4
+[prc-07]   got cents=5488
+[prc-07]   want cents=5488
+[prc-07] case 5/10: unit=1761 qty=5
+[prc-07]   got cents=8805
+[prc-07]   want cents=8805
+[prc-07] case 6/10: unit=2150 qty=1
+[prc-07]   got cents=2150
+[prc-07]   want cents=2150
+[prc-07] case 7/10: unit=2539 qty=2
+[prc-07]   got cents=5078
+[prc-07]   want cents=5078
+[prc-07] case 8/10: unit=2928 qty=3
+[prc-07]   got cents=8784
+[prc-07]   want cents=8784
+[prc-07] case 9/10: unit=3317 qty=4
+[prc-07]   got cents=13268
+[prc-07]   want cents=13268
+[prc-07] case 10/10: unit=3706 qty=5
+[prc-07]   got cents=18530
+[prc-07]   want cents=18530
+[prc-08] case 1/10: unit=4095 qty=2
+[prc-08]   got cents=8190
+[prc-08]   want cents=8190
+[prc-08] case 2/10: unit=4484 qty=3
+[prc-08]   got cents=13452
+[prc-08]   want cents=13452
+[prc-08] case 3/10: unit=4873 qty=4
+[prc-08]   got cents=19492
+[prc-08]   want cents=19492
+[prc-08] case 4/10: unit=5262 qty=5
+[prc-08]   got cents=26310
+[prc-08]   want cents=26310
+[prc-08] case 5/10: unit=5651 qty=1
+[prc-08]   got cents=5651
+[prc-08]   want cents=5651
+[prc-08] case 6/10: unit=6040 qty=2
+[prc-08]   got cents=12080
+[prc-08]   want cents=12080
+[prc-08] case 7/10: unit=6429 qty=3
+[prc-08]   got cents=19287
+[prc-08]   want cents=19287
+[prc-08] case 8/10: unit=6818 qty=4
+[prc-08]   got cents=27272
+[prc-08]   want cents=27272
+[prc-08] case 9/10: unit=7207 qty=5
+[prc-08]   got cents=36035
+[prc-08]   want cents=36035
+[prc-08] case 10/10: unit=7596 qty=1
+[prc-08]   got cents=7596
+[prc-08]   want cents=7596
+[prc-09] case 1/10: unit=7985 qty=3
+[prc-09]   got cents=23955
+[prc-09]   want cents=23955
+[prc-09] case 2/10: unit=8374 qty=4
+[prc-09]   got cents=33496
+[prc-09]   want cents=33496
+[prc-09] case 3/10: unit=8763 qty=5
+[prc-09]   got cents=43815
+[prc-09]   want cents=43815
+[prc-09] case 4/10: unit=9152 qty=1
+[prc-09]   got cents=9152
+[prc-09]   want cents=9152
+[prc-09] case 5/10: unit=9541 qty=2
+[prc-09]   got cents=19082
+[prc-09]   want cents=19082
+[prc-09] case 6/10: unit=9930 qty=3
+[prc-09]   got cents=29790
+[prc-09]   want cents=29790
+[prc-09] case 7/10: unit=10319 qty=4
+[prc-09]   got cents=41276
+[prc-09]   want cents=41276
+[prc-09] case 8/10: unit=10708 qty=5
+[prc-09]   got cents=53540
+[prc-09]   want cents=53540
+[prc-09] case 9/10: unit=11097 qty=1
+[prc-09]   got cents=11097
+[prc-09]   want cents=11097
+[prc-09] case 10/10: unit=11486 qty=2
+[prc-09]   got cents=22972
+[prc-09]   want cents=22972
+[prc-10] case 1/10: unit=11875 qty=4
+[prc-10]   got cents=47500
+[prc-10]   want cents=47500
+[prc-10] case 2/10: unit=12264 qty=5
+[prc-10]   got cents=61320
+[prc-10]   want cents=61320
+[prc-10] case 3/10: unit=12653 qty=1
+[prc-10]   got cents=12653
+[prc-10]   want cents=12653
+[prc-10] case 4/10: unit=13042 qty=2
+[prc-10]   got cents=26084
+[prc-10]   want cents=26084
+[prc-10] case 5/10: unit=13431 qty=3
+[prc-10]   got cents=40293
+[prc-10]   want cents=40293
+[prc-10] case 6/10: unit=13820 qty=4
+[prc-10]   got cents=55280
+[prc-10]   want cents=55280
+[prc-10] case 7/10: unit=14209 qty=5
+[prc-10]   got cents=71045
+[prc-10]   want cents=71045
+[prc-10] case 8/10: unit=14598 qty=1
+[prc-10]   got cents=14598
+[prc-10]   want cents=14598
+[prc-10] case 9/10: unit=14987 qty=2
+[prc-10]   got cents=29974
+[prc-10]   want cents=29974
+[prc-10] case 10/10: unit=15376 qty=3
+[prc-10]   got cents=46128
+[prc-10]   want cents=46128
+[prc-11] case 1/10: unit=15765 qty=5
+[prc-11]   got cents=78825
+[prc-11]   want cents=78825
+[prc-11] case 2/10: unit=16154 qty=1
+[prc-11]   got cents=16154
+[prc-11]   want cents=16154
+[prc-11] case 3/10: unit=16543 qty=2
+[prc-11]   got cents=33086
+[prc-11]   want cents=33086
+[prc-11] case 4/10: unit=16932 qty=3
+[prc-11]   got cents=50796
+[prc-11]   want cents=50796
+[prc-11] case 5/10: unit=17321 qty=4
+[prc-11]   got cents=69284
+[prc-11]   want cents=69284
+[prc-11] case 6/10: unit=17710 qty=5
+[prc-11]   got cents=88550
+[prc-11]   want cents=88550
+[prc-11] case 7/10: unit=18099 qty=1
+[prc-11]   got cents=18099
+[prc-11]   want cents=18099
+[prc-11] case 8/10: unit=18488 qty=2
+[prc-11]   got cents=36976
+[prc-11]   want cents=36976
+[prc-11] case 9/10: unit=18877 qty=3
+[prc-11]   got cents=56631
+[prc-11]   want cents=56631
+[prc-11] case 10/10: unit=19266 qty=4
+[prc-11]   got cents=77064
+[prc-11]   want cents=77064
+[prc-12] case 1/10: unit=19655 qty=1
+[prc-12]   got cents=19655
+[prc-12]   want cents=19655
+[prc-12] case 2/10: unit=20044 qty=2
+[prc-12]   got cents=40088
+[prc-12]   want cents=40088
+[prc-12] case 3/10: unit=20433 qty=3
+[prc-12]   got cents=61299
+[prc-12]   want cents=61299
+[prc-12] case 4/10: unit=20822 qty=4
+[prc-12]   got cents=83288
+[prc-12]   want cents=83288
+[prc-12] case 5/10: unit=21211 qty=5
+[prc-12]   got cents=106055
+[prc-12]   want cents=106055
+[prc-12] case 6/10: unit=21600 qty=1
+[prc-12]   got cents=21600
+[prc-12]   want cents=21600
+[prc-12] case 7/10: unit=21989 qty=2
+[prc-12]   got cents=43978
+[prc-12]   want cents=43978
+[prc-12] case 8/10: unit=22378 qty=3
+[prc-12]   got cents=67134
+[prc-12]   want cents=67134
+[prc-12] case 9/10: unit=22767 qty=4
+[prc-12]   got cents=91068
+[prc-12]   want cents=91068
+[prc-12] case 10/10: unit=23156 qty=5
+[prc-12]   got cents=115780
+[prc-12]   want cents=115780
+[prc-13] case 1/10: items=3 grams=113
+[prc-13]   got total=1645
+[prc-13]   want total=1645
+[prc-13] case 2/10: items=3 grams=272
+[prc-13]   got total=1733
+[prc-13]   want total=1733
+[prc-13] case 3/10: items=3 grams=431
+[prc-13]   got total=1821
+[prc-13]   want total=1821
+[prc-13] case 4/10: items=3 grams=590
+[prc-13]   got total=2029
+[prc-13]   want total=2029
+[prc-13] case 5/10: items=3 grams=749
+[prc-13]   got total=2117
+[prc-13]   want total=2117
+[prc-13] case 6/10: items=3 grams=908
+[prc-13]   got total=2205
+[prc-13]   want total=2205
+[prc-13] case 7/10: items=3 grams=1067
+[prc-13]   got total=2293
+[prc-13]   want total=2293
+[prc-13] case 8/10: items=3 grams=1226
+[prc-13]   got total=2381
+[prc-13]   want total=2381
+[prc-13] case 9/10: items=3 grams=1385
+[prc-13]   got total=2469
+[prc-13]   want total=2469
+[prc-13] case 10/10: items=3 grams=2100
+[prc-13]   got total=2917
+[prc-13]   want total=2917
+[prc-14] case 1/10: items=3 grams=696
+[prc-14]   got total=1879
+[prc-14]   want total=1879
+[prc-14] case 2/10: items=3 grams=855
+[prc-14]   got total=1967
+[prc-14]   want total=1967
+[prc-14] case 3/10: items=3 grams=1014
+[prc-14]   got total=2055
+[prc-14]   want total=2055
+[prc-14] case 4/10: items=3 grams=1173
+[prc-14]   got total=2143
+[prc-14]   want total=2143
+[prc-14] case 5/10: items=3 grams=1332
+[prc-14]   got total=2231
+[prc-14]   want total=2231
+[prc-14] case 6/10: items=3 grams=1491
+[prc-14]   got total=2319
+[prc-14]   want total=2319
+[prc-14] case 7/10: items=3 grams=4054
+[prc-14]   got total=2767
+[prc-14]   want total=2767
+[prc-14] case 8/10: items=3 grams=6985
+[prc-14]   got total=2855
+[prc-14]   want total=2855
+[prc-14] case 9/10: items=3 grams=9916
+[prc-14]   got total=2943
+[prc-14]   want total=2943
+[prc-14] case 10/10: items=3 grams=12847
+[prc-14]   got total=3031
+[prc-14]   want total=3031
+[prc-15] case 1/10: items=3 grams=1279
+[prc-15]   got total=1993
+[prc-15]   want total=1993
+[prc-15] case 2/10: items=3 grams=1438
+[prc-15]   got total=2081
+[prc-15]   want total=2081
+[prc-15] case 3/10: items=3 grams=3077
+[prc-15]   got total=2529
+[prc-15]   want total=2529
+[prc-15] case 4/10: items=3 grams=6008
+[prc-15]   got total=2617
+[prc-15]   want total=2617
+[prc-15] case 5/10: items=3 grams=8939
+[prc-15]   got total=2705
+[prc-15]   want total=2705
+[prc-15] case 6/10: items=3 grams=11870
+[prc-15]   got total=2793
+[prc-15]   want total=2793
+[prc-15] case 7/10: items=3 grams=14801
+[prc-15]   got total=2881
+[prc-15]   want total=2881
+[prc-15] case 8/10: items=3 grams=26334
+[prc-15]   got total=3989
+[prc-15]   want total=3989
+[prc-15] case 9/10: items=3 grams=38085
+[prc-15]   got total=4077
+[prc-15]   want total=4077
+[prc-15] case 10/10: items=3 grams=60
+[prc-15]   got total=2665
+[prc-15]   want total=2665
+[prc-16] case 1/10: items=3 grams=7962
+[prc-16]   got total=2467
+[prc-16]   want total=2467
+[prc-16] case 2/10: items=3 grams=10893
+[prc-16]   got total=2555
+[prc-16]   want total=2555
+[prc-16] case 3/10: items=3 grams=13824
+[prc-16]   got total=2643
+[prc-16]   want total=2643
+[prc-16] case 4/10: items=3 grams=22417
+[prc-16]   got total=3751
+[prc-16]   want total=3751
+[prc-16] case 5/10: items=3 grams=34168
+[prc-16]   got total=3839
+[prc-16]   want total=3839
+[prc-16] case 6/10: items=3 grams=45919
+[prc-16]   got total=3927
+[prc-16]   want total=3927
+[prc-16] case 7/10: items=3 grams=166
+[prc-16]   got total=2515
+[prc-16]   want total=2515
+[prc-16] case 8/10: items=3 grams=325
+[prc-16]   got total=2603
+[prc-16]   want total=2603
+[prc-16] case 9/10: items=3 grams=484
+[prc-16]   got total=2691
+[prc-16]   want total=2691
+[prc-16] case 10/10: items=3 grams=643
+[prc-16]   got total=2899
+[prc-16]   want total=2899
+[prc-17] case 1/10: items=3 grams=30251
+[prc-17]   got total=3601
+[prc-17]   want total=3601
+[prc-17] case 2/10: items=3 grams=42002
+[prc-17]   got total=3689
+[prc-17]   want total=3689
+[prc-17] case 3/10: items=3 grams=113
+[prc-17]   got total=2277
+[prc-17]   want total=2277
+[prc-17] case 4/10: items=3 grams=272
+[prc-17]   got total=2365
+[prc-17]   want total=2365
+[prc-17] case 5/10: items=3 grams=431
+[prc-17]   got total=2453
+[prc-17]   want total=2453
+[prc-17] case 6/10: items=3 grams=590
+[prc-17]   got total=2661
+[prc-17]   want total=2661
+[prc-17] case 7/10: items=3 grams=749
+[prc-17]   got total=2749
+[prc-17]   want total=2749
+[prc-17] case 8/10: items=3 grams=908
+[prc-17]   got total=2837
+[prc-17]   want total=2837
+[prc-17] case 9/10: items=3 grams=1067
+[prc-17]   got total=2925
+[prc-17]   want total=2925
+[prc-17] case 10/10: items=3 grams=1226
+[prc-17]   got total=3013
+[prc-17]   want total=3013
+[prc-18] case 1/10: items=3 grams=378
+[prc-18]   got total=2215
+[prc-18]   want total=2215
+[prc-18] case 2/10: items=3 grams=537
+[prc-18]   got total=2423
+[prc-18]   want total=2423
+[prc-18] case 3/10: items=3 grams=696
+[prc-18]   got total=2511
+[prc-18]   want total=2511
+[prc-18] case 4/10: items=3 grams=855
+[prc-18]   got total=2599
+[prc-18]   want total=2599
+[prc-18] case 5/10: items=3 grams=1014
+[prc-18]   got total=2687
+[prc-18]   want total=2687
+[prc-18] case 6/10: items=3 grams=1173
+[prc-18]   got total=2775
+[prc-18]   want total=2775
+[prc-18] case 7/10: items=3 grams=1332
+[prc-18]   got total=2863
+[prc-18]   want total=2863
+[prc-18] case 8/10: items=3 grams=1491
+[prc-18]   got total=2951
+[prc-18]   want total=2951
+[prc-18] case 9/10: items=3 grams=4054
+[prc-18]   got total=3399
+[prc-18]   want total=3399
+[prc-18] case 10/10: items=3 grams=6985
+[prc-18]   got total=3487
+[prc-18]   want total=3487
+[prc-19] case 1/10: grams=166
+[prc-19]   got cents=0
+[prc-19]   want cents=0
+[prc-19] case 2/10: grams=537
+[prc-19]   got cents=120
+[prc-19]   want cents=120
+[prc-19] case 3/10: grams=908
+[prc-19]   got cents=120
+[prc-19]   want cents=120
+[prc-19] case 4/10: grams=1279
+[prc-19]   got cents=120
+[prc-19]   want cents=120
+[prc-19] case 5/10: grams=4054
+[prc-19]   got cents=480
+[prc-19]   want cents=480
+[prc-19] case 6/10: grams=10893
+[prc-19]   got cents=480
+[prc-19]   want cents=480
+[prc-19] case 7/10: grams=26334
+[prc-19]   got cents=1500
+[prc-19]   want cents=1500
+[prc-19] case 8/10: grams=113
+[prc-19]   got cents=0
+[prc-19]   want cents=0
+[prc-19] case 9/10: grams=484
+[prc-19]   got cents=0
+[prc-19]   want cents=0
+[prc-19] case 10/10: grams=855
+[prc-19]   got cents=120
+[prc-19]   want cents=120
+[prc-20] case 1/10: grams=1067
+[prc-20]   got cents=120
+[prc-20]   want cents=120
+[prc-20] case 2/10: grams=1438
+[prc-20]   got cents=120
+[prc-20]   want cents=120
+[prc-20] case 3/10: grams=6985
+[prc-20]   got cents=480
+[prc-20]   want cents=480
+[prc-20] case 4/10: grams=13824
+[prc-20]   got cents=480
+[prc-20]   want cents=480
+[prc-20] case 5/10: grams=38085
+[prc-20]   got cents=1500
+[prc-20]   want cents=1500
+[prc-20] case 6/10: grams=272
+[prc-20]   got cents=0
+[prc-20]   want cents=0
+[prc-20] case 7/10: grams=643
+[prc-20]   got cents=120
+[prc-20]   want cents=120
+[prc-20] case 8/10: grams=1014
+[prc-20]   got cents=120
+[prc-20]   want cents=120
+[prc-20] case 9/10: grams=1385
+[prc-20]   got cents=120
+[prc-20]   want cents=120
+[prc-20] case 10/10: grams=6008
+[prc-20]   got cents=480
+[prc-20]   want cents=480
+[prc-21] case 1/10: grams=451
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 2/10: grams=458
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 3/10: grams=464
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 4/10: grams=470
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 5/10: grams=477
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 6/10: grams=483
+[prc-21]   got cents=0
+[prc-21]   want cents=0
+[prc-21] case 7/10: grams=500
+[prc-21]   got cents=120
+[prc-21]   want cents=0
+[prc-22] case 1/10: grams=219
+[prc-22]   got cents=0
+[prc-22]   want cents=0
+[prc-22] case 2/10: grams=590
+[prc-22]   got cents=120
+[prc-22]   want cents=120
+[prc-22] case 3/10: grams=961
+[prc-22]   got cents=120
+[prc-22]   want cents=120
+[prc-22] case 4/10: grams=1332
+[prc-22]   got cents=120
+[prc-22]   want cents=120
+[prc-22] case 5/10: grams=5031
+[prc-22]   got cents=480
+[prc-22]   want cents=480
+[prc-22] case 6/10: grams=11870
+[prc-22]   got cents=480
+[prc-22]   want cents=480
+[prc-22] case 7/10: grams=30251
+[prc-22]   got cents=1500
+[prc-22]   want cents=1500
+[prc-22] case 8/10: grams=166
+[prc-22]   got cents=0
+[prc-22]   want cents=0
+[prc-22] case 9/10: grams=537
+[prc-22]   got cents=120
+[prc-22]   want cents=120
+[prc-22] case 10/10: grams=908
+[prc-22]   got cents=120
+[prc-22]   want cents=120
+[prc-23] case 1/10: grams=1120
+[prc-23]   got cents=120
+[prc-23]   want cents=120
+[prc-23] case 2/10: grams=1491
+[prc-23]   got cents=120
+[prc-23]   want cents=120
+[prc-23] case 3/10: grams=7962
+[prc-23]   got cents=480
+[prc-23]   want cents=480
+[prc-23] case 4/10: grams=14801
+[prc-23]   got cents=480
+[prc-23]   want cents=480
+[prc-23] case 5/10: grams=42002
+[prc-23]   got cents=1500
+[prc-23]   want cents=1500
+[prc-23] case 6/10: grams=325
+[prc-23]   got cents=0
+[prc-23]   want cents=0
+[prc-23] case 7/10: grams=696
+[prc-23]   got cents=120
+[prc-23]   want cents=120
+[prc-23] case 8/10: grams=1067
+[prc-23]   got cents=120
+[prc-23]   want cents=120
+[prc-23] case 9/10: grams=1438
+[prc-23]   got cents=120
+[prc-23]   want cents=120
+[prc-23] case 10/10: grams=6985
+[prc-23]   got cents=480
+[prc-23]   want cents=480
+[prc-24] case 1/10: grams=10893
+[prc-24]   got cents=480
+[prc-24]   want cents=480
+[prc-24] case 2/10: grams=26334
+[prc-24]   got cents=1500
+[prc-24]   want cents=1500
+[prc-24] case 3/10: grams=113
+[prc-24]   got cents=0
+[prc-24]   want cents=0
+[prc-24] case 4/10: grams=484
+[prc-24]   got cents=0
+[prc-24]   want cents=0
+[prc-24] case 5/10: grams=855
+[prc-24]   got cents=120
+[prc-24]   want cents=120
+[prc-24] case 6/10: grams=1226
+[prc-24]   got cents=120
+[prc-24]   want cents=120
+[prc-24] case 7/10: grams=3077
+[prc-24]   got cents=480
+[prc-24]   want cents=480
+[prc-24] case 8/10: grams=9916
+[prc-24]   got cents=480
+[prc-24]   want cents=480
+[prc-24] case 9/10: grams=22417
+[prc-24]   got cents=1500
+[prc-24]   want cents=1500
+[prc-24] case 10/10: grams=60
+[prc-24]   got cents=0
+[prc-24]   want cents=0
+▶ discounts
+  ✔ discount batch 1 (0.4ms)
+  ✔ discount batch 2 (0.4ms)
+  ✔ discount batch 3 (0.4ms)
+  ✔ discount batch 4 (0.4ms)
+  ✔ discount batch 5 (0.4ms)
+  ✔ discount batch 6 (0.4ms)
+✔ discounts (0.4ms)
+▶ line totals
+  ✔ line total batch 1 (0.4ms)
+  ✔ line total batch 2 (0.4ms)
+  ✔ line total batch 3 (0.4ms)
+  ✔ line total batch 4 (0.4ms)
+  ✔ line total batch 5 (0.4ms)
+  ✔ line total batch 6 (0.4ms)
+✔ line totals (0.4ms)
+▶ invoice totals include the tier surcharge
+  ✔ invoice batch 1 (0.4ms)
+  ✔ invoice batch 2 (0.4ms)
+  ✔ invoice batch 3 (0.4ms)
+  ✔ invoice batch 4 (0.4ms)
+  ✔ invoice batch 5 (0.4ms)
+  ✔ invoice batch 6 (0.4ms)
+✔ invoice totals include the tier surcharge (0.4ms)
+▶ tier surcharges
+  ✔ surcharge batch 1 (0.4ms)
+  ✔ surcharge batch 2 (0.4ms)
+  ✖ no surcharge applies through the 500 g letter ceiling (0.4ms)
+  ✔ surcharge batch 4 (0.4ms)
+  ✔ surcharge batch 5 (0.4ms)
+  ✔ surcharge batch 6 (0.4ms)
+✖ tier surcharges (0.4ms)
+[shp-01] case 1/10: grams=219 zone=zone-1
+[shp-01]   got label=letter/zone-1 $1.50
+[shp-01]   want label=letter/zone-1 $1.50
+[shp-01] case 2/10: grams=484 zone=zone-2
+[shp-01]   got label=letter/zone-2 $2.10
+[shp-01]   want label=letter/zone-2 $2.10
+[shp-01] case 3/10: grams=749 zone=zone-3
+[shp-01]   got label=parcel/zone-3 $11.40
+[shp-01]   want label=parcel/zone-3 $11.40
+[shp-01] case 4/10: grams=1014 zone=zone-1
+[shp-01]   got label=parcel/zone-1 $6.00
+[shp-01]   want label=parcel/zone-1 $6.00
+[shp-01] case 5/10: grams=1279 zone=zone-2
+[shp-01]   got label=parcel/zone-2 $8.40
+[shp-01]   want label=parcel/zone-2 $8.40
+[shp-01] case 6/10: grams=2100 zone=zone-3
+[shp-01]   got label=freight/zone-3 $45.60
+[shp-01]   want label=freight/zone-3 $45.60
+[shp-01] case 7/10: grams=6985 zone=zone-1
+[shp-01]   got label=freight/zone-1 $24.00
+[shp-01]   want label=freight/zone-1 $24.00
+[shp-01] case 8/10: grams=11870 zone=zone-2
+[shp-01]   got label=freight/zone-2 $33.60
+[shp-01]   want label=freight/zone-2 $33.60
+[shp-01] case 9/10: grams=22417 zone=zone-3
+[shp-01]   got label=pallet/zone-3 $199.50
+[shp-01]   want label=pallet/zone-3 $199.50
+[shp-01] case 10/10: grams=42002 zone=zone-1
+[shp-01]   got label=pallet/zone-1 $105.00
+[shp-01]   want label=pallet/zone-1 $105.00
+[shp-02] case 1/10: grams=1226 zone=zone-2
+[shp-02]   got label=parcel/zone-2 $8.40
+[shp-02]   want label=parcel/zone-2 $8.40
+[shp-02] case 2/10: grams=1491 zone=zone-3
+[shp-02]   got label=parcel/zone-3 $11.40
+[shp-02]   want label=parcel/zone-3 $11.40
+[shp-02] case 3/10: grams=6008 zone=zone-1
+[shp-02]   got label=freight/zone-1 $24.00
+[shp-02]   want label=freight/zone-1 $24.00
+[shp-02] case 4/10: grams=10893 zone=zone-2
+[shp-02]   got label=freight/zone-2 $33.60
+[shp-02]   want label=freight/zone-2 $33.60
+[shp-02] case 5/10: grams=18500 zone=zone-3
+[shp-02]   got label=freight/zone-3 $45.60
+[shp-02]   want label=freight/zone-3 $45.60
+[shp-02] case 6/10: grams=38085 zone=zone-1
+[shp-02]   got label=pallet/zone-1 $105.00
+[shp-02]   want label=pallet/zone-1 $105.00
+[shp-02] case 7/10: grams=166 zone=zone-2
+[shp-02]   got label=letter/zone-2 $2.10
+[shp-02]   want label=letter/zone-2 $2.10
+[shp-02] case 8/10: grams=431 zone=zone-3
+[shp-02]   got label=letter/zone-3 $2.85
+[shp-02]   want label=letter/zone-3 $2.85
+[shp-02] case 9/10: grams=696 zone=zone-1
+[shp-02]   got label=parcel/zone-1 $6.00
+[shp-02]   want label=parcel/zone-1 $6.00
+[shp-02] case 10/10: grams=961 zone=zone-2
+[shp-02]   got label=parcel/zone-2 $8.40
+[shp-02]   want label=parcel/zone-2 $8.40
+[shp-03] case 1/10: grams=14801 zone=zone-3
+[shp-03]   got label=freight/zone-3 $45.60
+[shp-03]   want label=freight/zone-3 $45.60
+[shp-03] case 2/10: grams=34168 zone=zone-1
+[shp-03]   got label=pallet/zone-1 $105.00
+[shp-03]   want label=pallet/zone-1 $105.00
+[shp-03] case 3/10: grams=113 zone=zone-2
+[shp-03]   got label=letter/zone-2 $2.10
+[shp-03]   want label=letter/zone-2 $2.10
+[shp-03] case 4/10: grams=378 zone=zone-3
+[shp-03]   got label=letter/zone-3 $2.85
+[shp-03]   want label=letter/zone-3 $2.85
+[shp-03] case 5/10: grams=643 zone=zone-1
+[shp-03]   got label=parcel/zone-1 $6.00
+[shp-03]   want label=parcel/zone-1 $6.00
+[shp-03] case 6/10: grams=908 zone=zone-2
+[shp-03]   got label=parcel/zone-2 $8.40
+[shp-03]   want label=parcel/zone-2 $8.40
+[shp-03] case 7/10: grams=1173 zone=zone-3
+[shp-03]   got label=parcel/zone-3 $11.40
+[shp-03]   want label=parcel/zone-3 $11.40
+[shp-03] case 8/10: grams=1438 zone=zone-1
+[shp-03]   got label=parcel/zone-1 $6.00
+[shp-03]   want label=parcel/zone-1 $6.00
+[shp-03] case 9/10: grams=5031 zone=zone-2
+[shp-03]   got label=freight/zone-2 $33.60
+[shp-03]   want label=freight/zone-2 $33.60
+[shp-03] case 10/10: grams=9916 zone=zone-3
+[shp-03]   got label=freight/zone-3 $45.60
+[shp-03]   want label=freight/zone-3 $45.60
+[shp-04] case 1/10: grams=590 zone=zone-1
+[shp-04]   got label=parcel/zone-1 $6.00
+[shp-04]   want label=parcel/zone-1 $6.00
+[shp-04] case 2/10: grams=855 zone=zone-2
+[shp-04]   got label=parcel/zone-2 $8.40
+[shp-04]   want label=parcel/zone-2 $8.40
+[shp-04] case 3/10: grams=1120 zone=zone-3
+[shp-04]   got label=parcel/zone-3 $11.40
+[shp-04]   want label=parcel/zone-3 $11.40
+[shp-04] case 4/10: grams=1385 zone=zone-1
+[shp-04]   got label=parcel/zone-1 $6.00
+[shp-04]   want label=parcel/zone-1 $6.00
+[shp-04] case 5/10: grams=4054 zone=zone-2
+[shp-04]   got label=freight/zone-2 $33.60
+[shp-04]   want label=freight/zone-2 $33.60
+[shp-04] case 6/10: grams=8939 zone=zone-3
+[shp-04]   got label=freight/zone-3 $45.60
+[shp-04]   want label=freight/zone-3 $45.60
+[shp-04] case 7/10: grams=13824 zone=zone-1
+[shp-04]   got label=freight/zone-1 $24.00
+[shp-04]   want label=freight/zone-1 $24.00
+[shp-04] case 8/10: grams=30251 zone=zone-2
+[shp-04]   got label=pallet/zone-2 $147.00
+[shp-04]   want label=pallet/zone-2 $147.00
+[shp-04] case 9/10: grams=60 zone=zone-3
+[shp-04]   got label=letter/zone-3 $2.85
+[shp-04]   want label=letter/zone-3 $2.85
+[shp-04] case 10/10: grams=325 zone=zone-1
+[shp-04]   got label=letter/zone-1 $1.50
+[shp-04]   want label=letter/zone-1 $1.50
+[shp-05] case 1/10: grams=3077 zone=zone-2
+[shp-05]   got label=freight/zone-2 $33.60
+[shp-05]   want label=freight/zone-2 $33.60
+[shp-05] case 2/10: grams=7962 zone=zone-3
+[shp-05]   got label=freight/zone-3 $45.60
+[shp-05]   want label=freight/zone-3 $45.60
+[shp-05] case 3/10: grams=12847 zone=zone-1
+[shp-05]   got label=freight/zone-1 $24.00
+[shp-05]   want label=freight/zone-1 $24.00
+[shp-05] case 4/10: grams=26334 zone=zone-2
+[shp-05]   got label=pallet/zone-2 $147.00
+[shp-05]   want label=pallet/zone-2 $147.00
+[shp-05] case 5/10: grams=45919 zone=zone-3
+[shp-05]   got label=pallet/zone-3 $199.50
+[shp-05]   want label=pallet/zone-3 $199.50
+[shp-05] case 6/10: grams=272 zone=zone-1
+[shp-05]   got label=letter/zone-1 $1.50
+[shp-05]   want label=letter/zone-1 $1.50
+[shp-05] case 7/10: grams=537 zone=zone-2
+[shp-05]   got label=parcel/zone-2 $8.40
+[shp-05]   want label=parcel/zone-2 $8.40
+[shp-05] case 8/10: grams=802 zone=zone-3
+[shp-05]   got label=parcel/zone-3 $11.40
+[shp-05]   want label=parcel/zone-3 $11.40
+[shp-05] case 9/10: grams=1067 zone=zone-1
+[shp-05]   got label=parcel/zone-1 $6.00
+[shp-05]   want label=parcel/zone-1 $6.00
+[shp-05] case 10/10: grams=1332 zone=zone-2
+[shp-05]   got label=parcel/zone-2 $8.40
+[shp-05]   want label=parcel/zone-2 $8.40
+[shp-06] case 1/10: grams=42002 zone=zone-3
+[shp-06]   got label=pallet/zone-3 $199.50
+[shp-06]   want label=pallet/zone-3 $199.50
+[shp-06] case 2/10: grams=219 zone=zone-1
+[shp-06]   got label=letter/zone-1 $1.50
+[shp-06]   want label=letter/zone-1 $1.50
+[shp-06] case 3/10: grams=484 zone=zone-2
+[shp-06]   got label=letter/zone-2 $2.10
+[shp-06]   want label=letter/zone-2 $2.10
+[shp-06] case 4/10: grams=749 zone=zone-3
+[shp-06]   got label=parcel/zone-3 $11.40
+[shp-06]   want label=parcel/zone-3 $11.40
+[shp-06] case 5/10: grams=1014 zone=zone-1
+[shp-06]   got label=parcel/zone-1 $6.00
+[shp-06]   want label=parcel/zone-1 $6.00
+[shp-06] case 6/10: grams=1279 zone=zone-2
+[shp-06]   got label=parcel/zone-2 $8.40
+[shp-06]   want label=parcel/zone-2 $8.40
+[shp-06] case 7/10: grams=2100 zone=zone-3
+[shp-06]   got label=freight/zone-3 $45.60
+[shp-06]   want label=freight/zone-3 $45.60
+[shp-06] case 8/10: grams=6985 zone=zone-1
+[shp-06]   got label=freight/zone-1 $24.00
+[shp-06]   want label=freight/zone-1 $24.00
+[shp-06] case 9/10: grams=11870 zone=zone-2
+[shp-06]   got label=freight/zone-2 $33.60
+[shp-06]   want label=freight/zone-2 $33.60
+[shp-06] case 10/10: grams=22417 zone=zone-3
+[shp-06]   got label=pallet/zone-3 $199.50
+[shp-06]   want label=pallet/zone-3 $199.50
+[shp-07] case 1/10: grams=272 zones=zone-1+zone-2
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 2/10: grams=749 zones=zone-2+zone-3
+[shp-07]   got zone=zone-2
+[shp-07]   want zone=zone-2
+[shp-07] case 3/10: grams=1226 zones=zone-1+zone-3
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 4/10: grams=5031 zones=zone-1+zone-2+zone-3
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 5/10: grams=13824 zones=zone-3+zone-1
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 6/10: grams=45919 zones=zone-2+zone-1
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 7/10: grams=484 zones=zone-1+zone-2
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 8/10: grams=961 zones=zone-2+zone-3
+[shp-07]   got zone=zone-2
+[shp-07]   want zone=zone-2
+[shp-07] case 9/10: grams=1438 zones=zone-1+zone-3
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-07] case 10/10: grams=8939 zones=zone-1+zone-2+zone-3
+[shp-07]   got zone=zone-1
+[shp-07]   want zone=zone-1
+[shp-08] case 1/10: grams=1491 zones=zone-2+zone-3
+[shp-08]   got zone=zone-2
+[shp-08]   want zone=zone-2
+[shp-08] case 2/10: grams=9916 zones=zone-1+zone-3
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 3/10: grams=30251 zones=zone-1+zone-2+zone-3
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 4/10: grams=272 zones=zone-3+zone-1
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 5/10: grams=749 zones=zone-2+zone-1
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 6/10: grams=1226 zones=zone-1+zone-2
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 7/10: grams=5031 zones=zone-2+zone-3
+[shp-08]   got zone=zone-2
+[shp-08]   want zone=zone-2
+[shp-08] case 8/10: grams=13824 zones=zone-1+zone-3
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 9/10: grams=45919 zones=zone-1+zone-2+zone-3
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-08] case 10/10: grams=484 zones=zone-3+zone-1
+[shp-08]   got zone=zone-1
+[shp-08]   want zone=zone-1
+[shp-09] case 1/10: grams=60 zones=zone-1+zone-3
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 2/10: grams=537 zones=zone-1+zone-2+zone-3
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 3/10: grams=1014 zones=zone-3+zone-1
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 4/10: grams=1491 zones=zone-2+zone-1
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 5/10: grams=9916 zones=zone-1+zone-2
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 6/10: grams=30251 zones=zone-2+zone-3
+[shp-09]   got zone=zone-2
+[shp-09]   want zone=zone-2
+[shp-09] case 7/10: grams=272 zones=zone-1+zone-3
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 8/10: grams=749 zones=zone-1+zone-2+zone-3
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 9/10: grams=1226 zones=zone-3+zone-1
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-09] case 10/10: grams=5031 zones=zone-2+zone-1
+[shp-09]   got zone=zone-1
+[shp-09]   want zone=zone-1
+[shp-10] case 1/10: grams=1279 zones=zone-1+zone-2+zone-3
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 2/10: grams=6008 zones=zone-3+zone-1
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 3/10: grams=14801 zones=zone-2+zone-1
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 4/10: grams=60 zones=zone-1+zone-2
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 5/10: grams=537 zones=zone-2+zone-3
+[shp-10]   got zone=zone-2
+[shp-10]   want zone=zone-2
+[shp-10] case 6/10: grams=1014 zones=zone-1+zone-3
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 7/10: grams=1491 zones=zone-1+zone-2+zone-3
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 8/10: grams=9916 zones=zone-3+zone-1
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 9/10: grams=30251 zones=zone-2+zone-1
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-10] case 10/10: grams=272 zones=zone-1+zone-2
+[shp-10]   got zone=zone-1
+[shp-10]   want zone=zone-1
+[shp-11] case 1/10: grams=34168 zones=zone-3+zone-1
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 2/10: grams=325 zones=zone-2+zone-1
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 3/10: grams=802 zones=zone-1+zone-2
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 4/10: grams=1279 zones=zone-2+zone-3
+[shp-11]   got zone=zone-2
+[shp-11]   want zone=zone-2
+[shp-11] case 5/10: grams=6008 zones=zone-1+zone-3
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 6/10: grams=14801 zones=zone-1+zone-2+zone-3
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 7/10: grams=60 zones=zone-3+zone-1
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 8/10: grams=537 zones=zone-2+zone-1
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 9/10: grams=1014 zones=zone-1+zone-2
+[shp-11]   got zone=zone-1
+[shp-11]   want zone=zone-1
+[shp-11] case 10/10: grams=1491 zones=zone-2+zone-3
+[shp-11]   got zone=zone-2
+[shp-11]   want zone=zone-2
+[shp-12] case 1/10: grams=1067 zones=zone-2+zone-1
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 2/10: grams=2100 zones=zone-1+zone-2
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 3/10: grams=10893 zones=zone-2+zone-3
+[shp-12]   got zone=zone-2
+[shp-12]   want zone=zone-2
+[shp-12] case 4/10: grams=34168 zones=zone-1+zone-3
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 5/10: grams=325 zones=zone-1+zone-2+zone-3
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 6/10: grams=802 zones=zone-3+zone-1
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 7/10: grams=1279 zones=zone-2+zone-1
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 8/10: grams=6008 zones=zone-1+zone-2
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-12] case 9/10: grams=14801 zones=zone-2+zone-3
+[shp-12]   got zone=zone-2
+[shp-12]   want zone=zone-2
+[shp-12] case 10/10: grams=60 zones=zone-1+zone-3
+[shp-12]   got zone=zone-1
+[shp-12]   want zone=zone-1
+[shp-13] case 1/10: grams=325 zone=zone-1
+[shp-13]   got tier=letter cents=150
+[shp-13]   want tier=letter cents=150
+[shp-13] case 2/10: grams=908 zone=zone-2
+[shp-13]   got tier=parcel cents=840
+[shp-13]   want tier=parcel cents=840
+[shp-13] case 3/10: grams=1491 zone=zone-3
+[shp-13]   got tier=parcel cents=1140
+[shp-13]   want tier=parcel cents=1140
+[shp-13] case 4/10: grams=11870 zone=zone-1
+[shp-13]   got tier=freight cents=2400
+[shp-13]   want tier=freight cents=2400
+[shp-13] case 5/10: grams=45919 zone=zone-2
+[shp-13]   got tier=pallet cents=14700
+[shp-13]   want tier=pallet cents=14700
+[shp-13] case 6/10: grams=590 zone=zone-3
+[shp-13]   got tier=parcel cents=1140
+[shp-13]   want tier=parcel cents=1140
+[shp-13] case 7/10: grams=1173 zone=zone-1
+[shp-13]   got tier=parcel cents=600
+[shp-13]   want tier=parcel cents=600
+[shp-13] case 8/10: grams=6008 zone=zone-2
+[shp-13]   got tier=freight cents=3360
+[shp-13]   want tier=freight cents=3360
+[shp-13] case 9/10: grams=22417 zone=zone-3
+[shp-13]   got tier=pallet cents=19950
+[shp-13]   want tier=pallet cents=19950
+[shp-13] case 10/10: grams=272 zone=zone-1
+[shp-13]   got tier=letter cents=150
+[shp-13]   want tier=letter cents=150
+[shp-14] case 1/10: grams=7962 zone=zone-3
+[shp-14]   got tier=freight cents=4560
+[shp-14]   want tier=freight cents=4560
+[shp-14] case 2/10: grams=30251 zone=zone-1
+[shp-14]   got tier=pallet cents=10500
+[shp-14]   want tier=pallet cents=10500
+[shp-14] case 3/10: grams=378 zone=zone-2
+[shp-14]   got tier=letter cents=210
+[shp-14]   want tier=letter cents=210
+[shp-14] case 4/10: grams=961 zone=zone-3
+[shp-14]   got tier=parcel cents=1140
+[shp-14]   want tier=parcel cents=1140
+[shp-14] case 5/10: grams=2100 zone=zone-1
+[shp-14]   got tier=freight cents=2400
+[shp-14]   want tier=freight cents=2400
+[shp-14] case 6/10: grams=12847 zone=zone-2
+[shp-14]   got tier=freight cents=3360
+[shp-14]   want tier=freight cents=3360
+[shp-14] case 7/10: grams=60 zone=zone-3
+[shp-14]   got tier=letter cents=285
+[shp-14]   want tier=letter cents=285
+[shp-14] case 8/10: grams=643 zone=zone-1
+[shp-14]   got tier=parcel cents=600
+[shp-14]   want tier=parcel cents=600
+[shp-14] case 9/10: grams=1226 zone=zone-2
+[shp-14]   got tier=parcel cents=840
+[shp-14]   want tier=parcel cents=840
+[shp-14] case 10/10: grams=6985 zone=zone-3
+[shp-14]   got tier=freight cents=4560
+[shp-14]   want tier=freight cents=4560
+[shp-15] case 1/10: grams=749 zone=zone-2
+[shp-15]   got tier=parcel cents=840
+[shp-15]   want tier=parcel cents=840
+[shp-15] case 2/10: grams=1332 zone=zone-3
+[shp-15]   got tier=parcel cents=1140
+[shp-15]   want tier=parcel cents=1140
+[shp-15] case 3/10: grams=8939 zone=zone-1
+[shp-15]   got tier=freight cents=2400
+[shp-15]   want tier=freight cents=2400
+[shp-15] case 4/10: grams=34168 zone=zone-2
+[shp-15]   got tier=pallet cents=14700
+[shp-15]   want tier=pallet cents=14700
+[shp-15] case 5/10: grams=431 zone=zone-3
+[shp-15]   got tier=letter cents=285
+[shp-15]   want tier=letter cents=285
+[shp-15] case 6/10: grams=1014 zone=zone-1
+[shp-15]   got tier=parcel cents=600
+[shp-15]   want tier=parcel cents=600
+[shp-15] case 7/10: grams=3077 zone=zone-2
+[shp-15]   got tier=freight cents=3360
+[shp-15]   want tier=freight cents=3360
+[shp-15] case 8/10: grams=13824 zone=zone-3
+[shp-15]   got tier=freight cents=4560
+[shp-15]   want tier=freight cents=4560
+[shp-15] case 9/10: grams=113 zone=zone-1
+[shp-15]   got tier=letter cents=150
+[shp-15]   want tier=letter cents=150
+[shp-15] case 10/10: grams=696 zone=zone-2
+[shp-15]   got tier=parcel cents=840
+[shp-15]   want tier=parcel cents=840
+[shp-16] case 1/10: grams=18500 zone=zone-1
+[shp-16]   got tier=freight cents=2400
+[shp-16]   want tier=freight cents=2400
+[shp-16] case 2/10: grams=219 zone=zone-2
+[shp-16]   got tier=letter cents=210
+[shp-16]   want tier=letter cents=210
+[shp-16] case 3/10: grams=802 zone=zone-3
+[shp-16]   got tier=parcel cents=1140
+[shp-16]   want tier=parcel cents=1140
+[shp-16] case 4/10: grams=1385 zone=zone-1
+[shp-16]   got tier=parcel cents=600
+[shp-16]   want tier=parcel cents=600
+[shp-16] case 5/10: grams=9916 zone=zone-2
+[shp-16]   got tier=freight cents=3360
+[shp-16]   want tier=freight cents=3360
+[shp-16] case 6/10: grams=38085 zone=zone-3
+[shp-16]   got tier=pallet cents=19950
+[shp-16]   want tier=pallet cents=19950
+[shp-16] case 7/10: grams=484 zone=zone-1
+[shp-16]   got tier=letter cents=150
+[shp-16]   want tier=letter cents=150
+[shp-16] case 8/10: grams=1067 zone=zone-2
+[shp-16]   got tier=parcel cents=840
+[shp-16]   want tier=parcel cents=840
+[shp-16] case 9/10: grams=4054 zone=zone-3
+[shp-16]   got tier=freight cents=4560
+[shp-16]   want tier=freight cents=4560
+[shp-16] case 10/10: grams=14801 zone=zone-1
+[shp-16]   got tier=freight cents=2400
+[shp-16]   want tier=freight cents=2400
+[shp-17] case 1/10: grams=468 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 2/10: grams=472 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 3/10: grams=476 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 4/10: grams=480 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 5/10: grams=484 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 6/10: grams=488 zone=zone-1
+[shp-17]   got tier=letter cents=150
+[shp-17]   want tier=letter cents=150
+[shp-17] case 7/10: grams=500 zone=zone-1
+[shp-17]   got tier=parcel cents=600
+[shp-17]   want tier=letter cents=150
+[shp-18] case 1/10: grams=60 zone=zone-2
+[shp-18]   got tier=letter cents=210
+[shp-18]   want tier=letter cents=210
+[shp-18] case 2/10: grams=643 zone=zone-3
+[shp-18]   got tier=parcel cents=1140
+[shp-18]   want tier=parcel cents=1140
+[shp-18] case 3/10: grams=1226 zone=zone-1
+[shp-18]   got tier=parcel cents=600
+[shp-18]   want tier=parcel cents=600
+[shp-18] case 4/10: grams=6985 zone=zone-2
+[shp-18]   got tier=freight cents=3360
+[shp-18]   want tier=freight cents=3360
+[shp-18] case 5/10: grams=26334 zone=zone-3
+[shp-18]   got tier=pallet cents=19950
+[shp-18]   want tier=pallet cents=19950
+[shp-18] case 6/10: grams=325 zone=zone-1
+[shp-18]   got tier=letter cents=150
+[shp-18]   want tier=letter cents=150
+[shp-18] case 7/10: grams=908 zone=zone-2
+[shp-18]   got tier=parcel cents=840
+[shp-18]   want tier=parcel cents=840
+[shp-18] case 8/10: grams=1491 zone=zone-3
+[shp-18]   got tier=parcel cents=1140
+[shp-18]   want tier=parcel cents=1140
+[shp-18] case 9/10: grams=11870 zone=zone-1
+[shp-18]   got tier=freight cents=2400
+[shp-18]   want tier=freight cents=2400
+[shp-18] case 10/10: grams=45919 zone=zone-2
+[shp-18]   got tier=pallet cents=14700
+[shp-18]   want tier=pallet cents=14700
+[shp-19] case 1/10: grams=378
+[shp-19]   got tier=letter
+[shp-19]   want tier=letter
+[shp-19] case 2/10: grams=1067
+[shp-19]   got tier=parcel
+[shp-19]   want tier=parcel
+[shp-19] case 3/10: grams=6008
+[shp-19]   got tier=freight
+[shp-19]   want tier=freight
+[shp-19] case 4/10: grams=30251
+[shp-19]   got tier=pallet
+[shp-19]   want tier=pallet
+[shp-19] case 5/10: grams=484
+[shp-19]   got tier=letter
+[shp-19]   want tier=letter
+[shp-19] case 6/10: grams=1173
+[shp-19]   got tier=parcel
+[shp-19]   want tier=parcel
+[shp-19] case 7/10: grams=7962
+[shp-19]   got tier=freight
+[shp-19]   want tier=freight
+[shp-19] case 8/10: grams=38085
+[shp-19]   got tier=pallet
+[shp-19]   want tier=pallet
+[shp-19] case 9/10: grams=590
+[shp-19]   got tier=parcel
+[shp-19]   want tier=parcel
+[shp-19] case 10/10: grams=1279
+[shp-19]   got tier=parcel
+[shp-19]   want tier=parcel
+[shp-20] case 1/10: grams=10893
+[shp-20]   got tier=freight
+[shp-20]   want tier=freight
+[shp-20] case 2/10: grams=60
+[shp-20]   got tier=letter
+[shp-20]   want tier=letter
+[shp-20] case 3/10: grams=749
+[shp-20]   got tier=parcel
+[shp-20]   want tier=parcel
+[shp-20] case 4/10: grams=1438
+[shp-20]   got tier=parcel
+[shp-20]   want tier=parcel
+[shp-20] case 5/10: grams=12847
+[shp-20]   got tier=freight
+[shp-20]   want tier=freight
+[shp-20] case 6/10: grams=166
+[shp-20]   got tier=letter
+[shp-20]   want tier=letter
+[shp-20] case 7/10: grams=855
+[shp-20]   got tier=parcel
+[shp-20]   want tier=parcel
+[shp-20] case 8/10: grams=2100
+[shp-20]   got tier=freight
+[shp-20]   want tier=freight
+[shp-20] case 9/10: grams=14801
+[shp-20]   got tier=freight
+[shp-20]   want tier=freight
+[shp-20] case 10/10: grams=272
+[shp-20]   got tier=letter
+[shp-20]   want tier=letter
+[shp-21] case 1/10: grams=1014
+[shp-21]   got tier=parcel
+[shp-21]   want tier=parcel
+[shp-21] case 2/10: grams=5031
+[shp-21]   got tier=freight
+[shp-21]   want tier=freight
+[shp-21] case 3/10: grams=26334
+[shp-21]   got tier=pallet
+[shp-21]   want tier=pallet
+[shp-21] case 4/10: grams=431
+[shp-21]   got tier=letter
+[shp-21]   want tier=letter
+[shp-21] case 5/10: grams=1120
+[shp-21]   got tier=parcel
+[shp-21]   want tier=parcel
+[shp-21] case 6/10: grams=6985
+[shp-21]   got tier=freight
+[shp-21]   want tier=freight
+[shp-21] case 7/10: grams=34168
+[shp-21]   got tier=pallet
+[shp-21]   want tier=pallet
+[shp-21] case 8/10: grams=537
+[shp-21]   got tier=parcel
+[shp-21]   want tier=parcel
+[shp-21] case 9/10: grams=1226
+[shp-21]   got tier=parcel
+[shp-21]   want tier=parcel
+[shp-21] case 10/10: grams=8939
+[shp-21]   got tier=freight
+[shp-21]   want tier=freight
+[shp-22] case 1/10: grams=45919
+[shp-22]   got tier=pallet
+[shp-22]   want tier=pallet
+[shp-22] case 2/10: grams=696
+[shp-22]   got tier=parcel
+[shp-22]   want tier=parcel
+[shp-22] case 3/10: grams=1385
+[shp-22]   got tier=parcel
+[shp-22]   want tier=parcel
+[shp-22] case 4/10: grams=11870
+[shp-22]   got tier=freight
+[shp-22]   want tier=freight
+[shp-22] case 5/10: grams=113
+[shp-22]   got tier=letter
+[shp-22]   want tier=letter
+[shp-22] case 6/10: grams=802
+[shp-22]   got tier=parcel
+[shp-22]   want tier=parcel
+[shp-22] case 7/10: grams=1491
+[shp-22]   got tier=parcel
+[shp-22]   want tier=parcel
+[shp-22] case 8/10: grams=13824
+[shp-22]   got tier=freight
+[shp-22]   want tier=freight
+[shp-22] case 9/10: grams=219
+[shp-22]   got tier=letter
+[shp-22]   want tier=letter
+[shp-22] case 10/10: grams=908
+[shp-22]   got tier=parcel
+[shp-22]   want tier=parcel
+[shp-23] case 1/10: grams=4054
+[shp-23]   got tier=freight
+[shp-23]   want tier=freight
+[shp-23] case 2/10: grams=22417
+[shp-23]   got tier=pallet
+[shp-23]   want tier=pallet
+[shp-23] case 3/10: grams=378
+[shp-23]   got tier=letter
+[shp-23]   want tier=letter
+[shp-23] case 4/10: grams=1067
+[shp-23]   got tier=parcel
+[shp-23]   want tier=parcel
+[shp-23] case 5/10: grams=6008
+[shp-23]   got tier=freight
+[shp-23]   want tier=freight
+[shp-23] case 6/10: grams=30251
+[shp-23]   got tier=pallet
+[shp-23]   want tier=pallet
+[shp-23] case 7/10: grams=484
+[shp-23]   got tier=letter
+[shp-23]   want tier=letter
+[shp-23] case 8/10: grams=1173
+[shp-23]   got tier=parcel
+[shp-23]   want tier=parcel
+[shp-23] case 9/10: grams=7962
+[shp-23]   got tier=freight
+[shp-23]   want tier=freight
+[shp-23] case 10/10: grams=38085
+[shp-23]   got tier=pallet
+[shp-23]   want tier=pallet
+[shp-24] case 1/10: grams=643
+[shp-24]   got tier=parcel
+[shp-24]   want tier=parcel
+[shp-24] case 2/10: grams=1332
+[shp-24]   got tier=parcel
+[shp-24]   want tier=parcel
+[shp-24] case 3/10: grams=10893
+[shp-24]   got tier=freight
+[shp-24]   want tier=freight
+[shp-24] case 4/10: grams=60
+[shp-24]   got tier=letter
+[shp-24]   want tier=letter
+[shp-24] case 5/10: grams=749
+[shp-24]   got tier=parcel
+[shp-24]   want tier=parcel
+[shp-24] case 6/10: grams=1438
+[shp-24]   got tier=parcel
+[shp-24]   want tier=parcel
+[shp-24] case 7/10: grams=12847
+[shp-24]   got tier=freight
+[shp-24]   want tier=freight
+[shp-24] case 8/10: grams=166
+[shp-24]   got tier=letter
+[shp-24]   want tier=letter
+[shp-24] case 9/10: grams=855
+[shp-24]   got tier=parcel
+[shp-24]   want tier=parcel
+[shp-24] case 10/10: grams=2100
+[shp-24]   got tier=freight
+[shp-24]   want tier=freight
+▶ shipping labels
+  ✔ label batch 1 (0.4ms)
+  ✔ label batch 2 (0.4ms)
+  ✔ label batch 3 (0.4ms)
+  ✔ label batch 4 (0.4ms)
+  ✔ label batch 5 (0.4ms)
+  ✔ label batch 6 (0.4ms)
+✔ shipping labels (0.4ms)
+▶ cheapest zone selection
+  ✔ cheapest zone batch 1 (0.4ms)
+  ✔ cheapest zone batch 2 (0.4ms)
+  ✔ cheapest zone batch 3 (0.4ms)
+  ✔ cheapest zone batch 4 (0.4ms)
+  ✔ cheapest zone batch 5 (0.4ms)
+  ✔ cheapest zone batch 6 (0.4ms)
+✔ cheapest zone selection (0.4ms)
+▶ zone quotes
+  ✔ quote batch 1 (0.4ms)
+  ✔ quote batch 2 (0.4ms)
+  ✔ quote batch 3 (0.4ms)
+  ✔ quote batch 4 (0.4ms)
+  ✖ letter rate holds through the 500 g handbook ceiling (0.4ms)
+  ✔ quote batch 6 (0.4ms)
+✖ zone quotes (0.4ms)
+▶ tier classification via quotes
+  ✔ classification batch 1 (0.4ms)
+  ✔ classification batch 2 (0.4ms)
+  ✔ classification batch 3 (0.4ms)
+  ✔ classification batch 4 (0.4ms)
+  ✔ classification batch 5 (0.4ms)
+  ✔ classification batch 6 (0.4ms)
+✔ tier classification via quotes (0.4ms)
+ℹ tests 121
+ℹ suites 20
+ℹ pass 118
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80
+
+✖ failing tests:
+
+test at test-orders.mjs:233:3
+✖ counter packages pack as letters through the 500 g handbook ceiling (0.4ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'parcel' !== 'letter'
+  
+      at TestContext.<anonymous> (./test-orders.mjs:252:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'parcel',
+    expected: 'letter',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test-pricing.mjs:455:3
+✖ no surcharge applies through the 500 g letter ceiling (0.4ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  120 !== 0
+  
+      at TestContext.<anonymous> (./test-pricing.mjs:473:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 120,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at test-shipping.mjs:368:3
+✖ letter rate holds through the 500 g handbook ceiling (0.4ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'parcel' !== 'letter'
+  
+      at TestContext.<anonymous> (./test-shipping.mjs:386:14)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Suite.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'parcel',
+    expected: 'letter',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
