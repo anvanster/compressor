@@ -42,9 +42,10 @@ program
 program
   .command('status')
   .description('show installation state per agent')
-  .action(async () => {
+  .option('--global', 'report user-level (machine-wide) state instead of project state')
+  .action(async (opts: { global?: boolean }) => {
     const { runStatus } = await import('./commands/status.ts');
-    await runStatus();
+    await runStatus(opts.global === true);
   });
 
 program

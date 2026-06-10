@@ -77,9 +77,11 @@ export async function installForAgents(
   // agents-md) must not require either bundle to exist
   const needsHookBundle = agents.some((adapter) => adapter.name === 'claude-code');
   const ctx = buildContext(opts.global === true, mode, needsHookBundle);
-  if (agents.some((adapter) => adapter.name === 'copilot') && opts.global !== true) {
-    // existence check only: refuses to install a hook command that would fail
-    // on every tool call (Copilot postToolUse is fail-open = silent no-op)
+  const hasCopilot = agents.some((adapter) => adapter.name === 'copilot');
+  if (hasCopilot) {
+    // existence check only (both scopes — global installs the hook too):
+    // refuses to install a hook command that would fail on every tool call
+    // (Copilot postToolUse is fail-open = silent no-op)
     resolveCopilotHookCommand(mode);
   }
   for (const adapter of agents) {
@@ -95,6 +97,12 @@ export async function installForAgents(
   const names = agents.map((adapter) => adapter.name).join(', ');
   const suffix = opts.dryRun === true ? ' (dry-run: nothing written)' : '';
   console.log(`Mode ${mode} installed for ${names}. ${effectNote(agents)}${suffix}`);
+  if (hasCopilot && opts.global === true) {
+    const verb = opts.dryRun === true ? 'would be installed' : 'installed';
+    console.log(
+      `Copilot --global: hook ${verb} machine-wide (Copilot CLI); instructions were NOT installed (no global mechanism) — run init --agent copilot in each repo for instruction packs.`,
+    );
+  }
 }
 
 export async function runInit(opts: InitOptions): Promise<void> {

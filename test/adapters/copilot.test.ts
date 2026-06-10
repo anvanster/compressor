@@ -1,9 +1,10 @@
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import process from 'node:process';
 import { copilotAdapter } from '../../src/adapters/copilot.ts';
 import { applyChanges } from '../../src/adapters/apply.ts';
 import {
@@ -12,6 +13,17 @@ import {
   renderMarkedSection,
 } from '../../src/packs/render.ts';
 import type { AdapterContext } from '../../src/adapters/types.ts';
+
+// Hermeticity: the adapter reads $COPILOT_HOME for global-scope resolution —
+// a developer's real value must never leak into these tests. Cleared for the
+// whole file; tests that need it use withCopilotHome.
+const SAVED_COPILOT_HOME = process.env['COPILOT_HOME'];
+delete process.env['COPILOT_HOME'];
+after(() => {
+  if (SAVED_COPILOT_HOME !== undefined) {
+    process.env['COPILOT_HOME'] = SAVED_COPILOT_HOME;
+  }
+});
 
 const HOOK_COMMAND = 'node "/opt/compressor/dist/hook.js"';
 
@@ -30,6 +42,32 @@ function instructionsFile(ctx: AdapterContext): string {
 
 function hookConfigFile(ctx: AdapterContext): string {
   return path.join(ctx.projectDir, '.github', 'hooks', 'compressor.json');
+}
+
+function globalHookConfigFile(ctx: AdapterContext): string {
+  return path.join(ctx.homeDir, '.copilot', 'hooks', 'compressor.json');
+}
+
+/** Run with COPILOT_HOME set (or deleted when undefined), restoring after. */
+async function withCopilotHome(
+  value: string | undefined,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const saved = process.env['COPILOT_HOME'];
+  if (value === undefined) {
+    delete process.env['COPILOT_HOME'];
+  } else {
+    process.env['COPILOT_HOME'] = value;
+  }
+  try {
+    await fn();
+  } finally {
+    if (saved === undefined) {
+      delete process.env['COPILOT_HOME'];
+    } else {
+      process.env['COPILOT_HOME'] = saved;
+    }
+  }
 }
 
 const OUR_COPILOT_COMMAND_BASE = 'node "/opt/compressor/dist/copilot-hook.js"';
@@ -199,20 +237,235 @@ test('file ending in an unclosed code fence: install stays idempotent, uninstall
   assert.equal(await readFile(instructionsFile(ctx), 'utf8'), original);
 });
 
-test('--global install throws; global uninstall is a no-op', async () => {
-  const ctx = await makeCtx(true);
-  await assert.rejects(
-    copilotAdapter.install('slim', ctx),
-    /copilot: no user-global instruction mechanism; use project scope/,
-  );
-  assert.deepEqual(await copilotAdapter.uninstall(ctx), []);
+// Deliberate behavior change (global hooks phase): --global no longer throws.
+// User-scope hooks (<copilotHome>/hooks/, CLI >= 1.0.21) are real; global
+// install plans ONLY the hook config — instructions stay project-scoped.
+test('global install plans only the hook config under ~/.copilot/hooks — no instructions anywhere; idempotent', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(true);
+
+    const changes = await copilotAdapter.install('slim', ctx);
+    assert.equal(changes.length, 1);
+    assert.equal(changes[0]?.path, globalHookConfigFile(ctx));
+    await applyChanges(changes);
+
+    const raw = await readFile(globalHookConfigFile(ctx), 'utf8');
+    const config = JSON.parse(raw) as HookConfig;
+    assert.equal(config.version, 1);
+    assert.deepEqual(Object.keys(config.hooks), ['postToolUse']);
+    assert.equal(config.hooks['postToolUse']?.length, 1);
+    const entry = config.hooks['postToolUse']?.[0];
+    assert.ok(entry !== undefined);
+    assert.equal(entry['type'], 'command');
+    // quoted command with the --mode flag, same shape as project scope
+    assert.equal(entry['bash'], `${OUR_COPILOT_COMMAND_BASE} --mode slim`);
+    assert.equal(entry['powershell'], entry['bash']);
+    assert.equal(typeof entry['timeoutSec'], 'number');
+
+    // NEVER an instructions change at global scope — no file in the project,
+    // nothing outside the hook config in the fake home
+    assert.ok(!existsSync(instructionsFile(ctx)));
+    assert.ok(!existsSync(path.join(ctx.projectDir, '.github')));
+    assert.ok(!existsSync(path.join(ctx.homeDir, '.copilot', 'copilot-instructions.md')));
+
+    // idempotent: second install plans nothing; file byte-identical
+    assert.deepEqual(await copilotAdapter.install('slim', ctx), []);
+    assert.equal(await readFile(globalHookConfigFile(ctx), 'utf8'), raw);
+
+    // global uninstall deletes the file when only ours is in it
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+    assert.ok(!existsSync(globalHookConfigFile(ctx)));
+
+    // nothing of ours left: uninstall plans no changes
+    assert.deepEqual(await copilotAdapter.uninstall(ctx), []);
+  });
 });
 
-test('detect: requires a .github directory', async () => {
-  const ctx = await makeCtx();
-  assert.equal(await copilotAdapter.detect(ctx), false);
-  await mkdir(path.join(ctx.projectDir, '.github'), { recursive: true });
-  assert.equal(await copilotAdapter.detect(ctx), true);
+test('COPILOT_HOME overrides the global hook location', async () => {
+  const ctx = await makeCtx(true);
+  const copilotHome = path.join(path.dirname(ctx.projectDir), 'copilot-home');
+  await withCopilotHome(copilotHome, async () => {
+    await applyChanges(await copilotAdapter.install('optimized', ctx));
+
+    const file = path.join(copilotHome, 'hooks', 'compressor.json');
+    const config = JSON.parse(await readFile(file, 'utf8')) as HookConfig;
+    assert.equal(
+      config.hooks['postToolUse']?.[0]?.['bash'],
+      `${OUR_COPILOT_COMMAND_BASE} --mode optimized`,
+    );
+    // nothing written under the default ~/.copilot
+    assert.ok(!existsSync(path.join(ctx.homeDir, '.copilot')));
+
+    // detect/status/uninstall all honor the override
+    assert.equal(await copilotAdapter.detect(ctx), true);
+    const status = await copilotAdapter.status(ctx);
+    assert.equal(status.installed, true);
+    assert.match(status.detail, /\$COPILOT_HOME\/hooks\/compressor\.json \(global\)/);
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+    assert.ok(!existsSync(file));
+  });
+});
+
+test('regression: relative or tilde COPILOT_HOME is refused — global scope must never anchor to cwd', async () => {
+  // '.copilot-custom' would land under process.cwd() (inside the project tree,
+  // committable; stranded for uninstall from any other cwd); '~/copilot-home'
+  // is a literal tilde — Node never expands ~ — so it is relative too.
+  for (const value of ['.copilot-custom', '~/copilot-home']) {
+    await withCopilotHome(value, async () => {
+      const ctx = await makeCtx(true);
+      const refused = /COPILOT_HOME=.* is not an absolute path/;
+
+      // every scope decision routes through copilotHome — all four refuse
+      await assert.rejects(copilotAdapter.install('slim', ctx), refused);
+      await assert.rejects(copilotAdapter.uninstall(ctx), refused);
+      await assert.rejects(copilotAdapter.detect(ctx), refused);
+      await assert.rejects(copilotAdapter.status(ctx), refused);
+
+      // project-scope status inspects the global hook for its cross-scope
+      // note — it must refuse rather than report a cwd-dependent location
+      const projectCtx: AdapterContext = { ...ctx, global: false };
+      await assert.rejects(copilotAdapter.status(projectCtx), refused);
+
+      // nothing was planned, so nothing can leak into the current directory
+      assert.ok(!existsSync(path.join(process.cwd(), value)));
+      assert.ok(!existsSync(path.join(process.cwd(), '~')));
+      // and nothing fell back to the default home either
+      assert.ok(!existsSync(path.join(ctx.homeDir, '.copilot')));
+    });
+  }
+});
+
+test('regression: whitespace-only COPILOT_HOME counts as unset — default ~/.copilot used', async () => {
+  await withCopilotHome('   ', async () => {
+    const ctx = await makeCtx(true);
+
+    const changes = await copilotAdapter.install('slim', ctx);
+    assert.equal(changes.length, 1);
+    // planned under the fake home's ~/.copilot, never '   /hooks/...' in cwd
+    assert.equal(changes[0]?.path, globalHookConfigFile(ctx));
+    await applyChanges(changes);
+    assert.ok(!existsSync(path.join(process.cwd(), '   ')));
+
+    // display also treats it as unset: ~/.copilot, not $COPILOT_HOME
+    const status = await copilotAdapter.status(ctx);
+    assert.equal(status.installed, true);
+    assert.match(status.detail, /~\/\.copilot\/hooks\/compressor\.json \(global\)/);
+
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+    assert.ok(!existsSync(globalHookConfigFile(ctx)));
+  });
+});
+
+test('global config: foreign entry preserved through install, mode switch, and uninstall', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(true);
+    const foreign = {
+      type: 'command',
+      bash: './scripts/audit.sh',
+      timeoutSec: 5,
+    };
+    const original = `${JSON.stringify(
+      { version: 1, hooks: { postToolUse: [foreign] } },
+      null,
+      2,
+    )}\n`;
+    await mkdir(path.dirname(globalHookConfigFile(ctx)), { recursive: true });
+    await writeFile(globalHookConfigFile(ctx), original, 'utf8');
+
+    await applyChanges(await copilotAdapter.install('slim', ctx));
+    const installed = JSON.parse(
+      await readFile(globalHookConfigFile(ctx), 'utf8'),
+    ) as HookConfig;
+    assert.equal(installed.hooks['postToolUse']?.length, 2);
+    assert.deepEqual(installed.hooks['postToolUse']?.[0], foreign);
+    assert.equal(
+      installed.hooks['postToolUse']?.[1]?.['bash'],
+      `${OUR_COPILOT_COMMAND_BASE} --mode slim`,
+    );
+
+    // mode switch replaces only our entry's --mode flag — no duplicates
+    await applyChanges(await copilotAdapter.install('optimized', ctx));
+    const switched = JSON.parse(
+      await readFile(globalHookConfigFile(ctx), 'utf8'),
+    ) as HookConfig;
+    assert.equal(switched.hooks['postToolUse']?.length, 2);
+    assert.deepEqual(switched.hooks['postToolUse']?.[0], foreign);
+    assert.equal(
+      switched.hooks['postToolUse']?.[1]?.['bash'],
+      `${OUR_COPILOT_COMMAND_BASE} --mode optimized`,
+    );
+
+    // uninstall strips only ours; foreign-bearing file kept byte-equal
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+    assert.equal(await readFile(globalHookConfigFile(ctx), 'utf8'), original);
+  });
+});
+
+test('status: global detail + project cross-scope notes', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(); // project scope
+    const globalCtx: AdapterContext = { ...ctx, global: true };
+
+    // nothing anywhere: both scopes report not installed
+    const empty = await copilotAdapter.status(globalCtx);
+    assert.equal(empty.installed, false);
+    assert.equal(empty.detail, 'not installed');
+
+    // only global installed
+    await applyChanges(await copilotAdapter.install('slim', globalCtx));
+    const globalStatus = await copilotAdapter.status(globalCtx);
+    assert.equal(globalStatus.installed, true);
+    assert.equal(globalStatus.mode, 'slim');
+    assert.match(
+      globalStatus.detail,
+      /~\/\.copilot\/hooks\/compressor\.json \(global\)/,
+    );
+    assert.match(
+      globalStatus.detail,
+      /machine-wide input compression for Copilot CLI on this machine/,
+    );
+    assert.match(globalStatus.detail, /instructions are per-repo/);
+    assert.match(globalStatus.detail, /IDE runs no hook files/);
+    assert.match(
+      globalStatus.detail,
+      /cloud agent reads only \.github\/hooks on the default branch/,
+    );
+
+    // project ctx with only global installed: scope-faithful primary line
+    // plus the cross-scope note (mode surfaced from the global hook)
+    const projectOnly = await copilotAdapter.status(ctx);
+    assert.match(projectOnly.detail, /^not installed \(project\)/);
+    assert.match(projectOnly.detail, /installed globally \(machine-wide hook\)/);
+    assert.equal(projectOnly.mode, 'slim');
+
+    // BOTH scopes installed: project detail appends the also-globally note
+    await applyChanges(await copilotAdapter.install('optimized', ctx));
+    const both = await copilotAdapter.status(ctx);
+    assert.equal(both.installed, true);
+    assert.equal(both.mode, 'optimized');
+    assert.match(both.detail, /instructions \+ input compression/);
+    assert.match(both.detail, /also installed globally \(machine-wide hook\)/);
+
+    // project-only after global uninstall: no cross-scope note
+    await applyChanges(await copilotAdapter.uninstall(globalCtx));
+    const projectScoped = await copilotAdapter.status(ctx);
+    assert.doesNotMatch(projectScoped.detail, /globally/);
+  });
+});
+
+test('detect: requires a .github directory (project) or <copilotHome> (global)', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx();
+    assert.equal(await copilotAdapter.detect(ctx), false);
+    await mkdir(path.join(ctx.projectDir, '.github'), { recursive: true });
+    assert.equal(await copilotAdapter.detect(ctx), true);
+
+    // global scope keys on the copilot home dir, not .github
+    const globalCtx: AdapterContext = { ...ctx, global: true };
+    assert.equal(await copilotAdapter.detect(globalCtx), false);
+    await mkdir(path.join(ctx.homeDir, '.copilot'), { recursive: true });
+    assert.equal(await copilotAdapter.detect(globalCtx), true);
+  });
 });
 
 test('hook config: fresh install writes version 1 + our postToolUse entry; uninstall deletes the file', async () => {

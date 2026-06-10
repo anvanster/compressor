@@ -1,5 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import process from 'node:process';
 import type { PackMode } from '../packs/types.ts';
 import { parseAtomManifest, renderMarkedSection } from '../packs/render.ts';
 import { copilotHookCommandFrom } from '../paths.ts';
@@ -30,15 +31,21 @@ import type {
 //   installing machine; elsewhere the entry is a dead command that degrades
 //   to a logged fail-open no-op (postToolUse never blocks the agent).
 //   Status must not imply a cloud-agent benefit.
-// - ~/.copilot/hooks (user scope) exists since CLI v1.0.40 but is CLI-only
-//   and instructions have no user-global mechanism at all, so compressor
-//   installs at project scope only
+// - user-scope hooks (<copilotHome>/hooks/, CLI >= 1.0.21; copilotHome is
+//   $COPILOT_HOME when set, else ~/.copilot) load in Copilot CLI only. Global
+//   install therefore plans ONLY the hook config there — instructions have no
+//   user-global mechanism at all (personal instructions are a github.com web
+//   setting), the IDE runs no hook files, and the cloud agent reads only
+//   .github/hooks/ on the default branch.
 const HOOK_SURFACES_NOTE =
   'compression effective in Copilot CLI on this machine only — the hook command is an absolute local path (a fail-open no-op for cloud agent and teammates; the IDE runs no hook files)';
 const HOOK_MISSING_NOTE =
   'instructions only — compression hook not installed (.github/hooks/compressor.json)';
 const AGENTS_MD_OVERLAP_NOTE =
   'NOTE: Copilot also reads AGENTS.md — both installed means duplicated instructions';
+const GLOBAL_HOOK_NOTE =
+  'machine-wide input compression for Copilot CLI on this machine (instructions are per-repo; IDE runs no hook files; cloud agent reads only .github/hooks on the default branch)';
+const GLOBAL_CROSS_NOTE = 'installed globally (machine-wide hook)';
 
 /** Our hook config file under .github/hooks/ (any NAME.json is valid). */
 const HOOK_CONFIG_FILE = 'compressor.json';
@@ -56,6 +63,44 @@ function instructionsPath(ctx: AdapterContext): string {
 
 function hookConfigPath(ctx: AdapterContext): string {
   return path.join(ctx.projectDir, '.github', 'hooks', HOOK_CONFIG_FILE);
+}
+
+/**
+ * The effective $COPILOT_HOME override, or null when unset (whitespace-only
+ * counts as unset). Non-absolute values — including a literal `~`, which Node
+ * never expands — are refused: every scope decision (detect/install/uninstall/
+ * status) routes through this value, and a relative path would anchor the
+ * "machine-wide" hook to whatever directory the command happened to run from
+ * (global-to-project scope leakage; an uninstall from any other cwd could
+ * never find the file again).
+ */
+function copilotHomeOverride(): string | null {
+  const env = process.env['COPILOT_HOME'];
+  if (env === undefined || env.trim() === '') {
+    return null;
+  }
+  if (!path.isAbsolute(env)) {
+    throw new Error(
+      `COPILOT_HOME=${JSON.stringify(env)} is not an absolute path — refusing to anchor the machine-wide hook to the current directory (~ is not expanded; set an absolute path or unset it, then re-run)`,
+    );
+  }
+  return env;
+}
+
+/** $COPILOT_HOME when set (Copilot CLI honors it), else ~/.copilot. */
+function copilotHome(ctx: AdapterContext): string {
+  return copilotHomeOverride() ?? path.join(ctx.homeDir, '.copilot');
+}
+
+function globalHookConfigPath(ctx: AdapterContext): string {
+  return path.join(copilotHome(ctx), 'hooks', HOOK_CONFIG_FILE);
+}
+
+/** Human form of the global config location for status lines. */
+function globalHookConfigDisplay(): string {
+  return copilotHomeOverride() !== null
+    ? `$COPILOT_HOME/hooks/${HOOK_CONFIG_FILE}`
+    : `~/.copilot/hooks/${HOOK_CONFIG_FILE}`;
 }
 
 function agentsMdPath(ctx: AdapterContext): string {
@@ -257,13 +302,55 @@ function onlyVersionLeft(config: Record<string, unknown>): boolean {
   return Object.keys(config).every((key) => key === 'version');
 }
 
+/**
+ * Plan merging our entry into the hook config at `filePath` (project or
+ * global scope — the merge/ownership/foreign-preservation rules are
+ * identical; only the path differs).
+ */
+async function planHookConfigInstall(
+  filePath: string,
+  command: string,
+): Promise<FileChange> {
+  const before = await readFileOrNull(filePath);
+  const config = parseHookConfig(before);
+  mergeOurHook(config, command);
+  return { path: filePath, before, after: serializeHookConfig(config, before) };
+}
+
+/**
+ * Plan stripping our entry from the hook config at `filePath`. Returns null
+ * when there is nothing of ours to remove. compressor.json is our namespaced
+ * file: once only the version stub remains it is safe to delete; foreign
+ * entries/events keep it alive.
+ */
+async function planHookConfigUninstall(
+  filePath: string,
+  ourCommand: string,
+): Promise<FileChange | null> {
+  const before = await readFileOrNull(filePath);
+  if (before === null) {
+    return null;
+  }
+  const config = parseHookConfig(before);
+  if (!stripOurHook(config, ourCommand)) {
+    return null;
+  }
+  const after = onlyVersionLeft(config)
+    ? null
+    : serializeHookConfig(config, before);
+  return { path: filePath, before, after };
+}
+
 interface HookState {
   present: boolean;
   mode: PackMode | null;
 }
 
-async function inspectHook(ctx: AdapterContext): Promise<HookState> {
-  const text = await readFileOrNull(hookConfigPath(ctx));
+async function inspectHookAt(
+  filePath: string,
+  ourCommand: string,
+): Promise<HookState> {
+  const text = await readFileOrNull(filePath);
   if (text === null) {
     return { present: false, mode: null };
   }
@@ -274,7 +361,6 @@ async function inspectHook(ctx: AdapterContext): Promise<HookState> {
     config = null; // status never throws on a broken file
   }
   const post = asArray(asRecord(config?.['hooks'])?.['postToolUse']);
-  const ourCommand = copilotHookCommandFrom(ctx.hookCommand);
   const ours = post?.find((entry) => isOurHookEntry(entry, ourCommand));
   if (ours === undefined) {
     return { present: false, mode: null };
@@ -292,18 +378,26 @@ export const copilotAdapter: Adapter = {
   name: 'copilot',
 
   async detect(ctx: AdapterContext): Promise<boolean> {
+    if (ctx.global) {
+      return dirExists(copilotHome(ctx));
+    }
     return dirExists(path.join(ctx.projectDir, '.github'));
   },
 
   async install(mode: PackMode, ctx: AdapterContext): Promise<FileChange[]> {
+    const command = copilotHookCommandFrom(ctx.hookCommand, mode);
+
     if (ctx.global) {
-      // ~/.copilot/hooks exists (CLI-only, v1.0.40+) but instructions have no
-      // user-global mechanism and the cloud agent only reads .github/hooks/,
-      // so compressor stays project-scoped for copilot.
-      throw new Error(
-        'copilot: no user-global instruction mechanism; use project scope',
+      // user-scope hooks load in Copilot CLI only; instructions have no
+      // user-global mechanism, so global plans ONLY the hook config — never
+      // an instructions change.
+      const change = await planHookConfigInstall(
+        globalHookConfigPath(ctx),
+        command,
       );
+      return change.before === change.after ? [] : [change];
     }
+
     const changes: FileChange[] = [];
 
     const file = instructionsPath(ctx);
@@ -314,25 +408,22 @@ export const copilotAdapter: Adapter = {
     );
     changes.push({ path: file, before, after });
 
-    const command = copilotHookCommandFrom(ctx.hookCommand, mode);
-    const hookFile = hookConfigPath(ctx);
-    const hookBefore = await readFileOrNull(hookFile);
-    const config = parseHookConfig(hookBefore);
-    mergeOurHook(config, command);
-    changes.push({
-      path: hookFile,
-      before: hookBefore,
-      after: serializeHookConfig(config, hookBefore),
-    });
+    changes.push(await planHookConfigInstall(hookConfigPath(ctx), command));
 
     return changes.filter((change) => change.before !== change.after);
   },
 
   async uninstall(ctx: AdapterContext): Promise<FileChange[]> {
+    const ourCommand = copilotHookCommandFrom(ctx.hookCommand);
+
     if (ctx.global) {
-      // install refuses global scope, so nothing of ours can exist there
-      return [];
+      const change = await planHookConfigUninstall(
+        globalHookConfigPath(ctx),
+        ourCommand,
+      );
+      return change === null ? [] : [change];
     }
+
     const changes: FileChange[] = [];
 
     const file = instructionsPath(ctx);
@@ -345,35 +436,58 @@ export const copilotAdapter: Adapter = {
       changes.push({ path: file, before, after: removeMarkedSection(before) });
     }
 
-    const hookFile = hookConfigPath(ctx);
-    const hookBefore = await readFileOrNull(hookFile);
-    if (hookBefore !== null) {
-      const config = parseHookConfig(hookBefore);
-      const ourCommand = copilotHookCommandFrom(ctx.hookCommand);
-      if (stripOurHook(config, ourCommand)) {
-        // compressor.json is our namespaced file: once only the version stub
-        // remains it is safe to delete; foreign entries/events keep it alive.
-        const after = onlyVersionLeft(config)
-          ? null
-          : serializeHookConfig(config, hookBefore);
-        changes.push({ path: hookFile, before: hookBefore, after });
-      }
+    const hookChange = await planHookConfigUninstall(
+      hookConfigPath(ctx),
+      ourCommand,
+    );
+    if (hookChange !== null) {
+      changes.push(hookChange);
     }
 
     return changes;
   },
 
   async status(ctx: AdapterContext): Promise<AdapterStatus> {
+    const ourCommand = copilotHookCommandFrom(ctx.hookCommand);
+    const globalHook = await inspectHookAt(
+      globalHookConfigPath(ctx),
+      ourCommand,
+    );
+
+    if (ctx.global) {
+      if (!globalHook.present) {
+        return { agent: 'copilot', installed: false, detail: 'not installed' };
+      }
+      return {
+        agent: 'copilot',
+        installed: true,
+        ...(globalHook.mode !== null ? { mode: globalHook.mode } : {}),
+        detail: `${globalHookConfigDisplay()} (global) — ${GLOBAL_HOOK_NOTE}`,
+      };
+    }
+
     const body = await readFileOrNull(instructionsPath(ctx));
     const section = body === null ? null : readMarkedSection(body);
-    const hook = await inspectHook(ctx);
+    const hook = await inspectHookAt(hookConfigPath(ctx), ourCommand);
     if (section === null && !hook.present) {
+      if (globalHook.present) {
+        // scope-faithful: nothing at project level, but the machine-wide
+        // hook still compresses Copilot CLI input here (claude-code's
+        // cross-scope note pattern)
+        return {
+          agent: 'copilot',
+          installed: true,
+          ...(globalHook.mode !== null ? { mode: globalHook.mode } : {}),
+          detail: `not installed (project); ${GLOBAL_CROSS_NOTE}`,
+        };
+      }
       return { agent: 'copilot', installed: false, detail: 'not installed' };
     }
 
     const mode =
       (section === null ? undefined : parseAtomManifest(section)?.mode) ??
       hook.mode ??
+      globalHook.mode ??
       undefined;
 
     let detail: string;
@@ -389,6 +503,9 @@ export const copilotAdapter: Adapter = {
       if (agentsMd !== null && readMarkedSection(agentsMd) !== null) {
         detail += `; ${AGENTS_MD_OVERLAP_NOTE}`;
       }
+    }
+    if (globalHook.present) {
+      detail += `; also ${GLOBAL_CROSS_NOTE}`;
     }
 
     return {

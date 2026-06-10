@@ -1,8 +1,8 @@
 import { adapters } from '../../adapters/index.ts';
 import { buildContext } from './init.ts';
 
-export async function runStatus(): Promise<void> {
-  const ctx = buildContext(false, 'optimized', false);
+export async function runStatus(global = false): Promise<void> {
+  const ctx = buildContext(global, 'optimized', false);
   for (const adapter of adapters) {
     const status = await adapter.status(ctx);
     const installed = status.installed ? 'installed' : 'not installed';
