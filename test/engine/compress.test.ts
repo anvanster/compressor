@@ -48,7 +48,8 @@ test('policyFor optimized and slim thresholds', () => {
 
   const slim = policyFor('slim');
   assert.equal(slim.touch, 300);
-  assert.equal(slim.truncateBudget, 2500);
+  // 5,000 not 2,500: measured pagination-recovery threshold (see policy.ts)
+  assert.equal(slim.truncateBudget, 5000);
   assert.equal(slim.commentStrip, 1000);
   assert.equal(slim.skeleton, 6000);
   assert.equal(slim.logFilter, 800);
@@ -104,10 +105,14 @@ test('content already containing the omission marker passes through', () => {
 
 test('end-to-end slim compression of a large numbered TS file', () => {
   // 120 helpers ≈ 5000 est tokens: above commentStrip (1000), below skeleton
-  // (6000), and still above truncateBudget (2500) after stripping.
+  // (6000), and above the overridden truncateBudget after stripping. The
+  // override exists because this test verifies marker line-number correctness
+  // when comment-strip precedes truncation — under the real slim budget
+  // (5,000, see policy.ts) no fixture can be both under the skeleton
+  // threshold pre-strip and over the budget post-strip.
   const content = bigNumberedTsFile(120);
   const meta: CompressMeta = { tool: 'read', mode: 'slim', filePath: 'src/big.ts' };
-  const policy = policyFor('slim');
+  const policy = { ...policyFor('slim'), truncateBudget: 2500 };
   const result = compress(content, meta, policy, estimate);
 
   assert.ok(result.content.length < content.length, 'result is shorter');

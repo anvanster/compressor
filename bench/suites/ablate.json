@@ -1,0 +1,110 @@
+{
+  "name": "ablate",
+  "tasks": [
+    {
+      "id": "bugfix-off-by-one",
+      "prompt": "Tests are failing. Find and fix the bug. Do not modify the tests.",
+      "fixture": "bugfix-off-by-one",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      }
+    },
+    {
+      "id": "add-function",
+      "prompt": "One test in test.mjs fails because strings.mjs does not export slugify yet. Implement slugify in strings.mjs per the failing test's contract. Do not modify the tests.",
+      "fixture": "add-function",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      }
+    },
+    {
+      "id": "refactor-extract",
+      "prompt": "orders.mjs repeats the same order-validation block in three functions. Extract that duplicated validation into a validateOrder function in a new file validate.mjs and use it in all three functions. Keep every test in test.mjs passing.",
+      "fixture": "refactor-extract",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      }
+    },
+    {
+      "id": "explain-codebase",
+      "prompt": "How does a plugin intercept an event before other handlers see it? Explain the mechanism.",
+      "fixture": "explain-codebase",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "before[\\s-]?dispatch[\\s\\S]*cancel|cancel[\\s\\S]*before[\\s-]?dispatch",
+        "flags": "i"
+      },
+      "tags": [
+        "output-heavy"
+      ]
+    },
+    {
+      "id": "diagnose-failing-test",
+      "prompt": "The full verbose test output is in test-output.txt; diagnose the root cause and fix it so the tests pass.",
+      "fixture": "diagnose-failing-test",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "log-heavy"
+      ]
+    },
+    {
+      "id": "large-file-edit",
+      "prompt": "The snapshot:prune command in commands.mjs ships the wrong retention default: its --keep option must default to 30. Update that one entry. Do not modify the tests.",
+      "fixture": "large-file-edit",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "large-file"
+      ]
+    },
+    {
+      "id": "review-diff",
+      "prompt": "Review changes.patch against this codebase. Identify any bugs the patch introduces, with file/function references, and assess the overall change.",
+      "fixture": "review-diff",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "^(?=[\\s\\S]*(?:applyTierDiscount|applyVolumePricing))(?=[\\s\\S]*(?:<=\\s*tiers\\.length|past the end|out[ -]of[ -]bounds|off[ -]by[ -]one|\\bundefined\\b|TypeError))(?=[\\s\\S]*(?:scheduleRetry|chargeWithRetry))(?=[\\s\\S]*(?:swap|transpos|revers|flip|backwards|inverted|wrong order|order of (?:the )?(?:argument|arg|parameter)s?|(?:argument|parameter) order|(?:delay|backoff)[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?attempt|attempt[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?(?:delay|backoff)))",
+        "flags": "i"
+      },
+      "tags": [
+        "output-heavy",
+        "prose"
+      ]
+    },
+    {
+      "id": "summarize-architecture",
+      "prompt": "Explain the full lifecycle of a request through this codebase, from entry to response, including how middleware composes and how errors propagate. Be thorough.",
+      "fixture": "summarize-architecture",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "^(?=[\\s\\S]*(?:foldPipeline|reduceRight|fold|compos))(?=[\\s\\S]*(?:reduceRight|onion|outermost|innermost|right[ -]?to[ -]?left|reversed? order|in reverse))",
+        "flags": "i"
+      },
+      "tags": [
+        "output-heavy",
+        "prose"
+      ]
+    },
+    {
+      "id": "wide-refactor",
+      "prompt": "util.mjs still uses the legacy positional helper signature packField(name, value, width). Migrate it to a single options object \u2014 packField({ name, value, width }) \u2014 flip PACK_STYLE to 'options', and update every packField call site across telemetry.mjs, manifest.mjs, and beacon.mjs. Wire output must stay byte-identical. test.mjs asserts the new contract; do not modify the tests.",
+      "fixture": "wide-refactor",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "large-file",
+        "hook-target"
+      ]
+    }
+  ]
+}

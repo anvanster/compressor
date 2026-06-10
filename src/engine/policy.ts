@@ -32,7 +32,11 @@ export function policyFor(mode: Mode): Policy {
         codeAware: true,
         logAware: true,
         touch: 300,
-        truncateBudget: 2500,
+        // measured (bench-20260610-114234/-123102): a 2,500 budget pushed the
+        // model into offset/limit pagination — targeted reads pass through, so
+        // recovery re-reads nullified all savings (worst cell exceeded the
+        // uncompressed baseline). 5,000 stays under the recovery trigger.
+        truncateBudget: 5000,
         commentStrip: 1000,
         skeleton: 6000,
         logFilter: 800,

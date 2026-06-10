@@ -86,7 +86,7 @@ export const ATOMS: readonly Atom[] = [
     modes: ['optimized', 'slim'],
     rejected: {
       reason:
-        '~1 token saved per article, output-only; degrades grammar and pushes the model off its training distribution for single-digit savings. Benchmarks show a plain concise instruction beats grammar degradation (see PLAN.md research). Kept for --ablate-add demonstration.',
+        '~1 token saved per article, output-only; degrades grammar and pushes the model off its training distribution for single-digit savings. Empirically refuted: bench-20260610-124626 (sonnet, 9 tasks ×2 trials) measured optimized-plus-tokens-drop-articles at −2.2% output vs optimized — noise, no benefit on top of a concise baseline. Kept for --ablate-add reproduction.',
     },
   },
   {
