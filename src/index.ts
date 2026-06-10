@@ -54,6 +54,9 @@ export {
   applyChanges,
   renderChanges,
   claudeCodeAdapter,
+  copilotAdapter,
+  cursorAdapter,
+  agentsMdAdapter,
 } from './adapters/index.ts';
 export type {
   Adapter,

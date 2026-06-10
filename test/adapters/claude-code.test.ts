@@ -288,6 +288,39 @@ test('mode switch replaces our hook entry matched across --mode values', async (
   assert.ok(!existsSync(localSettingsFile(slimCtx)));
 });
 
+test('quoted hook command claims legacy unquoted entries (upgrade path)', async () => {
+  const ctx = await makeCtx();
+  const quoted = 'node "/opt/compressor/dist/hook.js" --mode slim';
+  const legacyEntry = {
+    matcher: 'Read|Bash|Grep|Glob',
+    hooks: [
+      { type: 'command', command: 'node /opt/compressor/dist/hook.js --mode slim' },
+    ],
+  };
+  await mkdir(path.dirname(localSettingsFile(ctx)), { recursive: true });
+  await writeFile(
+    localSettingsFile(ctx),
+    `${JSON.stringify({ hooks: { PostToolUse: [legacyEntry] } }, null, 2)}\n`,
+    'utf8',
+  );
+
+  const quotedCtx: AdapterContext = { ...ctx, hookCommand: quoted };
+  await applyChanges(await claudeCodeAdapter.install('slim', quotedCtx));
+  assert.deepEqual(await readJson(localSettingsFile(ctx)), {
+    hooks: {
+      PostToolUse: [
+        {
+          matcher: 'Read|Bash|Grep|Glob',
+          hooks: [{ type: 'command', command: quoted }],
+        },
+      ],
+    },
+  });
+
+  await applyChanges(await claudeCodeAdapter.uninstall(quotedCtx));
+  assert.ok(!existsSync(localSettingsFile(ctx)));
+});
+
 test('detect: project scope always true; global scope requires a .claude dir', async () => {
   const ctx = await makeCtx();
   assert.equal(await claudeCodeAdapter.detect(ctx), true);

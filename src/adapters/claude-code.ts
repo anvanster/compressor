@@ -118,6 +118,16 @@ function hookCommandBase(hookCommand: string): string {
 }
 
 /**
+ * Base forms we accept as ours: the current command (hook.js path quoted
+ * against spaces) and the legacy unquoted form written by older installs.
+ */
+function ourBases(hookCommand: string): string[] {
+  const base = hookCommandBase(hookCommand);
+  const unquoted = base.replaceAll('"', '');
+  return unquoted === base ? [base] : [base, unquoted];
+}
+
+/**
  * Ownership predicate: exact match on our resolved hook command, allowing a
  * different --mode value (mode switches rewrite the flag; the absolute path
  * identifies us). Generic substrings like 'dist/hook.js' are NOT ours —
@@ -129,14 +139,15 @@ function isOurHookEntry(entry: unknown, hookCommand: string): boolean {
   if (hooks === null) {
     return false;
   }
-  const base = hookCommandBase(hookCommand);
+  const bases = ourBases(hookCommand);
   return hooks.some((hook) => {
     const command = asRecord(hook)?.command;
     return (
       typeof command === 'string' &&
       (command === hookCommand ||
-        command === base ||
-        command.startsWith(`${base} --mode `))
+        bases.some(
+          (base) => command === base || command.startsWith(`${base} --mode `),
+        ))
     );
   });
 }

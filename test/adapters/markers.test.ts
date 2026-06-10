@@ -121,3 +121,114 @@ test('readMarkedSection ignores fenced examples', () => {
   const withSection = upsertMarkedSection(fencedExample, sectionOptimized);
   assert.equal(readMarkedSection(withSection), sectionOptimized);
 });
+
+// --- regression: loose begin-prefix matching swallowed user content ---
+
+test('prose line that merely starts with the begin prefix is not a boundary', () => {
+  const prose = '<!-- compressor:begin marker is documented below -->';
+  const doc = [prose, 'Important user paragraph A', '', sectionSlim, '', 'tail', ''].join('\n');
+  // remove deletes ONLY the real section — prose line and user content survive
+  assert.equal(
+    removeMarkedSection(doc),
+    `${prose}\nImportant user paragraph A\n\ntail\n`,
+  );
+  // upsert replaces the real section in place, not from the prose line
+  const upserted = upsertMarkedSection(doc, sectionOptimized);
+  assert.equal(
+    upserted,
+    [prose, 'Important user paragraph A', '', sectionOptimized, '', 'tail', ''].join('\n'),
+  );
+  // a document with ONLY the prose line has no section at all
+  assert.equal(readMarkedSection(`${prose}\nuser text\n`), null);
+});
+
+test('orphan begin (end hand-deleted) never pairs with a later end', () => {
+  const orphanDoc = [
+    markerBegin('slim'),
+    'Important user paragraph A',
+    'Important user paragraph B',
+    '',
+  ].join('\n');
+  // an orphan begin is not a section
+  assert.equal(readMarkedSection(orphanDoc), null);
+  assert.equal(removeMarkedSection(orphanDoc), orphanDoc);
+
+  // install appends a fresh section; the orphan must not capture its end
+  const once = upsertMarkedSection(orphanDoc, sectionSlim);
+  assert.ok(once.includes('Important user paragraph A'));
+  assert.equal(upsertMarkedSection(once, sectionSlim), once); // idempotent
+
+  // uninstall removes only the appended section; user paragraphs survive
+  const removed = removeMarkedSection(once);
+  assert.ok(removed.includes('Important user paragraph A'));
+  assert.ok(removed.includes('Important user paragraph B'));
+  assert.ok(!removed.includes(MARKER_END));
+});
+
+// --- regression: markers in 4-space indented code blocks were treated as real ---
+
+const indentedExample = [
+  '# My project',
+  '',
+  'Compressor markers look like this:',
+  '',
+  `    ${markerBegin('slim')}`,
+  '    user example body',
+  `    ${MARKER_END}`,
+  '',
+  'Tail text.',
+  '',
+].join('\n');
+
+test('markers in indented code blocks are examples, not boundaries', () => {
+  assert.equal(readMarkedSection(indentedExample), null);
+  assert.equal(removeMarkedSection(indentedExample), indentedExample);
+  const withSection = upsertMarkedSection(indentedExample, sectionOptimized);
+  assert.ok(withSection.includes('    user example body'), 'example preserved');
+  assert.equal(readMarkedSection(withSection), sectionOptimized);
+  assert.equal(removeMarkedSection(withSection), indentedExample);
+});
+
+// --- regression: ``` inside an open ~~~ block desynced fence tracking ---
+
+test('a ``` line inside an open ~~~ block is literal text, not a fence toggle', () => {
+  const doc = [
+    '~~~markdown',
+    'Nested example:',
+    '```',
+    markerBegin('slim'),
+    'fenced user line',
+    MARKER_END,
+    '```',
+    '~~~',
+    '',
+  ].join('\n');
+  // documented markers inside the ~~~ block are never matched
+  assert.equal(readMarkedSection(doc), null);
+  assert.equal(removeMarkedSection(doc), doc);
+
+  // and a REAL section after the closed block is still found (no inverse desync)
+  const withReal = upsertMarkedSection(doc, sectionSlim);
+  assert.equal(withReal, `${doc.replace(/\n+$/u, '')}\n\n${sectionSlim}\n`);
+  assert.equal(readMarkedSection(withReal), sectionSlim);
+  assert.equal(upsertMarkedSection(withReal, sectionSlim), withReal);
+  assert.equal(removeMarkedSection(withReal), doc);
+});
+
+// --- regression: unclosed fence at EOF stranded our section forever ---
+
+test('unclosed fence at EOF: upsert stays idempotent and the section stays removable', () => {
+  const doc = '# Notes\n\n```\ncode never closed\n';
+  const once = upsertMarkedSection(doc, sectionSlim);
+  assert.equal(upsertMarkedSection(once, sectionSlim), once); // no duplicates
+  assert.equal(readMarkedSection(once), sectionSlim); // not stranded
+  assert.equal(removeMarkedSection(once), doc); // removal path exists
+});
+
+// --- regression: whitespace-only residue was collapsed to '' on removal ---
+
+test('remove preserves whitespace-only residue byte-for-byte', () => {
+  const original = ' \n';
+  const withSection = upsertMarkedSection(original, sectionSlim);
+  assert.equal(removeMarkedSection(withSection), original);
+});

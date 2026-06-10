@@ -4,6 +4,13 @@ import { atomsForMode, MODE_DESCRIPTIONS } from './modes.ts';
 export const MARKER_BEGIN_PREFIX = '<!-- compressor:begin';
 export const MARKER_END = '<!-- compressor:end -->';
 
+/**
+ * Full grammar for a begin-marker LINE (test against the trimmed line).
+ * Prefix-only matching is unsafe: user prose that merely starts with the
+ * prefix must never be mistaken for a section boundary.
+ */
+export const MARKER_BEGIN_LINE_RE = /^<!-- compressor:begin mode=\S+ v=\d+ -->$/;
+
 export function markerBegin(mode: PackMode): string {
   return `${MARKER_BEGIN_PREFIX} mode=${mode} v=1 -->`;
 }

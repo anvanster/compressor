@@ -35,7 +35,8 @@ export function packageRoot(): string {
 }
 
 function hookCommandFor(mode: PackMode, root: string): string {
-  return `node ${path.join(root, 'dist', 'hook.js')} --mode ${mode}`;
+  // quoted so the command survives package roots containing spaces
+  return `node "${path.join(root, 'dist', 'hook.js')}" --mode ${mode}`;
 }
 
 /**

@@ -60,7 +60,10 @@ export async function installForAgents(
   mode: PackMode,
   opts: ScopeOptions,
 ): Promise<void> {
-  const ctx = buildContext(opts.global === true, mode);
+  // only claude-code installs the PostToolUse hook; instruction-only agents
+  // (copilot, cursor, agents-md) must not require dist/hook.js to exist
+  const needsHookBundle = agents.some((adapter) => adapter.name === 'claude-code');
+  const ctx = buildContext(opts.global === true, mode, needsHookBundle);
   for (const adapter of agents) {
     const changes = await adapter.install(mode, ctx);
     const rendered = renderChanges(changes);
