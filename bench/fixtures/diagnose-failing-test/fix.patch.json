@@ -1,0 +1,7 @@
+[
+  {
+    "file": "dates.mjs",
+    "find": "    month = Number(eu[1]);\n    day = Number(eu[2]);",
+    "replace": "    day = Number(eu[1]);\n    month = Number(eu[2]);"
+  }
+]

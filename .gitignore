@@ -4,3 +4,4 @@ dist/
 internal/
 bench/results/
 *.log
+config.local

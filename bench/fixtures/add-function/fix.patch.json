@@ -1,0 +1,7 @@
+[
+  {
+    "file": "strings.mjs",
+    "find": "  return text.split(/\\s+/).filter((word) => word.length > 0);\n}",
+    "replace": "  return text.split(/\\s+/).filter((word) => word.length > 0);\n}\n\nexport function slugify(text) {\n  if (typeof text !== 'string') {\n    throw new TypeError('text must be a string');\n  }\n  return text\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '-')\n    .replace(/^-+|-+$/g, '');\n}"
+  }
+]

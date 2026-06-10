@@ -1,0 +1,7 @@
+[
+  {
+    "file": "paginate.mjs",
+    "find": "return items.slice(start, start + perPage - 1);",
+    "replace": "return items.slice(start, start + perPage);"
+  }
+]

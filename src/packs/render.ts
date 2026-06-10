@@ -61,8 +61,21 @@ const CODE_FIRST_IDS: ReadonlySet<string> = new Set([
   'out.code-only-default',
 ]);
 
-export function renderOutputStyle(mode: PackMode): RenderedArtifact {
-  const atoms = atomsForMode(mode, 'claude-code');
+/**
+ * Output style over an explicit atom list (benchmark ablation variants).
+ * styleName is validated only: Claude Code resolves styles by file name
+ * (`<styleName>.md`), and a `name:` frontmatter field is deliberately omitted.
+ */
+export function renderOutputStyleFromAtoms(
+  atoms: Atom[],
+  styleName: string,
+  description: string,
+): RenderedArtifact {
+  if (styleName === '' || /[/\\]/.test(styleName)) {
+    throw new Error(
+      `invalid output-style name ${JSON.stringify(styleName)} — becomes the file name <styleName>.md`,
+    );
+  }
   const codeFirst = atoms.filter((a) => CODE_FIRST_IDS.has(a.id));
   const output = atoms.filter(
     (a) => a.category === 'output' && !CODE_FIRST_IDS.has(a.id),
@@ -72,7 +85,7 @@ export function renderOutputStyle(mode: PackMode): RenderedArtifact {
 
   const lines: string[] = [
     '---',
-    `description: ${MODE_DESCRIPTIONS[mode]}`,
+    `description: ${description}`,
     'keep-coding-instructions: true',
     '---',
     '',
@@ -85,6 +98,14 @@ export function renderOutputStyle(mode: PackMode): RenderedArtifact {
   lines.push('## Output discipline', ...output.map(bullet), '');
   lines.push('## Context discipline', ...behavior.map(bullet));
   return { body: `${lines.join('\n')}\n`, atomIds };
+}
+
+export function renderOutputStyle(mode: PackMode): RenderedArtifact {
+  return renderOutputStyleFromAtoms(
+    atomsForMode(mode, 'claude-code'),
+    `compressor-${mode}`,
+    MODE_DESCRIPTIONS[mode],
+  );
 }
 
 export function renderMarkedSection(

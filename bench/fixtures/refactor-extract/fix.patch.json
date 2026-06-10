@@ -1,0 +1,17 @@
+[
+  {
+    "file": "validate.mjs",
+    "find": "",
+    "replace": "export function validateOrder(order) {\n  if (order === null || typeof order !== 'object') {\n    throw new TypeError('order must be an object');\n  }\n  if (!Number.isInteger(order.id) || order.id <= 0) {\n    throw new TypeError('order.id must be a positive integer');\n  }\n  if (!Array.isArray(order.items) || order.items.length === 0) {\n    throw new TypeError('order.items must be a non-empty array');\n  }\n  if (!Number.isFinite(order.total) || order.total < 0) {\n    throw new TypeError('order.total must be a non-negative finite number');\n  }\n}\n"
+  },
+  {
+    "file": "orders.mjs",
+    "find": "export function createOrder(order) {",
+    "replace": "import { validateOrder } from './validate.mjs';\n\nexport function createOrder(order) {"
+  },
+  {
+    "file": "orders.mjs",
+    "find": "  if (order === null || typeof order !== 'object') {\n    throw new TypeError('order must be an object');\n  }\n  if (!Number.isInteger(order.id) || order.id <= 0) {\n    throw new TypeError('order.id must be a positive integer');\n  }\n  if (!Array.isArray(order.items) || order.items.length === 0) {\n    throw new TypeError('order.items must be a non-empty array');\n  }\n  if (!Number.isFinite(order.total) || order.total < 0) {\n    throw new TypeError('order.total must be a non-negative finite number');\n  }",
+    "replace": "  validateOrder(order);"
+  }
+]

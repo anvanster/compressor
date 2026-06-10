@@ -1,0 +1,7 @@
+[
+  {
+    "file": "commands.mjs",
+    "find": "{ name: 'keep', flag: '--keep <days>', kind: 'number', default: 7, summary: 'Days of snapshot history to retain' }",
+    "replace": "{ name: 'keep', flag: '--keep <days>', kind: 'number', default: 30, summary: 'Days of snapshot history to retain' }"
+  }
+]

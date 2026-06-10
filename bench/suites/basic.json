@@ -1,0 +1,48 @@
+{
+  "name": "basic",
+  "tasks": [
+    {
+      "id": "bugfix-off-by-one",
+      "prompt": "Tests are failing. Find and fix the bug. Do not modify the tests.",
+      "fixture": "bugfix-off-by-one",
+      "check": { "kind": "command", "command": "node --test test.mjs" }
+    },
+    {
+      "id": "add-function",
+      "prompt": "One test in test.mjs fails because strings.mjs does not export slugify yet. Implement slugify in strings.mjs per the failing test's contract. Do not modify the tests.",
+      "fixture": "add-function",
+      "check": { "kind": "command", "command": "node --test test.mjs" }
+    },
+    {
+      "id": "refactor-extract",
+      "prompt": "orders.mjs repeats the same order-validation block in three functions. Extract that duplicated validation into a validateOrder function in a new file validate.mjs and use it in all three functions. Keep every test in test.mjs passing.",
+      "fixture": "refactor-extract",
+      "check": { "kind": "command", "command": "node --test test.mjs" }
+    },
+    {
+      "id": "explain-codebase",
+      "prompt": "How does a plugin intercept an event before other handlers see it? Explain the mechanism.",
+      "fixture": "explain-codebase",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "before[\\s-]?dispatch[\\s\\S]*cancel|cancel[\\s\\S]*before[\\s-]?dispatch",
+        "flags": "i"
+      },
+      "tags": ["output-heavy"]
+    },
+    {
+      "id": "diagnose-failing-test",
+      "prompt": "The full verbose test output is in test-output.txt; diagnose the root cause and fix it so the tests pass.",
+      "fixture": "diagnose-failing-test",
+      "check": { "kind": "command", "command": "node --test test.mjs" },
+      "tags": ["log-heavy"]
+    },
+    {
+      "id": "large-file-edit",
+      "prompt": "The snapshot:prune command in commands.mjs ships the wrong retention default: its --keep option must default to 30. Update that one entry. Do not modify the tests.",
+      "fixture": "large-file-edit",
+      "check": { "kind": "command", "command": "node --test test.mjs" },
+      "tags": ["large-file"]
+    }
+  ]
+}

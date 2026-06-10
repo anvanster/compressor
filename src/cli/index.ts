@@ -90,6 +90,56 @@ program
     await runStats(opts);
   });
 
+program
+  .command('benchmark')
+  .description('run the benchmark suite: cells = task × variant × trial, results as JSONL')
+  .option('--suite <path>', 'suite JSON file', 'bench/suites/basic.json')
+  .option('--modes <modes>', 'comma-separated full|optimized|slim', 'full,optimized,slim')
+  .option('--trials <n>', 'trials per task × variant', '5')
+  .option('--model <model>', 'requested model (served model verified per cell)', 'claude-sonnet-4-6')
+  .option(
+    '--ablate <ids>',
+    'comma-separated atom ids: adds optimized-minus-<id> variants (slim-minus-<id> for slim-only atoms)',
+  )
+  .option('--ablate-add <ids>', 'comma-separated REJECTED atom ids: adds optimized-plus-<id> variants')
+  .option('--no-hook', 'skip the compression hook in optimized/slim cells')
+  .option('--concurrency <n>', 'cells run in parallel', '2')
+  .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
+  .option('--out <dir>', 'results directory', 'bench/results')
+  .action(
+    async (opts: {
+      suite: string;
+      modes: string;
+      trials: string;
+      model: string;
+      ablate?: string;
+      ablateAdd?: string;
+      hook: boolean;
+      concurrency: string;
+      maxBudgetUsd: string;
+      out: string;
+    }) => {
+      const { runBenchmarkCommand } = await import('./commands/benchmark.ts');
+      await runBenchmarkCommand(opts);
+    },
+  );
+
+program
+  .command('report')
+  .description(
+    'aggregate a benchmark run: per-variant medians+IQR, deltas vs full, per-atom ablation deltas vs their baseline',
+  )
+  .option('--run <id>', 'run id (default: latest run in --out)')
+  .option('--out <dir>', 'results directory', 'bench/results')
+  .option('--compare <runs...>', 'compare two runs side-by-side by variant')
+  .option('--format <format>', 'table|md|json', 'table')
+  .action(
+    async (opts: { run?: string; out: string; compare?: string[]; format: string }) => {
+      const { runReport } = await import('./commands/report.ts');
+      await runReport(opts);
+    },
+  );
+
 const hook = program.command('hook').description('hook protocol entry points (read stdin)');
 hook
   .command('post-tool-use')
