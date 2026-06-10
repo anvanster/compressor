@@ -60,3 +60,49 @@ export function resolveHookCommand(mode: PackMode, root: string = packageRoot())
   }
   return hookCommandFor(mode, root);
 }
+
+function copilotHookCommandFor(mode: PackMode, root: string): string {
+  // quoted so the command survives package roots containing spaces
+  return `node "${path.join(root, 'dist', 'copilot-hook.js')}" --mode ${mode}`;
+}
+
+/** Copilot hook command for display/matching — works without the bundle. */
+export function describeCopilotHookCommand(
+  mode: PackMode,
+  root: string = packageRoot(),
+): string {
+  return copilotHookCommandFor(mode, root);
+}
+
+/**
+ * Command line installed for the Copilot postToolUse hook. Like
+ * resolveHookCommand, refuses to install a command that would fail on every
+ * tool call (Copilot postToolUse is fail-open: a dead command = silent no-op).
+ */
+export function resolveCopilotHookCommand(
+  mode: PackMode,
+  root: string = packageRoot(),
+): string {
+  const hookPath = path.join(root, 'dist', 'copilot-hook.js');
+  if (!existsSync(hookPath)) {
+    throw new Error(
+      `copilot hook bundle missing at ${hookPath} — run 'npm run build' in the compressor package, then re-run`,
+    );
+  }
+  return copilotHookCommandFor(mode, root);
+}
+
+/**
+ * Copilot hook command derived from the Claude Code hook command carried in
+ * AdapterContext (the only resolved-path carrier adapters receive; the
+ * adapters/types.ts contract is frozen). Both commands are generated in this
+ * module from the same root, so swapping the sibling bundle name and --mode
+ * flag reproduces copilotHookCommandFor exactly. Mode omitted → base form
+ * for ownership matching (mode-agnostic, like claude-code's predicate).
+ */
+export function copilotHookCommandFrom(hookCommand: string, mode?: PackMode): string {
+  const base = hookCommand
+    .replace(/ --mode \S+$/, '')
+    .replace(/(?<![\w-])hook\.js("?)$/, 'copilot-hook.js$1');
+  return mode === undefined ? base : `${base} --mode ${mode}`;
+}

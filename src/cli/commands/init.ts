@@ -3,7 +3,11 @@ import process from 'node:process';
 import { applyChanges, getAdapter, renderChanges } from '../../adapters/index.ts';
 import type { Adapter, AdapterContext } from '../../adapters/index.ts';
 import type { AgentName, PackMode } from '../../packs/types.ts';
-import { describeHookCommand, resolveHookCommand } from '../../paths.ts';
+import {
+  describeHookCommand,
+  resolveCopilotHookCommand,
+  resolveHookCommand,
+} from '../../paths.ts';
 
 export interface ScopeOptions {
   global?: boolean;
@@ -15,8 +19,16 @@ export interface InitOptions extends ScopeOptions {
   mode: string;
 }
 
-export const EFFECT_NOTE =
-  'Takes effect on the next Claude Code session (/clear or new session).';
+const AGENT_EFFECT_NOTES: Record<AgentName, string> = {
+  'claude-code': 'Claude Code: takes effect on the next session (/clear or new session).',
+  copilot: 'Copilot: hook config loads when the CLI starts — restart any running copilot session.',
+  cursor: 'Cursor: rules apply to new chats.',
+  'agents-md': 'AGENTS.md: read at agent startup.',
+};
+
+export function effectNote(agents: readonly Pick<Adapter, 'name'>[]): string {
+  return agents.map((a) => AGENT_EFFECT_NOTES[a.name]).join(' ');
+}
 
 export function parsePackMode(value: string): PackMode {
   if (value === 'optimized' || value === 'slim') {
@@ -60,10 +72,16 @@ export async function installForAgents(
   mode: PackMode,
   opts: ScopeOptions,
 ): Promise<void> {
-  // only claude-code installs the PostToolUse hook; instruction-only agents
-  // (copilot, cursor, agents-md) must not require dist/hook.js to exist
+  // claude-code installs the PostToolUse hook (dist/hook.js) and copilot the
+  // postToolUse hook (dist/copilot-hook.js); instruction-only agents (cursor,
+  // agents-md) must not require either bundle to exist
   const needsHookBundle = agents.some((adapter) => adapter.name === 'claude-code');
   const ctx = buildContext(opts.global === true, mode, needsHookBundle);
+  if (agents.some((adapter) => adapter.name === 'copilot') && opts.global !== true) {
+    // existence check only: refuses to install a hook command that would fail
+    // on every tool call (Copilot postToolUse is fail-open = silent no-op)
+    resolveCopilotHookCommand(mode);
+  }
   for (const adapter of agents) {
     const changes = await adapter.install(mode, ctx);
     const rendered = renderChanges(changes);
@@ -76,7 +94,7 @@ export async function installForAgents(
   }
   const names = agents.map((adapter) => adapter.name).join(', ');
   const suffix = opts.dryRun === true ? ' (dry-run: nothing written)' : '';
-  console.log(`Mode ${mode} installed for ${names}. ${EFFECT_NOTE}${suffix}`);
+  console.log(`Mode ${mode} installed for ${names}. ${effectNote(agents)}${suffix}`);
 }
 
 export async function runInit(opts: InitOptions): Promise<void> {

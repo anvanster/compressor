@@ -154,6 +154,14 @@ hook
     const { runHookPostToolUse } = await import('./commands/hook.ts');
     await runHookPostToolUse(opts);
   });
+hook
+  .command('copilot-post-tool-use')
+  .description('Copilot postToolUse protocol: payload on stdin, modifiedResult JSON on stdout')
+  .option('--mode <mode>', 'full|optimized|slim', 'optimized')
+  .action(async (opts: { mode?: string }) => {
+    const { runHookCopilotPostToolUse } = await import('./commands/hook.ts');
+    await runHookCopilotPostToolUse(opts);
+  });
 
 try {
   await program.parseAsync(process.argv);
