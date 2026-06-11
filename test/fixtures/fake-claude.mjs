@@ -2,9 +2,24 @@
 // Deterministic stand-in for the claude CLI — never touches the network.
 // Knobs: FAKE_CLAUDE_SUCCEED, FAKE_CLAUDE_FAIL, FAKE_CLAUDE_GARBAGE,
 // FAKE_CLAUDE_OUTPUT_TOKENS, FAKE_CLAUDE_NO_COST, FAKE_CLAUDE_DUP_LINES,
+// FAKE_CLAUDE_FAIL_ON_RESUME (fail only --resume invocations — exercises
+// mid-conversation turn failure), FAKE_CLAUDE_FORK_ON_RESUME (each --resume
+// returns a NEW session id whose transcript holds ONLY that turn — the
+// dangerous fork-without-history topology the usage cross-check must flag),
+// FAKE_CLAUDE_ENV_FILE (write selected env vars seen by this process to the
+// given path — proves what the runner exports to cells), and
 // FAKE_CLAUDE_FIXTURES_DIR (where fix.patch.json answer keys live — the
 // runner must NEVER copy them into the workspace).
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+// --resume <id>: reuses that session id, APPENDS to the existing transcript
+// (fresh requestIds per turn), and emits the usual result JSON.
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const argv = process.argv.slice(2);
@@ -22,9 +37,14 @@ function argValue(flag) {
 const prompt = argValue('-p') ?? '';
 const model = argValue('--model') ?? 'unknown-model';
 const settingsPath = argValue('--settings');
+const resumeId = argValue('--resume');
 
 if (process.env.FAKE_CLAUDE_FAIL === '1') {
   console.error('fake-claude: simulated failure');
+  process.exit(1);
+}
+if (process.env.FAKE_CLAUDE_FAIL_ON_RESUME === '1' && resumeId !== undefined) {
+  console.error('fake-claude: simulated resume failure');
   process.exit(1);
 }
 if (process.env.FAKE_CLAUDE_GARBAGE === '1') {
@@ -74,8 +94,11 @@ function applyPatch(patches) {
 
 // "solve" the task: apply the fixture's scripted fix. The answer key is read
 // from the fixture SOURCE dir (FAKE_CLAUDE_FIXTURES_DIR) — a real benchmark
-// workspace must not contain fix.patch.json.
-if (process.env.FAKE_CLAUDE_SUCCEED === '1') {
+// workspace must not contain fix.patch.json. Only the OPENING turn solves:
+// once patched, the workspace is no longer a pristine fixture and the
+// disjointness assumption breaks (another fixture's key can spuriously fit
+// the modified files and corrupt them on resumed turns).
+if (process.env.FAKE_CLAUDE_SUCCEED === '1' && resumeId === undefined) {
   const fixturesDir = process.env.FAKE_CLAUDE_FIXTURES_DIR;
   if (fixturesDir !== undefined && existsSync(fixturesDir)) {
     try {
@@ -101,10 +124,51 @@ function hash36(text) {
   return Math.abs(h).toString(36);
 }
 
+if (process.env.FAKE_CLAUDE_ENV_FILE !== undefined) {
+  try {
+    writeFileSync(
+      process.env.FAKE_CLAUDE_ENV_FILE,
+      JSON.stringify({
+        noLedger: process.env.COMPRESSOR_NO_LEDGER ?? null,
+        configDir: process.env.CLAUDE_CONFIG_DIR ?? null,
+      }),
+    );
+  } catch {
+    // probe is best-effort
+  }
+}
+
 const rawTokens = Number.parseInt(process.env.FAKE_CLAUDE_OUTPUT_TOKENS ?? '', 10);
 const outputTokens = Number.isFinite(rawTokens) ? rawTokens : 400;
-const sessionId = `fake-${hash36(prompt + model + outputStyle)}`;
-const resultText = `fake answer style=${outputStyle} configDir=${configDir} permMode=${permMode}`;
+// --resume reuses the session id it was given (stable across the conversation)
+// unless FAKE_CLAUDE_FORK_ON_RESUME simulates a print-mode fork: a fresh id
+// per resumed turn whose transcript does NOT carry the prior history
+const forkOnResume = process.env.FAKE_CLAUDE_FORK_ON_RESUME === '1' && resumeId !== undefined;
+const sessionId = forkOnResume
+  ? `${resumeId.replace(/-fork-.*$/, '')}-fork-${hash36(prompt)}`
+  : (resumeId ?? `fake-${hash36(prompt + model + outputStyle)}`);
+
+// deterministic turn counter, persisted per session id under CLAUDE_CONFIG_DIR
+let turn = resumeId === undefined ? 1 : 2;
+if (configDir !== 'none') {
+  try {
+    const stateFile = join(
+      configDir,
+      `fake-session-${sessionId.replace(/[^a-zA-Z0-9-]/g, '_')}.json`,
+    );
+    if (resumeId !== undefined && existsSync(stateFile)) {
+      const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+      if (Number.isInteger(state.turn)) turn = state.turn + 1;
+    }
+    writeFileSync(stateFile, JSON.stringify({ turn }));
+  } catch {
+    // state is best-effort; turn stays at its default
+  }
+}
+
+const resultText =
+  `fake answer style=${outputStyle} configDir=${configDir} permMode=${permMode}` +
+  (resumeId === undefined ? '' : ` turn=${turn} resumed=${sessionId}`);
 
 // transcript mirrors Claude Code: $CLAUDE_CONFIG_DIR/projects/<encoded cwd>/
 if (configDir !== 'none') {
@@ -113,6 +177,9 @@ if (configDir !== 'none') {
     const dir = join(configDir, 'projects', encoded);
     mkdirSync(dir, { recursive: true });
     const firstOut = Math.floor(outputTokens / 2);
+    // fresh requestIds per turn; turn 1 keeps the legacy names so existing
+    // single-shot expectations stay byte-identical
+    const idPrefix = turn === 1 ? 'fake' : `fake_t${turn}`;
     const entry = (requestId, msgId, usage, toolName) =>
       JSON.stringify({
         type: 'assistant',
@@ -128,8 +195,8 @@ if (configDir !== 'none') {
       });
     const lines = [
       entry(
-        'req_fake_1',
-        'msg_fake_1',
+        `req_${idPrefix}_1`,
+        `msg_${idPrefix}_1`,
         {
           input_tokens: 5000,
           output_tokens: firstOut,
@@ -139,8 +206,8 @@ if (configDir !== 'none') {
         'Read',
       ),
       entry(
-        'req_fake_2',
-        'msg_fake_2',
+        `req_${idPrefix}_2`,
+        `msg_${idPrefix}_2`,
         {
           input_tokens: 4000,
           output_tokens: outputTokens - firstOut,
@@ -155,7 +222,15 @@ if (configDir !== 'none') {
       // requestId) — consumers must dedupe
       lines.push(lines[0], lines[1]);
     }
-    writeFileSync(join(dir, `${sessionId}.jsonl`), `${lines.join('\n')}\n`);
+    const payload = `${lines.join('\n')}\n`;
+    const file = join(dir, `${sessionId}.jsonl`);
+    // resumed sessions APPEND — the final transcript carries the whole
+    // conversation, like a real resumed Claude Code session
+    if (resumeId === undefined) {
+      writeFileSync(file, payload);
+    } else {
+      appendFileSync(file, payload);
+    }
   } catch {
     // missing transcript is a tolerated runner path
   }

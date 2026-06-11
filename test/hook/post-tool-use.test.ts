@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import process from 'node:process';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
+
+// Worthwhile compressions fire fire-and-forget ledger appends; keep this
+// suite hermetic (never touch the real ~/.compressor). Ledger behavior has
+// its own tests under test/ledger/ using temp dirs.
+process.env['COMPRESSOR_NO_LEDGER'] = '1';
 
 function repetitiveLog(lines: number): string {
   return Array.from(
@@ -141,4 +147,51 @@ test('string tool_response is compressed directly to a string', () => {
   const parsed = JSON.parse(out) as Envelope<string>;
   assert.equal(typeof parsed.hookSpecificOutput.updatedToolOutput, 'string');
   assert.ok(parsed.hookSpecificOutput.updatedToolOutput.includes('[compressor:'));
+});
+
+// big enough (cheapEstimator) to trip slim's truncate budget; no repeats so
+// dedupe stays out of the way and the truncation marker carries the style
+function distinctLog(lines: number): string {
+  return Array.from(
+    { length: lines },
+    (_, i) => `row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur adipiscing`,
+  ).join('\n');
+}
+
+function stdoutOf(output: string | null): string {
+  assert.ok(output !== null, 'expected non-null output');
+  return (JSON.parse(output) as Envelope<BashOutput>).hookSpecificOutput.updatedToolOutput.stdout;
+}
+
+test('marker style defaults to the policy value (plain)', () => {
+  const stdout = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
+  assert.match(stdout, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
+  assert.ok(!stdout.includes('likely irrelevant'));
+});
+
+test('--marker-style deterrent override changes ONLY the marker line', () => {
+  const plain = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
+  const deterrent = stdoutOf(
+    handlePostToolUse(bashPayload(distinctLog(600)), 'slim', 'deterrent').output,
+  );
+  assert.ok(deterrent.includes('likely irrelevant'), 'deterrent phrasing present');
+  assert.ok(deterrent.includes('ONLY if the problem you are chasing'));
+  const sansMarkers = (text: string): string =>
+    text
+      .split('\n')
+      .filter((line) => !line.includes('[compressor:'))
+      .join('\n');
+  assert.equal(sansMarkers(deterrent), sansMarkers(plain), 'non-marker content identical');
+});
+
+test('--marker-style informative override reports the omitted-range scan', () => {
+  const rows = distinctLog(600).split('\n');
+  rows[300] = 'Error: kaboom while processing row 00300'; // 1-based line 301
+  const stdout = stdoutOf(
+    handlePostToolUse(bashPayload(rows.join('\n')), 'slim', 'informative').output,
+  );
+  assert.ok(
+    stdout.includes('1 lines matching error/fail/warn at lines 301'),
+    `expected scan report in: ${stdout.slice(0, 400)}`,
+  );
 });

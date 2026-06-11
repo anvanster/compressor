@@ -11,11 +11,15 @@ import { filterTestLog } from '../../src/engine/tiers/logs.ts';
 
 const SUITE_PATH = fileURLToPath(new URL('../../bench/suites/basic.json', import.meta.url));
 const MAIN_SUITE_PATH = fileURLToPath(new URL('../../bench/suites/main.json', import.meta.url));
+const INTERACTIVE_SUITE_PATH = fileURLToPath(
+  new URL('../../bench/suites/interactive.json', import.meta.url),
+);
 
 /** Shipped suites: every per-suite test below runs over each entry. */
 const SUITES = [
   { name: 'basic', path: SUITE_PATH, taskCount: 6, commandTaskCount: 5 },
   { name: 'main', path: MAIN_SUITE_PATH, taskCount: 10, commandTaskCount: 7 },
+  { name: 'interactive', path: INTERACTIVE_SUITE_PATH, taskCount: 4, commandTaskCount: 2 },
 ] as const;
 
 async function writeTmpSuite(spec: unknown): Promise<string> {
@@ -85,6 +89,69 @@ test('main suite = the 6 basic tasks verbatim + the 4 expansion tasks', async ()
     assert.equal(task.check.kind, 'command');
     assert.ok(task.tags?.includes('hook-target'), `${id} must carry the hook-target tag`);
   }
+});
+
+test('interactive suite: 4 conversations over existing fixtures, reusing the shipped checks', async () => {
+  const interactive = await loadSuite(INTERACTIVE_SUITE_PATH);
+  const main = await loadSuite(MAIN_SUITE_PATH);
+  assert.deepEqual(
+    interactive.tasks.map((t) => t.id),
+    [
+      'add-function-conversation',
+      'bugfix-conversation',
+      'review-conversation',
+      'explain-conversation',
+    ],
+  );
+  // every task is a scripted conversation over a fixture main.json already ships
+  const mainByFixture = new Map(main.tasks.map((t) => [t.fixture, t]));
+  for (const task of interactive.tasks) {
+    assert.ok(task.turns !== undefined && task.turns.length >= 2, `${task.id}: needs turns`);
+    assert.ok(task.tags?.includes('interactive'), `${task.id}: interactive tag`);
+    const original = mainByFixture.get(task.fixture);
+    assert.ok(original, `${task.id}: fixture ${task.fixture} is not an existing fixture`);
+    // the opening prompt and the check are the proven ones from main.json —
+    // multi-turn answer-regex judging matches ANY turn, so the patterns hold
+    assert.equal(task.prompt, original.prompt, `${task.id}: opening prompt drifted`);
+    assert.deepEqual(task.check, original.check, `${task.id}: check drifted from main.json`);
+  }
+  const byId = new Map(interactive.tasks.map((t) => [t.id, t]));
+  assert.equal(byId.get('add-function-conversation')?.turns?.length, 3);
+  assert.equal(byId.get('bugfix-conversation')?.turns?.length, 3);
+  assert.equal(byId.get('review-conversation')?.turns?.length, 2);
+  assert.equal(byId.get('explain-conversation')?.turns?.length, 2);
+});
+
+test('loadSuite parses turns and rejects malformed ones', async () => {
+  // valid: round-trips the array
+  const good = await loadSuite(
+    await writeTmpSuite({ name: 'ok', tasks: [taskTemplate({ turns: ['a', 'b'] })] }),
+  );
+  assert.deepEqual(good.tasks[0]?.turns, ['a', 'b']);
+  // absent: stays absent (single-shot)
+  const single = await loadSuite(await writeTmpSuite({ name: 'ok', tasks: [taskTemplate()] }));
+  assert.equal(single.tasks[0]?.turns, undefined);
+
+  await assert.rejects(
+    loadSuite(
+      await writeTmpSuite({ name: 'bad', tasks: [taskTemplate({ turns: 'follow up' })] }),
+    ),
+    /task a-task: turns must be a non-empty array/,
+  );
+  await assert.rejects(
+    loadSuite(await writeTmpSuite({ name: 'bad', tasks: [taskTemplate({ turns: [] })] })),
+    /task a-task: turns must be a non-empty array/,
+  );
+  await assert.rejects(
+    loadSuite(
+      await writeTmpSuite({ name: 'bad', tasks: [taskTemplate({ turns: ['ok', 42] })] }),
+    ),
+    /task a-task: turns\[1\] must be a non-empty string/,
+  );
+  await assert.rejects(
+    loadSuite(await writeTmpSuite({ name: 'bad', tasks: [taskTemplate({ turns: [''] })] })),
+    /task a-task: turns\[0\] must be a non-empty string/,
+  );
 });
 
 test('suiteFixturesDir resolves the sibling fixtures directory', () => {

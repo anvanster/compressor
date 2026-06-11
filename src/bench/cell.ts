@@ -3,7 +3,12 @@ import { cp, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/p
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { encodeProjectDir, type UsageTotals } from '../claude/transcripts.ts';
+import {
+  addUsage,
+  encodeProjectDir,
+  readSessionUsage,
+  type UsageTotals,
+} from '../claude/transcripts.ts';
 import { resolveHookCommand } from '../paths.ts';
 import type { CellResult, CellSpec, TaskCheck, Variant } from './types.ts';
 
@@ -45,6 +50,24 @@ async function gitInitBestEffort(workspace: string): Promise<void> {
   }
 }
 
+/**
+ * Hook command installed in a cell: the resolved bundle command plus the
+ * variant's extra args (Variant.hookArgs, e.g. '--marker-style informative')
+ * so experiments can vary engine behavior per variant. `root` is exposed for
+ * tests only; production callers use the package default.
+ */
+export function hookCommandForVariant(variant: Variant, root?: string): string {
+  if (variant.baseMode === 'full') {
+    throw new Error(`variant ${variant.id}: hook requires baseMode optimized|slim`);
+  }
+  const base =
+    root === undefined
+      ? resolveHookCommand(variant.baseMode)
+      : resolveHookCommand(variant.baseMode, root);
+  const extra = variant.hookArgs?.trim() ?? '';
+  return extra === '' ? base : `${base} ${extra}`;
+}
+
 /** Writes style files + cell settings; returns the settings file path. */
 async function writeVariantArtifacts(
   variant: Variant,
@@ -73,14 +96,11 @@ async function writeVariantArtifacts(
     settings['outputStyle'] = variant.styleName;
   }
   if (variant.hook) {
-    if (variant.baseMode === 'full') {
-      throw new Error(`variant ${variant.id}: hook requires baseMode optimized|slim`);
-    }
     settings['hooks'] = {
       PostToolUse: [
         {
           matcher: HOOK_MATCHER,
-          hooks: [{ type: 'command', command: resolveHookCommand(variant.baseMode) }],
+          hooks: [{ type: 'command', command: hookCommandForVariant(variant) }],
         },
       ],
     };
@@ -114,10 +134,15 @@ async function baselineCheck(check: TaskCheck, workspace: string): Promise<boole
   return outcome.kind === 'ran' ? outcome.passed : null;
 }
 
+/**
+ * Command checks run once in the workspace (after the final turn). For
+ * answer-regex the conversation is the answer: pass when the pattern matches
+ * ANY single turn's result text (see the semantics note in tasks.ts).
+ */
 async function judgeSuccess(
   check: TaskCheck,
   workspace: string,
-  resultText: string,
+  resultTexts: string[],
 ): Promise<{ success: boolean | null; checkError: string | null }> {
   if (check.kind === 'command') {
     const outcome = await runCommandCheck(check.command, workspace);
@@ -128,10 +153,26 @@ async function judgeSuccess(
   }
   try {
     const re = new RegExp(check.pattern, check.flags);
-    return { success: re.test(resultText), checkError: null };
+    const success = resultTexts.some((text) => {
+      re.lastIndex = 0; // 'g'/'y' flags carry state across .test calls
+      return re.test(text);
+    });
+    return { success, checkError: null };
   } catch (error) {
     return { success: null, checkError: `answer-regex invalid: ${errorMessage(error)}` };
   }
+}
+
+/**
+ * Environment for the claude child process (and therefore for the PostToolUse
+ * hook it spawns). CLAUDE_CONFIG_DIR isolates the cell; COMPRESSOR_NO_LEDGER
+ * keeps benchmark cells out of the user's LIVE savings ledger — hook-bearing
+ * cells run the real hook, and without the kill switch every worthwhile
+ * compression would append a synthetic event to ~/.compressor/ledger,
+ * corrupting what `compressor savings` reports. Exported for tests.
+ */
+export function cellEnv(scratch: string): NodeJS.ProcessEnv {
+  return { ...process.env, CLAUDE_CONFIG_DIR: scratch, COMPRESSOR_NO_LEDGER: '1' };
 }
 
 async function invokeClaude(
@@ -139,12 +180,14 @@ async function invokeClaude(
   workspace: string,
   scratch: string,
   settingsFile: string,
+  prompt: string,
+  resumeSessionId?: string,
 ): Promise<string> {
   const bin = process.env.COMPRESSOR_CLAUDE_BIN ?? 'claude';
   const args = [
     '--bare',
     '-p',
-    spec.task.prompt,
+    prompt,
     '--output-format',
     'json',
     '--model',
@@ -152,9 +195,13 @@ async function invokeClaude(
     '--settings',
     settingsFile,
   ];
+  if (resumeSessionId !== undefined) {
+    // documented headless continuation: claude -p "<prompt>" --resume <id>
+    args.push('--resume', resumeSessionId);
+  }
   const options = {
     cwd: workspace,
-    env: { ...process.env, CLAUDE_CONFIG_DIR: scratch },
+    env: cellEnv(scratch),
     timeout: CLAUDE_TIMEOUT_MS,
     maxBuffer: MAX_BUFFER,
   };
@@ -205,6 +252,64 @@ function parseResultJson(stdout: string): ParsedResult {
       : 0,
     resultText: typeof parsed['result'] === 'string' ? parsed['result'] : '',
   };
+}
+
+function transcriptFilePath(scratch: string, workspace: string, sessionId: string): string {
+  return path.join(scratch, 'projects', encodeProjectDir(workspace), `${sessionId}.jsonl`);
+}
+
+/**
+ * Transcript totals and summed per-turn result JSONs count the same API
+ * responses, so they must roughly agree. Divergence beyond this relative
+ * tolerance means one of the two known failure topologies happened: a
+ * resumed session forked ids and the final transcript does NOT carry the
+ * full copied history (transcript ≪ sum: usage silently undercounts to
+ * roughly the last turn), or per-turn result JSONs report cumulative
+ * session usage (sum ≫ transcript: the fallback double-counts). Neither is
+ * detectable from one side alone; the cell is flagged data-quality-suspect.
+ */
+export const USAGE_MISMATCH_TOLERANCE = 0.25;
+
+function totalTokens(usage: UsageTotals): number {
+  return usage.input + usage.output + usage.cacheCreation + usage.cacheRead;
+}
+
+/**
+ * Cell-level usage for multi-turn cells: the FINAL transcript, deduped by
+ * requestId (readSessionUsage), is authoritative across all turns — resumed
+ * sessions carry the full history, and per-turn result JSONs would double
+ * count anything the API reported on more than one turn. Falls back to
+ * summing the turn result JSONs when the transcript is missing/empty.
+ * When the transcript IS used, it is cross-checked against the summed
+ * per-turn usage; disagreement flags the cell instead of silently reporting
+ * a wrong total (`suspect` carries the data-quality note).
+ */
+async function multiTurnUsage(
+  scratch: string,
+  workspace: string,
+  sessionId: string | null,
+  turnUsage: UsageTotals[],
+): Promise<{ totals: UsageTotals; suspect: string | null }> {
+  const summed = turnUsage.reduce(addUsage, zeroUsage());
+  if (sessionId === null) {
+    return { totals: summed, suspect: null };
+  }
+  try {
+    const session = await readSessionUsage(transcriptFilePath(scratch, workspace, sessionId));
+    if (session.turns === 0) {
+      return { totals: summed, suspect: null };
+    }
+    const fromTranscript = totalTokens(session.totals);
+    const fromTurns = totalTokens(summed);
+    const limit = Math.max(fromTranscript, fromTurns) * USAGE_MISMATCH_TOLERANCE;
+    const suspect =
+      fromTurns > 0 && Math.abs(fromTranscript - fromTurns) > limit
+        ? `usage data-quality: final transcript totals (${fromTranscript} tokens) diverge from summed per-turn usage (${fromTurns} tokens) by >${Math.round(USAGE_MISMATCH_TOLERANCE * 100)}% — resumed session may have forked without full history, or per-turn result JSONs may be cumulative`
+        : null;
+    return { totals: session.totals, suspect };
+  } catch {
+    return { totals: summed, suspect: null };
+  }
 }
 
 async function countToolCalls(transcriptFile: string): Promise<Record<string, number>> {
@@ -278,6 +383,13 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
   let workspace = '';
   let scratch = '';
   let baselineCheckPassed: boolean | null = null;
+  const isMultiTurn = spec.task.turns !== undefined;
+  // accumulated outside the try so a failed turn still reports completed
+  // turns — including their COSTS: every completed turn's costUsd is known
+  // at failure time, and discarding it would leave the runner's budget
+  // ceiling blind to real spend on exactly the runs that misbehave
+  const turnUsage: UsageTotals[] = [];
+  const turnCosts: number[] = [];
 
   try {
     // realpath both sides so the encoded transcript dir matches the cwd the
@@ -296,40 +408,76 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
     const settingsFile = await writeVariantArtifacts(spec.variant, workspace, scratch);
     baselineCheckPassed = await baselineCheck(spec.task.check, workspace);
 
-    const stdout = await invokeClaude(spec, workspace, scratch, settingsFile);
-    const parsed = parseResultJson(stdout);
+    // scripted conversation: first the task prompt, then each turn resumed
+    // from the previous turn's session id (sessions can fork ids on resume,
+    // so each turn chains from the one before it)
+    const prompts = [spec.task.prompt, ...(spec.task.turns ?? [])];
+    const turns: ParsedResult[] = [];
+    for (const [index, prompt] of prompts.entries()) {
+      const label = prompts.length > 1 ? `turn ${index + 1}/${prompts.length}: ` : '';
+      let resume: string | undefined;
+      if (index > 0) {
+        const prevSession = turns[index - 1]?.sessionId ?? null;
+        if (prevSession === null) {
+          throw new Error(`${label}previous turn reported no session_id to --resume from`);
+        }
+        resume = prevSession;
+      }
+      let parsed: ParsedResult;
+      try {
+        const stdout = await invokeClaude(spec, workspace, scratch, settingsFile, prompt, resume);
+        parsed = parseResultJson(stdout);
+      } catch (error) {
+        // single-shot keeps its original message; conversations get the label
+        throw label === '' ? error : new Error(`${label}${errorMessage(error)}`);
+      }
+      turns.push(parsed);
+      turnUsage.push(parsed.usage);
+      if (typeof parsed.costUsd === 'number') {
+        turnCosts.push(parsed.costUsd);
+      }
+    }
 
+    const final = turns[turns.length - 1];
+    if (final === undefined) {
+      throw new Error('no turns ran'); // unreachable: prompts is never empty
+    }
+
+    // final transcript covers the whole conversation (toolCalls + usage)
     const toolCalls =
-      parsed.sessionId === null
+      final.sessionId === null
         ? {}
-        : await countToolCalls(
-            path.join(
-              scratch,
-              'projects',
-              encodeProjectDir(workspace),
-              `${parsed.sessionId}.jsonl`,
-            ),
-          );
+        : await countToolCalls(transcriptFilePath(scratch, workspace, final.sessionId));
+    const multi = isMultiTurn
+      ? await multiTurnUsage(scratch, workspace, final.sessionId, turnUsage)
+      : null;
+    const usage = multi === null ? final.usage : multi.totals;
 
     const { success, checkError } = await judgeSuccess(
       spec.task.check,
       workspace,
-      parsed.resultText,
+      turns.map((turn) => turn.resultText),
+    );
+
+    const problems = [checkError, multi?.suspect ?? null].filter(
+      (note): note is string => note !== null,
     );
 
     return {
       ...base,
-      servedModels: parsed.servedModels,
+      servedModels: [...new Set(turns.flatMap((turn) => turn.servedModels))],
       baselineCheckPassed,
       success,
-      usage: parsed.usage,
-      costUsd: parsed.costUsd,
-      durationMs: parsed.durationMs,
-      numTurns: parsed.numTurns,
-      permissionDenials: parsed.permissionDenials,
+      usage,
+      // each invocation reports its own totals: sum across turns
+      costUsd: turnCosts.length === 0 ? null : turnCosts.reduce((sum, cost) => sum + cost, 0),
+      durationMs: turns.reduce((sum, turn) => sum + turn.durationMs, 0),
+      numTurns: turns.reduce((sum, turn) => sum + turn.numTurns, 0),
+      permissionDenials: turns.reduce((sum, turn) => sum + turn.permissionDenials, 0),
+      ...(isMultiTurn ? { turnUsage: [...turnUsage] } : {}),
       toolCalls,
-      sessionId: parsed.sessionId,
-      ...(checkError !== null ? { error: checkError } : {}),
+      sessionId: final.sessionId,
+      ...(problems.length > 0 ? { error: problems.join('; ') } : {}),
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
@@ -338,11 +486,16 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
       servedModels: [],
       baselineCheckPassed,
       success: null,
-      usage: zeroUsage(),
-      costUsd: null,
+      // a failed/garbled turn errors the cell, but completed turns still
+      // count: usage sums them (keeps `usage` consistent with `turnUsage` —
+      // an aggregator summing either must see the same spend) and costUsd
+      // carries the partial spend so the runner's budget ceiling sees it
+      usage: turnUsage.reduce(addUsage, zeroUsage()),
+      costUsd: turnCosts.length === 0 ? null : turnCosts.reduce((sum, cost) => sum + cost, 0),
       durationMs: 0,
       numTurns: 0,
       permissionDenials: 0,
+      ...(isMultiTurn && turnUsage.length > 0 ? { turnUsage: [...turnUsage] } : {}),
       toolCalls: {},
       sessionId: null,
       error: errorMessage(error),

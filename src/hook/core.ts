@@ -1,6 +1,8 @@
-import type { CompressMeta, Mode, ToolKind } from '../engine/types.ts';
+import type { CompressMeta, CompressStats, MarkerStyle, Mode, ToolKind } from '../engine/types.ts';
+import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
+import { appendLedger } from '../ledger/write.ts';
 
 // Protocol-independent hook core shared by the Claude Code (PostToolUse) and
 // Copilot (postToolUse) protocol layers. Payload field names, tool-name
@@ -19,27 +21,89 @@ export interface CompressedCall {
   text: string;
   /** false = leave the tool output alone (below floor, marker present, throw) */
   worthwhile: boolean;
+  /** engine stats for the worthwhile case (ledger needs tokens/transforms) */
+  stats?: CompressStats;
 }
 
 /** Below either floor the rewrite is noise: don't churn the context. */
 const MIN_SAVED_CHARS = 200;
 const MIN_SAVED_RATIO = 0.1;
 
-export function compressCall(call: CompressibleCall, mode: Mode): CompressedCall {
+/**
+ * Length of the compressed output EXCLUDING marker lines, mirroring the
+ * engine's decide() filter (engine/index.ts). The floors must be measured
+ * against content only: marker text is the marker-style experiment's
+ * treatment (informative/deterrent markers run ~50-120 chars longer than
+ * plain, multiplied by one marker per skeleton gap), so a marker-inclusive
+ * `saved` lets arms flip between compressed and full passthrough near either
+ * floor — the arms would then differ in WHAT the model sees, not just in
+ * marker phrasing, and the treatment marker would be absent exactly when
+ * phrasing is being compared.
+ */
+function lengthSansMarkers(text: string): number {
+  if (!text.includes(OMISSION_MARKER)) {
+    return text.length;
+  }
+  return text
+    .split('\n')
+    .filter((line) => !line.includes(OMISSION_MARKER))
+    .join('\n').length;
+}
+
+export function compressCall(
+  call: CompressibleCall,
+  mode: Mode,
+  markerStyle?: MarkerStyle,
+): CompressedCall {
   try {
     const meta: CompressMeta = { tool: call.toolKind, mode, targeted: call.targeted };
     if (call.filePath !== undefined) {
       meta.filePath = call.filePath;
     }
-    const result = compress(call.text, meta, policyFor(mode), cheapEstimator);
-    const saved = call.text.length - result.content.length;
+    const base = policyFor(mode);
+    const policy = markerStyle === undefined ? base : { ...base, markerStyle };
+    const result = compress(call.text, meta, policy, cheapEstimator);
+    // marker-stripped so worthwhileness is style-invariant (see above)
+    const saved = call.text.length - lengthSansMarkers(result.content);
     if (saved < MIN_SAVED_CHARS || saved < call.text.length * MIN_SAVED_RATIO) {
       return { text: call.text, worthwhile: false };
     }
-    return { text: result.content, worthwhile: true };
+    return { text: result.content, worthwhile: true, stats: result.stats };
   } catch {
     // FAIL-OPEN: a broken hook must never break the user's agent.
     return { text: call.text, worthwhile: false };
+  }
+}
+
+/**
+ * Fire-and-forget ledger entry for a worthwhile compression. Called by the
+ * protocol layers (they know which agent they serve). Never awaited on the
+ * hot path; the hook entries settle pending writes (capped at 250ms) before
+ * exiting. Privacy: sizes and transform ids only — no paths, no content.
+ */
+export function recordCompression(
+  agent: 'claude-code' | 'copilot',
+  call: CompressibleCall,
+  compressed: CompressedCall,
+  mode: Mode,
+): void {
+  try {
+    if (!compressed.worthwhile) {
+      return;
+    }
+    void appendLedger({
+      ts: new Date().toISOString(),
+      agent,
+      tool: call.toolKind,
+      mode,
+      charsIn: call.text.length,
+      charsOut: compressed.text.length,
+      estTokensIn: compressed.stats?.estTokensIn ?? cheapEstimator(call.text),
+      estTokensOut: compressed.stats?.estTokensOut ?? cheapEstimator(compressed.text),
+      transforms: compressed.stats?.transforms.map((t) => t.id) ?? [],
+    }).catch(() => {});
+  } catch {
+    // FAIL-OPEN: the ledger must never break the hook.
   }
 }
 

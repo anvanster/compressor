@@ -1,0 +1,76 @@
+{
+  "name": "interactive",
+  "tasks": [
+    {
+      "id": "add-function-conversation",
+      "prompt": "One test in test.mjs fails because strings.mjs does not export slugify yet. Implement slugify in strings.mjs per the failing test's contract. Do not modify the tests.",
+      "turns": [
+        "Now also handle unicode dashes and collapse repeated separators — extend the implementation (tests must still pass)",
+        "Explain what you implemented and why, for a code reviewer",
+        "Add JSDoc to the function"
+      ],
+      "fixture": "add-function",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "interactive"
+      ]
+    },
+    {
+      "id": "bugfix-conversation",
+      "prompt": "Tests are failing. Find and fix the bug. Do not modify the tests.",
+      "turns": [
+        "walk me through the root cause",
+        "what other code in this repo could have the same class of bug? check",
+        "summarize the session"
+      ],
+      "fixture": "bugfix-off-by-one",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "interactive"
+      ]
+    },
+    {
+      "id": "review-conversation",
+      "prompt": "Review changes.patch against this codebase. Identify any bugs the patch introduces, with file/function references, and assess the overall change.",
+      "turns": [
+        "focus on the worst bug — explain its impact in production",
+        "draft a PR comment for the author"
+      ],
+      "fixture": "review-diff",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "^(?=[\\s\\S]*(?:applyTierDiscount|applyVolumePricing))(?=[\\s\\S]*(?:<=\\s*tiers\\.length|past the end|out[ -]of[ -]bounds|off[ -]by[ -]one|\\bundefined\\b|TypeError))(?=[\\s\\S]*(?:scheduleRetry|chargeWithRetry))(?=[\\s\\S]*(?:swap|transpos|revers|flip|backwards|inverted|wrong order|order of (?:the )?(?:argument|arg|parameter)s?|(?:argument|parameter) order|(?:delay|backoff)[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?attempt|attempt[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?(?:delay|backoff)))",
+        "flags": "i"
+      },
+      "tags": [
+        "interactive",
+        "output-heavy",
+        "prose"
+      ]
+    },
+    {
+      "id": "explain-conversation",
+      "prompt": "How does a plugin intercept an event before other handlers see it? Explain the mechanism.",
+      "turns": [
+        "how would you add a new event type? list the exact files/functions to touch",
+        "what is the riskiest part of this design?"
+      ],
+      "fixture": "explain-codebase",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "before[\\s-]?dispatch[\\s\\S]*cancel|cancel[\\s\\S]*before[\\s-]?dispatch",
+        "flags": "i"
+      },
+      "tags": [
+        "interactive",
+        "output-heavy"
+      ]
+    }
+  ]
+}

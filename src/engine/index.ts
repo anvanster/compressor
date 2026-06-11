@@ -45,6 +45,24 @@ export function compress(
     if (result.transform !== undefined) transforms.push(result.transform);
   };
 
+  // Decision estimator: threshold checks and truncation boundaries must not
+  // depend on marker TEXT, only on content — otherwise the marker-style
+  // experiment arms (plain/deterrent/informative phrasings of different
+  // lengths) would diverge in WHICH lines they keep, not just in marker
+  // wording. Any line containing OMISSION_MARKER mid-pipeline was inserted by
+  // an earlier tier in this run (pre-marked input passes through above), and
+  // every style inserts the same NUMBER of marker lines, so excluding them
+  // keeps decisions identical across styles.
+  const decide: Estimator = (text) =>
+    estimate(
+      text.includes(OMISSION_MARKER)
+        ? text
+            .split('\n')
+            .filter((line) => !line.includes(OMISSION_MARKER))
+            .join('\n')
+        : text,
+    );
+
   if (policy.structural) {
     apply(stripAnsi(current));
     apply(collapseBlankRuns(current));
@@ -55,23 +73,23 @@ export function compress(
 
   if (policy.codeAware && kind === 'code') {
     const lang = langFromPath(meta.filePath);
-    if (estimate(current) > policy.skeleton) {
-      apply(skeleton(current, lang, meta, estimate));
-    } else if (estimate(current) > policy.commentStrip) {
-      apply(stripComments(current, lang));
+    if (decide(current) > policy.skeleton) {
+      apply(skeleton(current, lang, meta, estimate, policy.markerStyle));
+    } else if (decide(current) > policy.commentStrip) {
+      apply(stripComments(current, lang, policy.markerStyle));
     }
   }
 
-  if (policy.logAware && estimate(current) > policy.logFilter) {
-    if (kind === 'test-log') apply(filterTestLog(current));
-    else if (kind === 'build-log') apply(filterBuildLog(current));
+  if (policy.logAware && decide(current) > policy.logFilter) {
+    if (kind === 'test-log') apply(filterTestLog(current, policy.markerStyle));
+    else if (kind === 'build-log') apply(filterBuildLog(current, policy.markerStyle));
   }
 
-  if (estimate(current) > policy.truncateBudget) {
+  if (decide(current) > policy.truncateBudget) {
     // Earlier tiers (except strip-ansi) delete lines, so array positions no
     // longer correspond to file line numbers.
     const positionsAreFileLines = transforms.every((t) => t.id === 'strip-ansi');
-    apply(truncateHeadTail(current, meta, policy, estimate, positionsAreFileLines));
+    apply(truncateHeadTail(current, meta, policy, decide, positionsAreFileLines));
   }
 
   return {

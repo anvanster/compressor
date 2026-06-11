@@ -7,6 +7,7 @@ import type { CellResult, RunMeta } from '../../src/bench/types.ts';
 import {
   aggregate,
   appendResult,
+  balanceWarning,
   newRunId,
   readRun,
   writeRunMeta,
@@ -169,4 +170,50 @@ test('aggregate: odd count and all-error variants', () => {
   assert.equal(c.medianOutput, 0);
   assert.deepEqual(c.iqrOutput, [0, 0]);
   assert.deepEqual(c.toolCallTotals, {});
+});
+
+// Regression: separate per-arm runs with independent budget ceilings truncate
+// at different points, leaving arms with unequal cell counts — comparisons
+// over such data are unbalanced by construction. balanceWarning is the
+// post-run assertion the benchmark command surfaces before analysis.
+test('balanceWarning: null when balanced, warning naming counts when not', () => {
+  // balanced: same executed count per variant (errors still count as executed)
+  assert.equal(
+    balanceWarning([
+      row({ variantId: 'plain' }),
+      row({ variantId: 'deterrent' }),
+      row({ variantId: 'plain', error: 'turn 2/4: boom' }),
+      row({ variantId: 'deterrent', error: 'turn 2/4: boom' }),
+    ]),
+    null,
+  );
+
+  // budget/no-cost skips do not count as executed — a fully skipped tail
+  // that hits every variant equally stays balanced
+  assert.equal(
+    balanceWarning([
+      row({ variantId: 'plain' }),
+      row({ variantId: 'deterrent' }),
+      row({ variantId: 'plain', error: 'skipped: budget ceiling 5 USD reached' }),
+      row({ variantId: 'deterrent', error: 'skipped: budget ceiling 5 USD reached' }),
+    ]),
+    null,
+  );
+
+  // unbalanced: one arm lost a cell to its ceiling
+  const warning = balanceWarning([
+    row({ variantId: 'plain' }),
+    row({ variantId: 'plain' }),
+    row({ variantId: 'deterrent' }),
+    row({ variantId: 'deterrent', error: 'skipped: budget ceiling 5 USD reached' }),
+  ]);
+  assert.ok(warning !== null);
+  assert.match(warning, /unbalanced variants/);
+  assert.match(warning, /plain=2/);
+  assert.match(warning, /deterrent=1/);
+  assert.match(warning, /drop task×trial groups/);
+
+  // degenerate inputs stay quiet
+  assert.equal(balanceWarning([]), null);
+  assert.equal(balanceWarning([row({ variantId: 'only' })]), null);
 });

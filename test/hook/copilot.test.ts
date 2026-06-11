@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import process from 'node:process';
 import { handleCopilotPostToolUse } from '../../src/hook/copilot.ts';
+
+// Worthwhile compressions fire fire-and-forget ledger appends; keep this
+// suite hermetic (never touch the real ~/.compressor). Ledger behavior has
+// its own tests under test/ledger/ using temp dirs.
+process.env['COMPRESSOR_NO_LEDGER'] = '1';
 
 function repetitiveLog(lines: number): string {
   return Array.from(
@@ -249,4 +255,36 @@ test('toolResult with no string content at all is passthrough', () => {
     toolResult: 7,
   });
   assert.equal(handleCopilotPostToolUse(payload, 'slim').output, null);
+});
+
+// big enough (cheapEstimator) to trip slim's truncate budget; no repeats so
+// dedupe stays out of the way and the truncation marker carries the style
+function distinctLog(lines: number): string {
+  return Array.from(
+    { length: lines },
+    (_, i) => `row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur adipiscing`,
+  ).join('\n');
+}
+
+test('marker style defaults to the policy value (plain)', () => {
+  const out = handleCopilotPostToolUse(
+    copilotPayload('bash', { command: 'cargo build 2>&1' }, distinctLog(600)),
+    'slim',
+  ).output;
+  assert.ok(out !== null, 'expected non-null output');
+  const replaced = (JSON.parse(out) as CopilotResponse).modifiedResult.textResultForLlm;
+  assert.match(replaced, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
+  assert.ok(!replaced.includes('likely irrelevant'));
+});
+
+test('--marker-style deterrent override flows through to the marker', () => {
+  const out = handleCopilotPostToolUse(
+    copilotPayload('bash', { command: 'cargo build 2>&1' }, distinctLog(600)),
+    'slim',
+    'deterrent',
+  ).output;
+  assert.ok(out !== null, 'expected non-null output');
+  const replaced = (JSON.parse(out) as CopilotResponse).modifiedResult.textResultForLlm;
+  assert.ok(replaced.includes('likely irrelevant'), 'deterrent phrasing present');
+  assert.ok(replaced.includes('ONLY if the problem you are chasing'));
 });

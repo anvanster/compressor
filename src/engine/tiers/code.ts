@@ -1,5 +1,11 @@
-import type { CompressMeta, Estimator } from '../types.ts';
-import { lineNumberOf, omissionMarker, tierResult } from './structural.ts';
+import type { CompressMeta, Estimator, MarkerStyle } from '../types.ts';
+import {
+  formatMatchLines,
+  lineNumberOf,
+  omissionMarker,
+  scanFailureLines,
+  tierResult,
+} from './structural.ts';
 import type { TierResult } from './structural.ts';
 
 export type CodeLang =
@@ -91,7 +97,29 @@ function scanPythonTriples(text: string, open: TripleQuote | null): TripleQuote 
   return state;
 }
 
-export function stripComments(content: string, lang: CodeLang | undefined): TierResult {
+function commentStripMarker(
+  stripped: number,
+  strippedLines: readonly string[],
+  style: MarkerStyle,
+): string {
+  const head = `[compressor: ${stripped} comment/blank lines stripped — line numbers preserved`;
+  if (style === 'deterrent') {
+    return `${head}; comments are likely irrelevant to the problem you are chasing]`;
+  }
+  if (style === 'informative') {
+    const scan = scanFailureLines(strippedLines);
+    return scan.count === 0
+      ? `${head}; no error/failure/warning text among them; safe to skip]`
+      : `${head}; ${scan.count} stripped lines matching error/fail/warn at lines ${formatMatchLines(scan)}]`;
+  }
+  return `${head}]`;
+}
+
+export function stripComments(
+  content: string,
+  lang: CodeLang | undefined,
+  style: MarkerStyle = 'plain',
+): TierResult {
   if (lang === undefined || !hasLineNumbers(content)) return { content };
   // yaml/toml '#' lines inside block scalars are data, not comments — never strip config.
   if (lang === 'config') return { content };
@@ -99,6 +127,7 @@ export function stripComments(content: string, lang: CodeLang | undefined): Tier
   const block = syntax.block;
   const lines = content.split('\n');
   const kept: string[] = [];
+  const strippedLines: string[] = [];
   let stripped = 0;
   let inBlock = false;
   let tripleOpen: TripleQuote | null = null;
@@ -142,13 +171,14 @@ export function stripComments(content: string, lang: CodeLang | undefined): Tier
     }
     if (drop) {
       stripped += 1;
+      strippedLines.push(line);
     } else {
       if (lang === 'python') tripleOpen = scanPythonTriples(text, null);
       kept.push(line);
     }
   }
   if (stripped === 0) return { content };
-  const marker = `[compressor: ${stripped} comment/blank lines stripped — line numbers preserved]`;
+  const marker = commentStripMarker(stripped, strippedLines, style);
   const trailing = kept.length > 0 && kept[kept.length - 1] === '' ? kept.pop() : undefined;
   kept.push(marker);
   if (trailing !== undefined) kept.push(trailing);
@@ -169,6 +199,7 @@ export function skeleton(
   lang: CodeLang | undefined,
   meta: CompressMeta,
   estimate: Estimator,
+  style: MarkerStyle = 'plain',
 ): TierResult {
   if (lang === undefined || !hasLineNumbers(content)) return { content };
   const isSignature = SIGNATURE_TESTS[lang];
@@ -185,7 +216,7 @@ export function skeleton(
     if (gap.length < 2 || a === undefined || b === undefined) {
       out.push(...gap);
     } else {
-      out.push(omissionMarker(a, b, estimate(gap.join('\n')), meta));
+      out.push(omissionMarker(a, b, estimate(gap.join('\n')), meta, style, gap));
     }
     gap = [];
   };

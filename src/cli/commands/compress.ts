@@ -1,12 +1,13 @@
 import process from 'node:process';
 import { compress, policyFor } from '../../engine/index.ts';
-import type { CompressMeta, Mode, ToolKind } from '../../engine/types.ts';
+import type { CompressMeta, MarkerStyle, Mode, ToolKind } from '../../engine/types.ts';
 import { tiktokenEstimator } from '../../tokens/estimate.ts';
 
 export interface CompressOptions {
   mode?: string;
   kind?: string;
   filePath?: string;
+  markerStyle?: string;
 }
 
 export async function readStdin(): Promise<string> {
@@ -31,14 +32,25 @@ function parseKind(value: string): ToolKind {
   throw new Error(`unknown kind '${value}' (expected read|bash|search|other)`);
 }
 
+function parseMarkerStyle(value: string): MarkerStyle {
+  if (value === 'plain' || value === 'deterrent' || value === 'informative') {
+    return value;
+  }
+  throw new Error(`unknown marker style '${value}' (expected plain|deterrent|informative)`);
+}
+
 export async function runCompress(opts: CompressOptions): Promise<void> {
   const mode = parseMode(opts.mode ?? 'optimized');
   const meta: CompressMeta = { tool: parseKind(opts.kind ?? 'other'), mode };
   if (opts.filePath !== undefined) {
     meta.filePath = opts.filePath;
   }
+  const policy =
+    opts.markerStyle === undefined
+      ? policyFor(mode)
+      : { ...policyFor(mode), markerStyle: parseMarkerStyle(opts.markerStyle) };
   const text = await readStdin();
-  const result = compress(text, meta, policyFor(mode), tiktokenEstimator());
+  const result = compress(text, meta, policy, tiktokenEstimator());
   process.stdout.write(result.content);
   const { estTokensIn, estTokensOut, kind, transforms } = result.stats;
   const pct =

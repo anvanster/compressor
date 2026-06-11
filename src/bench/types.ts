@@ -11,6 +11,12 @@ export type TaskCheck =
 export interface TaskSpec {
   id: string;
   prompt: string;
+  /**
+   * Follow-up prompts forming a scripted multi-turn conversation: the runner
+   * sends `prompt`, then each entry via `claude -p --resume <session-id>`.
+   * Absent = single-shot (existing behavior).
+   */
+  turns?: string[];
   /** directory name under bench/fixtures/ copied into the cell workspace */
   fixture: string;
   check: TaskCheck;
@@ -37,6 +43,11 @@ export interface Variant {
   styleName: string | null;
   /** install the compression hook in this cell */
   hook: boolean;
+  /**
+   * Extra args appended to the hook command (e.g. '--marker-style informative')
+   * so experiments can vary engine behavior per variant.
+   */
+  hookArgs?: string;
 }
 
 export interface CellSpec {
@@ -72,6 +83,12 @@ export interface CellResult {
    * the report flags them as a data-quality problem.
    */
   permissionDenials: number;
+  /**
+   * Per-turn usage for multi-turn cells (one entry per scripted turn, from
+   * each turn's result JSON). Absent for single-shot cells. Cell-level
+   * `usage` stays authoritative (summed from the final transcript).
+   */
+  turnUsage?: UsageTotals[];
   /** tool_use counts by tool name, from the session transcript */
   toolCalls: Record<string, number>;
   sessionId: string | null;

@@ -7,6 +7,9 @@ export function policyFor(mode: Mode): Policy {
         structural: false,
         codeAware: false,
         logAware: false,
+        // 'plain' everywhere for now: the marker-style experiment (bench
+        // hookArgs --marker-style) varies this per arm and picks the winner.
+        markerStyle: 'plain',
         touch: Infinity,
         truncateBudget: Infinity,
         commentStrip: Infinity,
@@ -20,6 +23,7 @@ export function policyFor(mode: Mode): Policy {
         structural: true,
         codeAware: true,
         logAware: false,
+        markerStyle: 'plain',
         touch: 600,
         truncateBudget: 5000,
         commentStrip: 2000,
@@ -31,6 +35,7 @@ export function policyFor(mode: Mode): Policy {
         structural: true,
         codeAware: true,
         logAware: true,
+        markerStyle: 'plain',
         touch: 300,
         // measured (bench-20260610-114234/-123102): a 2,500 budget pushed the
         // model into offset/limit pagination — targeted reads pass through, so

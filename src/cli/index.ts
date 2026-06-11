@@ -65,10 +65,13 @@ program
   .option('--mode <mode>', 'full|optimized|slim', 'optimized')
   .option('--kind <kind>', 'read|bash|search|other', 'other')
   .option('--file-path <path>', 'source path hint (drives code detection)')
-  .action(async (opts: { mode: string; kind: string; filePath?: string }) => {
-    const { runCompress } = await import('./commands/compress.ts');
-    await runCompress(opts);
-  });
+  .option('--marker-style <style>', 'plain|deterrent|informative (default: policy value)')
+  .action(
+    async (opts: { mode: string; kind: string; filePath?: string; markerStyle?: string }) => {
+      const { runCompress } = await import('./commands/compress.ts');
+      await runCompress(opts);
+    },
+  );
 
 program
   .command('count')
@@ -92,6 +95,18 @@ program
   });
 
 program
+  .command('savings')
+  .description('show what the compression hook saved (live ledger, estimated tokens)')
+  .option('--since <window>', "lookback window: e.g. 7d, 30d, or 'all'", '30d')
+  .option('--by <dimension>', 'aggregate by day|tool|mode', 'day')
+  .option('--html <path>', 'also write a self-contained HTML report (inline SVG, no JS)')
+  .option('--ledger-dir <dir>', 'ledger directory (default: COMPRESSOR_LEDGER_DIR or ~/.compressor/ledger)')
+  .action(async (opts: { since?: string; by?: string; html?: string; ledgerDir?: string }) => {
+    const { runSavings } = await import('./commands/savings.ts');
+    await runSavings(opts);
+  });
+
+program
   .command('benchmark')
   .description('run the benchmark suite: cells = task × variant × trial, results as JSONL')
   .option('--suite <path>', 'suite JSON file', 'bench/suites/basic.json')
@@ -108,6 +123,14 @@ program
     'comma-separated atom categories (output|behavior): adds optimized-minus-<group>-atoms variants with every atom of that category removed',
   )
   .option('--no-hook', 'skip the compression hook in optimized/slim cells')
+  .option(
+    '--hook-args <args>',
+    "extra args appended to the hook command in every hook-bearing variant (e.g. '--marker-style informative')",
+  )
+  .option(
+    '--marker-styles <styles>',
+    'comma-separated plain|deterrent|informative: each hook-bearing variant fans out into one arm per style IN THE SAME RUN (one budget ceiling, balanced task×trial groups)',
+  )
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
   .option('--out <dir>', 'results directory', 'bench/results')
@@ -121,6 +144,8 @@ program
       ablateAdd?: string;
       ablateGroup?: string;
       hook: boolean;
+      hookArgs?: string;
+      markerStyles?: string;
       concurrency: string;
       maxBudgetUsd: string;
       out: string;
@@ -151,7 +176,8 @@ hook
   .command('post-tool-use')
   .description('PostToolUse protocol: payload on stdin, updated output on stdout')
   .option('--mode <mode>', 'full|optimized|slim', 'optimized')
-  .action(async (opts: { mode?: string }) => {
+  .option('--marker-style <style>', 'plain|deterrent|informative (default: policy value)')
+  .action(async (opts: { mode?: string; markerStyle?: string }) => {
     const { runHookPostToolUse } = await import('./commands/hook.ts');
     await runHookPostToolUse(opts);
   });
@@ -159,7 +185,8 @@ hook
   .command('copilot-post-tool-use')
   .description('Copilot postToolUse protocol: payload on stdin, modifiedResult JSON on stdout')
   .option('--mode <mode>', 'full|optimized|slim', 'optimized')
-  .action(async (opts: { mode?: string }) => {
+  .option('--marker-style <style>', 'plain|deterrent|informative (default: policy value)')
+  .action(async (opts: { mode?: string; markerStyle?: string }) => {
     const { runHookCopilotPostToolUse } = await import('./commands/hook.ts');
     await runHookCopilotPostToolUse(opts);
   });

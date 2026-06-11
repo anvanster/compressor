@@ -67,7 +67,12 @@ export async function runBenchmark(
   });
 
   // variants innermost: an early budget stop still covers every variant on
-  // the tasks that did run
+  // the tasks that did run. Enforced group-atomically below: consecutive
+  // cells form one task×trial group (group size = variant count), the stop
+  // decision is made ONCE at a group's first cell and shared by the rest of
+  // the group, so a mid-group ceiling trip can never leave some arms of a
+  // task×trial measured and others skipped — cross-arm comparisons need
+  // complete groups.
   const cells: CellSpec[] = [];
   for (let trial = 1; trial <= opts.trials; trial += 1) {
     for (const task of opts.suite.tasks) {
@@ -76,11 +81,15 @@ export async function runBenchmark(
       }
     }
   }
+  const groupSize = Math.max(1, opts.variants.length);
 
   const results: CellResult[] = new Array<CellResult>(cells.length);
   let spentUsd = 0;
   let noCostStreak = 0;
   let next = 0;
+  // task×trial group index → skip reason decided at the group's first cell
+  // (null = the whole group runs)
+  const groupSkip = new Map<number, string | null>();
   const progress = (line: string): void => opts.onProgress?.(line);
 
   const worker = async (): Promise<void> => {
@@ -91,19 +100,21 @@ export async function runBenchmark(
       if (cell === undefined) return;
       const label = `${cell.task.id} × ${cell.variant.id} trial ${cell.trial}`;
 
+      const group = Math.floor(index / groupSize);
+      let skipReason = groupSkip.get(group);
+      if (skipReason === undefined) {
+        skipReason =
+          spentUsd >= opts.maxBudgetUsd
+            ? `skipped: budget ceiling ${opts.maxBudgetUsd} USD reached`
+            : noCostStreak >= MAX_CONSECUTIVE_NO_COST_CELLS
+              ? `skipped: ${MAX_CONSECUTIVE_NO_COST_CELLS} consecutive cells reported no cost — budget ceiling ${opts.maxBudgetUsd} USD is unenforceable`
+              : null;
+        groupSkip.set(group, skipReason);
+      }
+
       let row: CellResult;
-      if (spentUsd >= opts.maxBudgetUsd) {
-        row = zeroedResult(
-          runId,
-          cell,
-          `skipped: budget ceiling ${opts.maxBudgetUsd} USD reached`,
-        );
-      } else if (noCostStreak >= MAX_CONSECUTIVE_NO_COST_CELLS) {
-        row = zeroedResult(
-          runId,
-          cell,
-          `skipped: ${MAX_CONSECUTIVE_NO_COST_CELLS} consecutive cells reported no cost — budget ceiling ${opts.maxBudgetUsd} USD is unenforceable`,
-        );
+      if (skipReason !== null) {
+        row = zeroedResult(runId, cell, skipReason);
       } else {
         try {
           row = await runCell(cell, { runId, fixturesDir: opts.fixturesDir });

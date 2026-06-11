@@ -55,6 +55,29 @@ function parseCheck(raw: unknown, taskId: string): TaskCheck {
   );
 }
 
+/**
+ * Multi-turn check semantics (tasks with `turns`):
+ * - command checks run once, in the workspace, after the FINAL turn.
+ * - answer-regex checks treat the whole conversation as the answer: the cell
+ *   passes when the pattern matches ANY single turn's result text. Each turn
+ *   is judged separately (so `^` anchors apply per turn), never only the
+ *   final turn — follow-ups like "draft a PR comment" would otherwise erase
+ *   evidence the first turn already produced.
+ */
+function parseTurns(raw: unknown, taskId: string): string[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error(
+      `task ${taskId}: turns must be a non-empty array of follow-up prompt strings`,
+    );
+  }
+  return raw.map((turn, index) => {
+    if (!nonEmptyString(turn)) {
+      throw new Error(`task ${taskId}: turns[${index}] must be a non-empty string`);
+    }
+    return turn;
+  });
+}
+
 function parseFixture(raw: unknown, taskId: string): string {
   if (!nonEmptyString(raw)) {
     throw new Error(`task ${taskId}: fixture must be a non-empty string`);
@@ -92,6 +115,10 @@ function parseTask(raw: unknown, index: number, seenIds: Set<string>): TaskSpec 
     throw new Error(`task ${id}: tags must be an array of strings`);
   }
   const task: TaskSpec = { id, prompt, fixture, check };
+  const turns = raw['turns'];
+  if (turns !== undefined) {
+    task.turns = parseTurns(turns, id);
+  }
   if (tags !== undefined) {
     task.tags = tags;
   }

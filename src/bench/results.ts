@@ -82,6 +82,32 @@ export async function readRun(
   return { meta, results };
 }
 
+/**
+ * Post-run balance assertion: cross-variant comparison is valid only when
+ * every variant executed the same number of cells (the runner schedules
+ * variants innermost and stops group-atomically, so an imbalance means
+ * something defeated that — e.g. results concatenated from separate arm runs
+ * with independent budget ceilings, each truncating at its own point).
+ * Returns a warning string, or null when balanced. Skipped cells (budget
+ * ceiling / no-cost breaker) are not counted as executed.
+ */
+export function balanceWarning(results: readonly CellResult[]): string | null {
+  const counts = new Map<string, number>();
+  for (const row of results) {
+    if (row.error?.startsWith('skipped:') === true) continue;
+    counts.set(row.variantId, (counts.get(row.variantId) ?? 0) + 1);
+  }
+  const values = [...counts.values()];
+  const first = values[0];
+  if (first === undefined || values.every((count) => count === first)) {
+    return null;
+  }
+  const detail = [...counts.entries()]
+    .map(([variantId, count]) => `${variantId}=${count}`)
+    .join(', ');
+  return `WARNING: unbalanced variants — executed cell counts differ (${detail}); drop task×trial groups missing from any variant before comparing`;
+}
+
 export interface VariantAggregate {
   variantId: string;
   cells: number;

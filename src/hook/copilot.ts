@@ -1,6 +1,6 @@
-import type { Mode, ToolKind } from '../engine/types.ts';
+import type { MarkerStyle, Mode, ToolKind } from '../engine/types.ts';
 import type { CompressibleCall, Leaf } from './core.ts';
-import { compressCall, isRecord, pickLeaf, rebuildWithLeaf } from './core.ts';
+import { compressCall, isRecord, pickLeaf, rebuildWithLeaf, recordCompression } from './core.ts';
 
 // GitHub Copilot postToolUse protocol layer — the Copilot CLI / cloud agent
 // COMMAND hooks (.github/hooks/*.json), NOT the Copilot SDK in-process hooks,
@@ -90,7 +90,11 @@ function isTargeted(args: Record<string, unknown>): boolean {
   return RANGE_KEYS.some((key) => args[key] != null);
 }
 
-export function handleCopilotPostToolUse(payloadJson: string, mode: Mode): CopilotHookResult {
+export function handleCopilotPostToolUse(
+  payloadJson: string,
+  mode: Mode,
+  markerStyle?: MarkerStyle,
+): CopilotHookResult {
   try {
     if (mode === 'full') {
       return { output: null };
@@ -139,10 +143,11 @@ export function handleCopilotPostToolUse(payloadJson: string, mode: Mode): Copil
       call.filePath = filePath;
     }
 
-    const compressed = compressCall(call, mode);
+    const compressed = compressCall(call, mode, markerStyle);
     if (!compressed.worthwhile) {
       return { output: null };
     }
+    recordCompression('copilot', call, compressed, mode);
 
     // The replacement schema carries exactly one string. Documented shape (or
     // a bare-string result): the compressed text IS the replacement. Unknown

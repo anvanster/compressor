@@ -26,11 +26,22 @@ export interface CompressMeta {
  */
 export type Estimator = (text: string) => number;
 
+/**
+ * Omission-marker phrasing. Measured (bench-20260610-114234): the plain
+ * recovery affordance invites whole-file pagination via targeted reads,
+ * nullifying savings on ~half of cells. 'deterrent' frames recovery as
+ * conditional; 'informative' additionally reports what the omitted region
+ * contains (failure-pattern scan) so the model can skip or retrieve
+ * surgically.
+ */
+export type MarkerStyle = 'plain' | 'deterrent' | 'informative';
+
 /** All thresholds are estimated tokens. Content below `touch` is never modified. */
 export interface Policy {
   structural: boolean;
   codeAware: boolean;
   logAware: boolean;
+  markerStyle: MarkerStyle;
   /** below this, return input unchanged */
   touch: number;
   /** head/tail truncation budget for a single tool result */

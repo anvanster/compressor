@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { SuiteSpec, Variant } from '../../src/bench/types.ts';
 import { MAX_CONSECUTIVE_NO_COST_CELLS, runBenchmark } from '../../src/bench/runner.ts';
-import { readRun } from '../../src/bench/results.ts';
+import { balanceWarning, readRun } from '../../src/bench/results.ts';
 
 const FAKE_CLAUDE = fileURLToPath(new URL('../fixtures/fake-claude.mjs', import.meta.url));
 process.env.COMPRESSOR_CLAUDE_BIN = FAKE_CLAUDE;
@@ -268,6 +268,58 @@ test('cells that report no cost stop scheduling — the ceiling must not be sile
       /skipped: \d+ consecutive cells reported no cost — budget ceiling 5 USD is unenforceable/,
     );
   }
+});
+
+// Regression: the budget stop must be task×trial-GROUP atomic. Checking the
+// ceiling per cell can cut between variants of one task×trial (the first
+// variant runs, the rest are skipped), which breaks the 'variants innermost'
+// guarantee that an early stop still covers every variant on the tasks that
+// did run — cross-arm comparisons need complete groups.
+test('budget stop is group-atomic: a started task×trial group runs ALL variants', async (t) => {
+  const fixturesDir = await makeFixtures();
+  const outDir = await mkdtemp(join(tmpdir(), 'bench-out-'));
+  t.after(async () => {
+    await rm(fixturesDir, { recursive: true, force: true });
+    await rm(outDir, { recursive: true, force: true });
+  });
+
+  const suite: SuiteSpec = {
+    name: 'group-atomic',
+    tasks: [
+      {
+        id: 'q',
+        prompt: 'q',
+        fixture: 'qa',
+        check: { kind: 'answer-regex', pattern: 'fake answer' },
+      },
+    ],
+  };
+  // each cell costs $0.01; the ceiling trips after the FIRST cell of trial 1,
+  // i.e. mid-group — the second variant of trial 1 must still run
+  const { results } = await runBenchmark({
+    suite,
+    variants: [fullVariant, styledVariant],
+    trials: 3,
+    model: 'test-model',
+    maxBudgetUsd: 0.005,
+    concurrency: 1,
+    outDir,
+    fixturesDir,
+  });
+
+  assert.equal(results.length, 6);
+  const trial1 = results.filter((r) => r.trial === 1);
+  assert.equal(trial1.length, 2);
+  for (const r of trial1) {
+    assert.equal(r.error, undefined, `trial 1 ${r.variantId} must run despite mid-group trip`);
+  }
+  const later = results.filter((r) => r.trial > 1);
+  assert.equal(later.length, 4);
+  for (const r of later) {
+    assert.equal(r.error, 'skipped: budget ceiling 0.005 USD reached');
+  }
+  // executed cells stay balanced across variants — the post-run assertion agrees
+  assert.equal(balanceWarning(results), null);
 });
 
 test('the answer key fix.patch.json never reaches the cell workspace', async (t) => {

@@ -1,4 +1,4 @@
-import type { Mode } from '../engine/types.ts';
+import type { MarkerStyle, Mode } from '../engine/types.ts';
 import { getAtom } from '../packs/atoms.ts';
 import { atomsForMode, MODE_DESCRIPTIONS } from '../packs/modes.ts';
 import { renderOutputStyle, renderOutputStyleFromAtoms } from '../packs/render.ts';
@@ -21,6 +21,29 @@ export interface BuildVariantsOptions {
   /** atom categories ('output' | 'behavior') removed wholesale from the optimized baseline */
   ablateGroups: string[];
   hook: boolean;
+  /**
+   * Extra args appended to the hook command of EVERY hook-bearing variant
+   * (Variant.hookArgs), e.g. '--marker-style informative'. Whitespace-only
+   * values are ignored.
+   */
+  hookArgs?: string;
+  /**
+   * Marker-style ARMS: each hook-bearing variant fans out into one variant
+   * per style (id '<variant>-marker-<style>', hookArgs '--marker-style
+   * <style>') so all arms coexist IN THE SAME RUN. Running arms as separate
+   * `--hook-args` runs gives each its own --max-budget-usd ceiling and its
+   * own truncation point — a more expensive arm loses later trials/tasks
+   * while others complete, unbalancing the comparison. In-run arms share one
+   * ceiling and the runner's variants-innermost, group-atomic scheduling
+   * keeps every arm present on exactly the same task×trial groups.
+   */
+  markerStyles?: string[];
+}
+
+const MARKER_STYLES: readonly MarkerStyle[] = ['plain', 'deterrent', 'informative'];
+
+function isMarkerStyle(value: string): value is MarkerStyle {
+  return (MARKER_STYLES as readonly string[]).includes(value);
 }
 
 /** Atom ids become style/file names — dots would read as extensions. */
@@ -147,9 +170,68 @@ export function buildVariants(opts: BuildVariantsOptions): Variant[] {
     });
   }
 
+  const hookArgs = opts.hookArgs?.trim();
+  if (hookArgs !== undefined && hookArgs !== '') {
+    const hooked = variants.filter((variant) => variant.hook);
+    if (hooked.length === 0) {
+      throw new Error(
+        '--hook-args: no hook-bearing variants to apply it to — remove --no-hook and include optimized/slim in --modes',
+      );
+    }
+    for (const variant of hooked) {
+      variant.hookArgs = hookArgs;
+    }
+  }
+
+  const markerStyles = opts.markerStyles ?? [];
+  let expanded = variants;
+  if (markerStyles.length > 0) {
+    for (const style of markerStyles) {
+      if (!isMarkerStyle(style)) {
+        throw new Error(
+          `--marker-styles: unknown style '${style}' (valid: ${MARKER_STYLES.join(', ')})`,
+        );
+      }
+    }
+    if (new Set(markerStyles).size !== markerStyles.length) {
+      throw new Error('--marker-styles: duplicate style');
+    }
+    // The hook entries take the FIRST --marker-style on their command line;
+    // a shared --hook-args value carrying the flag would silently override
+    // every arm, collapsing the experiment to one style.
+    if (hookArgs !== undefined && hookArgs.includes('--marker-style')) {
+      throw new Error(
+        '--marker-styles cannot be combined with --hook-args containing --marker-style — the shared value would override every arm',
+      );
+    }
+    if (!variants.some((variant) => variant.hook)) {
+      throw new Error(
+        '--marker-styles: no hook-bearing variants to fan out — remove --no-hook and include optimized/slim in --modes',
+      );
+    }
+    expanded = variants.flatMap((variant) =>
+      variant.hook
+        ? markerStyles.map(
+            (style): Variant => ({
+              ...variant,
+              id: `${variant.id}-marker-${style}`,
+              // unique style file per arm (same body): keeps the duplicate
+              // checks meaningful and the installed outputStyle traceable
+              styleName:
+                variant.styleName === null ? null : `${variant.styleName}-marker-${style}`,
+              hookArgs:
+                variant.hookArgs === undefined
+                  ? `--marker-style ${style}`
+                  : `${variant.hookArgs} --marker-style ${style}`,
+            }),
+          )
+        : [variant],
+    );
+  }
+
   const seenIds = new Set<string>();
   const seenStyles = new Set<string>();
-  for (const variant of variants) {
+  for (const variant of expanded) {
     if (seenIds.has(variant.id)) {
       throw new Error(`duplicate variant id '${variant.id}' (repeated mode or atom id?)`);
     }
@@ -161,5 +243,5 @@ export function buildVariants(opts: BuildVariantsOptions): Variant[] {
       seenStyles.add(variant.styleName);
     }
   }
-  return variants;
+  return expanded;
 }
