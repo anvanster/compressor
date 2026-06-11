@@ -1,0 +1,52 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2026-06-10
+
+Initial release.
+
+### Added
+
+#### Engine
+- Pure, dependency-free compression engine: `compress(content, meta, policy, estimator)` with injected token estimator.
+- Tier 1 (structural): ANSI stripping, blank-run collapse, repeated-line dedupe, head/tail truncation with recoverable markers stating exact `Read offset/limit`.
+- Tier 2 (code-aware): comment/blank-line stripping with original line numbers preserved; skeleton view (imports + signatures) above threshold.
+- Tier 3 (log-aware, slim only): test logs reduced to failures + summary, build logs to errors/warnings + status.
+- Per-mode policy thresholds; targeted reads (explicit offset/limit) always pass through; idempotency guard on the omission marker; fail-open on any error.
+- Content-kind detection (code / test log / build log / generic) and configurable marker styles (plain / deterrent / informative).
+
+#### Packs
+- Instruction atoms (`{id, category, text, modes}`): 13 active output- and behavior-discipline atoms composing the `optimized` and `slim` modes; `full` removes all artifacts for a true baseline.
+- Rejected atoms retained in the catalog with empirical rationale (e.g. `tokens.drop-articles`), reproducible via benchmark `--ablate-add`.
+- Deterministic renderers (no timestamps, byte-stable for prompt caching) with embedded atom-ID manifests: Claude Code output style, Copilot/AGENTS.md/legacy-`.cursorrules` marked sections, Cursor `.mdc`.
+
+#### Adapters
+- `claude-code`: output style + `outputStyle` settings entry + surgical PostToolUse hook merge; project hook entry written to `.claude/settings.local.json`; foreign `outputStyle` stashed and restored on uninstall; project and global scope.
+- `copilot`: marked section in `.github/copilot-instructions.md` + `postToolUse` hook config in `.github/hooks/compressor.json`; `--global` installs a machine-wide hook to `~/.copilot/hooks/` (`$COPILOT_HOME` honored).
+- `cursor`: `.cursor/rules/compressor.mdc` (`alwaysApply`); legacy `.cursorrules` updated only when pre-existing (instructions only).
+- `agents-md`: marked section in `AGENTS.md` (instructions only).
+- Shared conventions: marker-based idempotent upserts, ownership predicates that never touch foreign entries, `--dry-run` diffs, `status` derived from files with honest per-agent capability notes.
+
+#### Hooks
+- Claude Code PostToolUse hook (`dist/hook.js`, bundled, no CLI dependency): shape-preserving replacement of `tool_response` via `updatedToolOutput`; matcher `Read|Bash|Grep|Glob`; fail-open.
+- Copilot CLI `postToolUse` hook (`dist/copilot-hook.js`): `toolResult.textResultForLlm` in, `modifiedResult` out; self-filters by tool name (no matcher support); fail-open.
+- Shared protocol-independent hook core (leaf picking, worthwhileness floor of 200 chars / 10%, shape-preserving rebuild).
+
+#### Benchmark harness
+- Runner driving headless `claude --bare -p` per cell (task × variant × trial) with per-cell `CLAUDE_CONFIG_DIR` isolation, pinned and verified served model, cost ceiling with no-cost circuit breaker, and data-quality flags.
+- Token accounting from result JSON and session transcripts (deduped, sidechains included) — never from estimators.
+- Binary success checks per task; suites (`basic`, `main`, `hookab`, `ablate`, `interactive`) with zero-dependency fixtures.
+- Ablation variants: per-atom (`--ablate`), rejected-atom demonstration (`--ablate-add`), category groups (`--ablate-group`), `--no-hook` arms, and marker-style fan-out (`--marker-styles`).
+- `report`: per-variant medians + IQR, deltas vs full and vs ablation baselines, run comparison, table/md/json output.
+
+#### Ledger and savings
+- Append-only local savings ledger written by the hooks: monthly JSONL under `~/.compressor/ledger/`, sizes and transform ids only (no paths, no content), fail-open, `COMPRESSOR_NO_LEDGER=1` kill switch.
+- `savings` command: totals and day/tool/mode breakdowns with explicit "estimated" labelling and window labels; optional self-contained HTML report (inline SVG, no JS).
+- `stats` command: actual usage aggregated from local Claude Code transcripts.
+- `count` command: estimated token counts per file, `--exact` via the Anthropic `count_tokens` endpoint.
+
+[0.1.0]: https://github.com/anvanster/compressor/releases/tag/v0.1.0
