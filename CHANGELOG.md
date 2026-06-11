@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-06-10
+
+### Changed
+
+- `compressor status` is clearer: it now names the scope it reports on
+  (`project: <cwd>` or `user-level (machine-wide)`), so a global package install
+  in an unconfigured directory no longer reads as "broken". Redundant
+  "not installed — not installed" lines collapse to "not installed", and a
+  cross-scope install renders as "not installed (global); installed at project
+  level" instead of the contradictory "installed — not installed (global)".
+  When nothing is configured, status prints the `init` command to run.
+
 ## [0.1.1] - 2026-06-10
 
 ### Fixed
@@ -60,5 +72,6 @@ Initial release. (Broken when installed from npm — see 0.1.1.)
 - `stats` command: actual usage aggregated from local Claude Code transcripts.
 - `count` command: estimated token counts per file, `--exact` via the Anthropic `count_tokens` endpoint.
 
+[0.1.2]: https://github.com/anvanster/compressor/releases/tag/v0.1.2
 [0.1.1]: https://github.com/anvanster/compressor/releases/tag/v0.1.1
 [0.1.0]: https://github.com/anvanster/compressor/releases/tag/v0.1.0
