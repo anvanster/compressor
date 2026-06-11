@@ -3,18 +3,26 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { PackMode } from './packs/types.ts';
 
-function isCompressorRoot(dir: string): boolean {
+export function isCompressorRoot(dir: string): boolean {
   const pkgPath = path.join(dir, 'package.json');
   if (!existsSync(pkgPath)) {
     return false;
   }
   try {
     const parsed: unknown = JSON.parse(readFileSync(pkgPath, 'utf8'));
-    return (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      (parsed as Record<string, unknown>)['name'] === 'compressor'
-    );
+    if (typeof parsed !== 'object' || parsed === null) {
+      return false;
+    }
+    const pkg = parsed as Record<string, unknown>;
+    // Identify our package by the `compressor` bin, not its name — survives the
+    // unscoped→@astudioplus/compressor rename and any future scope change. The
+    // name check is a belt-and-suspenders fallback.
+    const bin = pkg['bin'];
+    if (typeof bin === 'object' && bin !== null && 'compressor' in bin) {
+      return true;
+    }
+    const name = pkg['name'];
+    return name === 'compressor' || name === '@astudioplus/compressor';
   } catch {
     return false;
   }

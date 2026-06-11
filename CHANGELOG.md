@@ -5,9 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-06-10
+
+### Fixed
+
+- Package-root discovery keyed on the literal name `compressor`, so after the
+  rename to `@astudioplus/compressor` every CLI command threw "could not locate
+  the compressor package root" when installed from npm. Discovery now keys on the
+  `compressor` bin entry, which survives any scope/name change. Regression test
+  added. (0.1.0 was unusable when installed; 0.1.1 is the first working release.)
+- `compressor --version` now reports the package version.
+
 ## [0.1.0] - 2026-06-10
 
-Initial release.
+Initial release. (Broken when installed from npm — see 0.1.1.)
 
 ### Added
 
@@ -49,4 +60,5 @@ Initial release.
 - `stats` command: actual usage aggregated from local Claude Code transcripts.
 - `count` command: estimated token counts per file, `--exact` via the Anthropic `count_tokens` endpoint.
 
+[0.1.1]: https://github.com/anvanster/compressor/releases/tag/v0.1.1
 [0.1.0]: https://github.com/anvanster/compressor/releases/tag/v0.1.0

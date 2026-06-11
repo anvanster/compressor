@@ -9,7 +9,7 @@ program
   .description(
     'Token optimization for AI coding agents: instruction packs, tool-output compression, measured savings',
   )
-  .version('0.1.0');
+  .version('0.1.1');
 
 program
   .command('init')
