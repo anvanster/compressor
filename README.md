@@ -28,7 +28,15 @@ A project that only publishes its wins is advertising. These were measured and r
 
 ## Install
 
-Not yet published to npm — install from source. Requires Node **>= 20**.
+Requires Node **>= 20**.
+
+Once published, install the CLI globally:
+
+```sh
+npm install -g @astudioplus/compressor
+```
+
+Or install from source:
 
 ```sh
 git clone https://github.com/anvanster/compressor.git

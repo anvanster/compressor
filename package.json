@@ -1,12 +1,44 @@
 {
-  "name": "compressor",
+  "name": "@astudioplus/compressor",
   "version": "0.1.0",
-  "description": "Token optimization for AI coding agents: mode-switchable instruction packs, tool-output compression, measured savings",
+  "description": "Reduce token usage in AI coding agents (Claude Code, Copilot, Cursor) with instruction packs and tool-output compression hooks — savings you can measure.",
   "type": "module",
+  "author": "Andrey Vasilevsky <anvanster@gmail.com>",
   "license": "MIT",
+  "homepage": "https://github.com/anvanster/compressor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anvanster/compressor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/anvanster/compressor/issues"
+  },
+  "keywords": [
+    "token-optimization",
+    "prompt-compression",
+    "context-compression",
+    "ai-coding-agents",
+    "claude-code",
+    "github-copilot",
+    "cursor",
+    "agents-md",
+    "llm",
+    "anthropic",
+    "developer-tools",
+    "cli"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
   "bin": {
     "compressor": "dist/cli/index.js"
   },
@@ -16,12 +48,19 @@
     "./tokens": "./dist/tokens/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && npm run bundle:hook && npm run bundle:copilot-hook",
     "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --outfile=dist/hook.js",
     "bundle:copilot-hook": "esbuild src/copilot-hook-entry.ts --bundle --platform=node --format=esm --outfile=dist/copilot-hook.js",
+    "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\""
   },
