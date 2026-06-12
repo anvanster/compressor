@@ -134,6 +134,45 @@ test('skeleton keeps imports and signatures, collapses bodies with line-accurate
   assert.equal(result.transform?.id, 'skeleton');
 });
 
+// Regression (minor): the ts-js signature regex missed top-level const/let/var
+// declarations, so a module written in the dominant modern style — exported
+// const arrow functions — skeletonized to nothing but its import lines.
+test('skeleton keeps top-level const/let/var signatures (const-arrow exports)', () => {
+  const input = numbered([
+    "import { a } from './a.ts';",
+    '',
+    'export const one = (x: number): number => {',
+    '  const doubled = x * 2;',
+    '  return doubled + a;',
+    '};',
+    '',
+    'export const two = async (x: number): Promise<number> => {',
+    '  const inner = await Promise.resolve(x);',
+    '  return inner + 2;',
+    '};',
+    '',
+    'const helper = (x: number): number => x + 3;',
+    'let counter = 0;',
+    'var legacy = true;',
+  ]);
+  const meta: CompressMeta = { tool: 'read', mode: 'slim', filePath: 'src/arrows.ts' };
+  const result = skeleton(input, 'ts-js', meta, estimate);
+
+  // top-level declarations are signatures — retained with their line numbers
+  assert.ok(result.content.includes(`${String(3).padStart(6)}→export const one = (x: number): number => {`));
+  assert.ok(result.content.includes(`${String(8).padStart(6)}→export const two = async (x: number): Promise<number> => {`));
+  assert.ok(result.content.includes(`${String(13).padStart(6)}→const helper = (x: number): number => x + 3;`));
+  assert.ok(result.content.includes(`${String(14).padStart(6)}→let counter = 0;`));
+  assert.ok(result.content.includes(`${String(15).padStart(6)}→var legacy = true;`));
+  // bodies still collapse — an INDENTED const is not a top-level signature
+  assert.ok(!result.content.includes('const doubled = x * 2;'));
+  assert.ok(!result.content.includes('const inner = await Promise.resolve(x);'));
+  // numbered blank lines join the adjacent gap, as in the test above
+  assert.match(result.content, /\[compressor: lines 4-7 omitted/);
+  assert.match(result.content, /\[compressor: lines 9-12 omitted/);
+  assert.equal(result.transform?.id, 'skeleton');
+});
+
 test('skeleton is a no-op on unnumbered content', () => {
   const input = 'export function one(): void {\n  return;\n}';
   const meta: CompressMeta = { tool: 'read', mode: 'slim', filePath: 'a.ts' };

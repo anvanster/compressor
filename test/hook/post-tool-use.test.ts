@@ -1,12 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import process from 'node:process';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
 
 // Worthwhile compressions fire fire-and-forget ledger appends; keep this
 // suite hermetic (never touch the real ~/.compressor). Ledger behavior has
-// its own tests under test/ledger/ using temp dirs.
+// its own tests under test/ledger/ using temp dirs. Same for recovery-budget
+// state (real dir is os.tmpdir()/compressor-recovery; behavior tests live in
+// test/hook/recovery.test.ts).
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
+process.env['COMPRESSOR_RECOVERY_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-ptu-recovery-'));
 
 function repetitiveLog(lines: number): string {
   return Array.from(

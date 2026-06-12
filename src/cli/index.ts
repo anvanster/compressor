@@ -9,7 +9,7 @@ program
   .description(
     'Token optimization for AI coding agents: instruction packs, tool-output compression, measured savings',
   )
-  .version('0.1.2');
+  .version('0.2.0');
 
 program
   .command('init')
@@ -18,8 +18,19 @@ program
   .option('--mode <mode>', 'pack mode (optimized|slim)', 'optimized')
   .option('--global', 'install at user level instead of project level')
   .option('--dry-run', 'print planned changes without writing')
+  .option(
+    '--hook-command <style>',
+    'hook command style: auto|absolute|relocatable (auto: relocatable when compressor-hook is on PATH and this is not a source checkout)',
+    'auto',
+  )
   .action(
-    async (opts: { agent: string[]; mode: string; global?: boolean; dryRun?: boolean }) => {
+    async (opts: {
+      agent: string[];
+      mode: string;
+      global?: boolean;
+      dryRun?: boolean;
+      hookCommand?: string;
+    }) => {
       const { runInit } = await import('./commands/init.ts');
       await runInit(opts);
     },
@@ -32,8 +43,16 @@ program
   .option('--agent <name...>', 'agent adapters to target', ['claude-code'])
   .option('--global', 'apply at user level instead of project level')
   .option('--dry-run', 'print planned changes without writing')
+  .option(
+    '--hook-command <style>',
+    'hook command style: auto|absolute|relocatable (auto: relocatable when compressor-hook is on PATH and this is not a source checkout)',
+    'auto',
+  )
   .action(
-    async (mode: string, opts: { agent: string[]; global?: boolean; dryRun?: boolean }) => {
+    async (
+      mode: string,
+      opts: { agent: string[]; global?: boolean; dryRun?: boolean; hookCommand?: string },
+    ) => {
       const { runSetMode } = await import('./commands/set-mode.ts');
       await runSetMode(mode, opts);
     },

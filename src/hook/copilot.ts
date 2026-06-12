@@ -1,6 +1,14 @@
 import type { MarkerStyle, Mode, ToolKind } from '../engine/types.ts';
 import type { CompressibleCall, Leaf } from './core.ts';
-import { compressCall, isRecord, pickLeaf, rebuildWithLeaf, recordCompression } from './core.ts';
+import {
+  applyRecoveryBudget,
+  compressCall,
+  isRecord,
+  noteTruncationIfCut,
+  pickLeaf,
+  rebuildWithLeaf,
+  recordCompression,
+} from './core.ts';
 
 // GitHub Copilot postToolUse protocol layer — the Copilot CLI / cloud agent
 // COMMAND hooks (.github/hooks/*.json), NOT the Copilot SDK in-process hooks,
@@ -106,6 +114,8 @@ export function handleCopilotPostToolUse(
     const toolName = typeof payload['toolName'] === 'string' ? payload['toolName'] : '';
     const toolArgs = parseToolArgs(payload['toolArgs']);
     const tool = toolKindFor(toolName);
+    const sessionId =
+      typeof payload['sessionId'] === 'string' ? payload['sessionId'] : undefined;
     const toolResult = payload['toolResult'];
 
     // postToolUse is success-only; if a non-success result ever arrives,
@@ -133,20 +143,24 @@ export function handleCopilotPostToolUse(
       text = genericLeaf.text;
     }
 
-    const call: CompressibleCall = {
+    const raw: CompressibleCall = {
       toolKind: tool,
       targeted: tool === 'read' && isTargeted(toolArgs),
       text,
     };
     const filePath = tool === 'read' ? filePathFrom(toolArgs) : undefined;
     if (filePath !== undefined) {
-      call.filePath = filePath;
+      raw.filePath = filePath;
     }
+    // Recovery-read budget: a targeted read past the session's budget for a
+    // previously-truncated file is demoted to untargeted (compressed).
+    const call = applyRecoveryBudget(raw, sessionId);
 
     const compressed = compressCall(call, mode, markerStyle);
     if (!compressed.worthwhile) {
       return { output: null };
     }
+    noteTruncationIfCut(sessionId, call, compressed);
     recordCompression('copilot', call, compressed, mode);
 
     // The replacement schema carries exactly one string. Documented shape (or

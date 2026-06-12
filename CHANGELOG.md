@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-11
+
+### Added
+
+- **Relocatable hook commands.** New bins `compressor-hook` and
+  `compressor-copilot-hook` run the hook bundles directly (no CLI startup cost).
+  When installed from npm with the bins on PATH, `init`/`set-mode` write
+  PATH-based hook commands instead of absolute paths — a committed
+  `.github/hooks/compressor.json` then works for any machine with the package
+  installed. Source checkouts keep absolute dev-build paths (dogfooding tracks
+  development). `--hook-command <auto|absolute|relocatable>` for explicit
+  control; ownership matching claims both forms, so re-running `init` upgrades
+  old absolute installs in place.
+- **Recovery-read budget** (structural fix for pagination recovery): after the
+  hook truncates a file, the first 3 targeted (offset/limit) reads of that file
+  pass through untouched — recovery stays legitimate — and further ones are
+  compressed. Session-scoped, fail-open state under the OS temp dir;
+  `COMPRESSOR_RECOVERY_BUDGET=<n>` tunes, `COMPRESSOR_NO_RECOVERY_BUDGET=1`
+  disables. Effect on the measured huge-log bimodality not yet benchmarked.
+- `--dry-run` now prints the body of newly created files (capped at 40 lines).
+
+### Fixed
+
+- Hook entries always exit 0 on stdout EPIPE (parent closing the pipe early no
+  longer surfaces a hook error).
+- Copilot global uninstall prunes the empty `~/.copilot/hooks` directory it
+  created and never deletes a pre-existing user config whose `version` differs
+  from the one compressor writes (or that carries unknown top-level keys).
+- Engine skeleton view retains top-level `const`/`let`/`var` arrow-function
+  declarations in TS/JS files.
+- Test-suite hermeticity: no test writes the developer's real savings ledger.
+
 ## [0.1.2] - 2026-06-10
 
 ### Changed
@@ -72,6 +104,7 @@ Initial release. (Broken when installed from npm — see 0.1.1.)
 - `stats` command: actual usage aggregated from local Claude Code transcripts.
 - `count` command: estimated token counts per file, `--exact` via the Anthropic `count_tokens` endpoint.
 
+[0.2.0]: https://github.com/anvanster/compressor/releases/tag/v0.2.0
 [0.1.2]: https://github.com/anvanster/compressor/releases/tag/v0.1.2
 [0.1.1]: https://github.com/anvanster/compressor/releases/tag/v0.1.1
 [0.1.0]: https://github.com/anvanster/compressor/releases/tag/v0.1.0

@@ -54,7 +54,9 @@ async function gitInitBestEffort(workspace: string): Promise<void> {
  * Hook command installed in a cell: the resolved bundle command plus the
  * variant's extra args (Variant.hookArgs, e.g. '--marker-style informative')
  * so experiments can vary engine behavior per variant. `root` is exposed for
- * tests only; production callers use the package default.
+ * tests only; production callers use the package default. Style is pinned to
+ * 'absolute': cells must measure THIS build, never whatever compressor-hook
+ * happens to resolve to on PATH.
  */
 export function hookCommandForVariant(variant: Variant, root?: string): string {
   if (variant.baseMode === 'full') {
@@ -62,8 +64,8 @@ export function hookCommandForVariant(variant: Variant, root?: string): string {
   }
   const base =
     root === undefined
-      ? resolveHookCommand(variant.baseMode)
-      : resolveHookCommand(variant.baseMode, root);
+      ? resolveHookCommand(variant.baseMode, undefined, 'absolute')
+      : resolveHookCommand(variant.baseMode, root, 'absolute');
   const extra = variant.hookArgs?.trim() ?? '';
   return extra === '' ? base : `${base} ${extra}`;
 }

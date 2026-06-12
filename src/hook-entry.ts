@@ -32,8 +32,9 @@ async function main(): Promise<string | null> {
 }
 
 // Exit path shared with the copilot entry and the CLI subcommands
-// (src/hook/exit.ts): stdout first, ledger settle capped at 250ms, SIGKILL
-// on timeout so a stuck filesystem can never hang the agent.
+// (src/hook/exit.ts): stdout first, state settle (ledger + recovery budget)
+// capped at 250ms, SIGKILL on timeout so a stuck filesystem can never hang
+// the agent.
 main().then(
   (output) => {
     settleThenExit(output).catch(() => process.exit(0));

@@ -217,8 +217,9 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
 
   const hooked = variants.find((variant) => variant.hook);
   if (hooked !== undefined && hooked.baseMode !== 'full') {
-    // throws 'run npm run build' when dist/hook.js is missing
-    const hookCommand = resolveHookCommand(hooked.baseMode);
+    // throws 'run npm run build' when dist/hook.js is missing; absolute style
+    // to match the cells (bench always measures the local build)
+    const hookCommand = resolveHookCommand(hooked.baseMode, undefined, 'absolute');
     // a bundle that EXISTS can still predate --marker-style: verify it
     // before spending a single API dollar on indistinguishable arms
     if (variants.some((v) => v.hook && v.hookArgs?.includes('--marker-style') === true)) {

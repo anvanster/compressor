@@ -188,7 +188,11 @@ export function stripComments(
 type SignatureTest = (text: string) => boolean;
 
 const SIGNATURE_TESTS: Partial<Record<CodeLang, SignatureTest>> = {
-  'ts-js': (t) => /^(import|export|function|async function|class|interface|type)\b/.test(t),
+  // const/let/var cover top-level arrow-function declarations (the dominant
+  // modern style: `const x = (...) =>`); `export const x = ...` already
+  // matches via the `export` branch. Line-anchored = top-level only.
+  'ts-js': (t) =>
+    /^(import|export|function|async function|class|interface|type|const|let|var)\b/.test(t),
   rust: (t) => /^\s*(use|pub|fn|struct|enum|trait|impl|mod)\b/.test(t),
   python: (t) => /^\s*(import|from|def|class|async def)\b/.test(t),
   go: (t) => /^(package|import|func|type)\b/.test(t),

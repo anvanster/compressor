@@ -2,6 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { PackMode } from '../packs/types.ts';
 import { parseAtomManifest, renderOutputStyle } from '../packs/render.ts';
+import { HOOK_BIN, describeHookCommand } from '../paths.ts';
 import type {
   Adapter,
   AdapterContext,
@@ -38,8 +39,9 @@ function settingsPath(root: string): string {
 
 /**
  * Where the hook entry lives. Project-scope settings.json is the SHARED file
- * (conventionally committed); the hook command embeds a machine-specific
- * absolute path, so at project scope it goes into settings.local.json.
+ * (conventionally committed); the hook command is machine-specific — an
+ * absolute path, or a PATH bin teammates may not have installed — so at
+ * project scope it goes into settings.local.json.
  * Global scope (~/.claude) is personal — settings.json holds everything.
  */
 function hookSettingsPath(root: string, global: boolean): string {
@@ -118,20 +120,43 @@ function hookCommandBase(hookCommand: string): string {
 }
 
 /**
- * Base forms we accept as ours: the current command (hook.js path quoted
- * against spaces) and the legacy unquoted form written by older installs.
+ * Base forms we accept as ours: the context's command (whatever style the
+ * caller resolved), its legacy unquoted variant, and THIS install's absolute
+ * form (upgrade path: an entry written by an older absolute-style install at
+ * this root must be claimed when the context now carries the relocatable
+ * command — and vice versa). An absolute entry pointing at some OTHER root is
+ * not distinguishable from a foreign tool's hook, so it is never claimed.
  */
 function ourBases(hookCommand: string): string[] {
-  const base = hookCommandBase(hookCommand);
-  const unquoted = base.replaceAll('"', '');
-  return unquoted === base ? [base] : [base, unquoted];
+  const bases = new Set<string>();
+  const add = (command: string): void => {
+    const base = hookCommandBase(command);
+    bases.add(base);
+    bases.add(base.replaceAll('"', '')); // legacy unquoted form
+  };
+  add(hookCommand);
+  try {
+    add(describeHookCommand('optimized', undefined, 'absolute')); // mode is stripped
+  } catch {
+    // package root unresolvable — the context command still identifies us
+  }
+  return [...bases];
+}
+
+/**
+ * Relocatable (PATH bin) form is ours regardless of the context's style, at
+ * the word boundary: `compressor-hook` exactly or `compressor-hook <args>` —
+ * never `compressor-hooks` or `my-compressor-hook`.
+ */
+function isRelocatableOurs(command: string): boolean {
+  return command === HOOK_BIN || command.startsWith(`${HOOK_BIN} `);
 }
 
 /**
  * Ownership predicate: exact match on our resolved hook command, allowing a
  * different --mode value (mode switches rewrite the flag; the absolute path
- * identifies us). Generic substrings like 'dist/hook.js' are NOT ours —
- * other tools use the same bundling layout.
+ * or our PATH bin name identifies us). Generic substrings like 'dist/hook.js'
+ * are NOT ours — other tools use the same bundling layout.
  */
 function isOurHookEntry(entry: unknown, hookCommand: string): boolean {
   const record = asRecord(entry);
@@ -142,12 +167,15 @@ function isOurHookEntry(entry: unknown, hookCommand: string): boolean {
   const bases = ourBases(hookCommand);
   return hooks.some((hook) => {
     const command = asRecord(hook)?.command;
+    if (typeof command !== 'string') {
+      return false;
+    }
     return (
-      typeof command === 'string' &&
-      (command === hookCommand ||
-        bases.some(
-          (base) => command === base || command.startsWith(`${base} --mode `),
-        ))
+      command === hookCommand ||
+      isRelocatableOurs(command) ||
+      bases.some(
+        (base) => command === base || command.startsWith(`${base} --mode `),
+      )
     );
   });
 }

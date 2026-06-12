@@ -69,4 +69,5 @@ export type {
 // hook
 export { handlePostToolUse } from './hook/post-tool-use.ts';
 export type { HookResult } from './hook/post-tool-use.ts';
-export { resolveHookCommand } from './paths.ts';
+export { detectHookCommandStyle, resolveHookCommand } from './paths.ts';
+export type { HookCommandStyle } from './paths.ts';

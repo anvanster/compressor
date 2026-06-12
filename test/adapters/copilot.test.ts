@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { copilotAdapter } from '../../src/adapters/copilot.ts';
 import { applyChanges } from '../../src/adapters/apply.ts';
+import { describeCopilotHookCommand } from '../../src/paths.ts';
 import {
   MARKER_BEGIN_PREFIX,
   parseAtomManifest,
@@ -635,6 +636,199 @@ test('regression: non-object hooks value is refused like invalid JSON — foreig
   );
   assert.equal(await readFile(hookConfigFile(ctx), 'utf8'), original);
   assert.equal((await copilotAdapter.status(ctx)).installed, false);
+});
+
+test('relocatable command: install writes the bin form; status shows the relocatable note', async () => {
+  const ctx = await makeCtx();
+  const relocCtx: AdapterContext = { ...ctx, hookCommand: 'compressor-hook --mode slim' };
+  await applyChanges(await copilotAdapter.install('slim', relocCtx));
+
+  const config = await readHookConfig(relocCtx);
+  assert.equal(
+    config.hooks['postToolUse']?.[0]?.['bash'],
+    'compressor-copilot-hook --mode slim',
+  );
+
+  const status = await copilotAdapter.status(relocCtx);
+  assert.equal(status.installed, true);
+  assert.equal(status.mode, 'slim');
+  assert.match(
+    status.detail,
+    /relocatable command — works wherever @astudioplus\/compressor is installed on PATH/,
+  );
+  assert.doesNotMatch(status.detail, /absolute local path/);
+  // still conservative: never an unconditional cloud-agent claim
+  assert.match(status.detail, /if the config is on the default branch and the package is in its environment/);
+  assert.match(status.detail, /IDE runs no hook files/);
+
+  // the note keys on the INSTALLED form: an absolute-style context (e.g.
+  // status run from a source checkout) must still report the relocatable note
+  const absStatus = await copilotAdapter.status(ctx);
+  assert.equal(absStatus.installed, true);
+  assert.match(absStatus.detail, /relocatable command/);
+  assert.doesNotMatch(absStatus.detail, /absolute local path/);
+});
+
+test('relocatable predicate: word boundary — near-miss commands are never claimed', async () => {
+  const ctx = await makeCtx();
+  const nearMisses = [
+    { type: 'command', bash: 'my-compressor-copilot-hook --mode slim' },
+    { type: 'command', bash: 'compressor-copilot-hooks --mode slim' },
+  ];
+  const original = `${JSON.stringify(
+    { version: 1, hooks: { postToolUse: nearMisses } },
+    null,
+    2,
+  )}\n`;
+  await mkdir(path.dirname(hookConfigFile(ctx)), { recursive: true });
+  await writeFile(hookConfigFile(ctx), original, 'utf8');
+
+  const relocCtx: AdapterContext = { ...ctx, hookCommand: 'compressor-hook --mode slim' };
+  await applyChanges(await copilotAdapter.install('slim', relocCtx));
+  const installed = await readHookConfig(relocCtx);
+  assert.equal(installed.hooks['postToolUse']?.length, 3);
+  assert.deepEqual(installed.hooks['postToolUse']?.[0], nearMisses[0]);
+  assert.deepEqual(installed.hooks['postToolUse']?.[1], nearMisses[1]);
+  assert.equal(
+    installed.hooks['postToolUse']?.[2]?.['bash'],
+    'compressor-copilot-hook --mode slim',
+  );
+
+  // uninstall removes only ours; near-miss entries round-trip byte-equal
+  await applyChanges(await copilotAdapter.uninstall(relocCtx));
+  assert.equal(await readFile(hookConfigFile(ctx), 'utf8'), original);
+});
+
+test('upgrade path: old absolute copilot entry replaced by a relocatable install — no duplicates', async () => {
+  const ctx = await makeCtx();
+  // the form a previous absolute-style install of THIS package wrote
+  const oldAbsolute = describeCopilotHookCommand('slim', undefined, 'absolute');
+  const seeded = `${JSON.stringify(
+    {
+      version: 1,
+      hooks: {
+        postToolUse: [
+          { type: 'command', bash: oldAbsolute, powershell: oldAbsolute, timeoutSec: 10 },
+        ],
+      },
+    },
+    null,
+    2,
+  )}\n`;
+  await mkdir(path.dirname(hookConfigFile(ctx)), { recursive: true });
+  await writeFile(hookConfigFile(ctx), seeded, 'utf8');
+
+  const relocCtx: AdapterContext = { ...ctx, hookCommand: 'compressor-hook --mode slim' };
+  await applyChanges(await copilotAdapter.install('slim', relocCtx));
+  const config = await readHookConfig(relocCtx);
+  assert.equal(config.hooks['postToolUse']?.length, 1);
+  assert.equal(
+    config.hooks['postToolUse']?.[0]?.['bash'],
+    'compressor-copilot-hook --mode slim',
+  );
+});
+
+// Regression (minor): global uninstall deleted <copilotHome>/hooks/compressor.json
+// but left the now-empty hooks/ and .copilot/ dirs behind — and detect() keys
+// on the .copilot dir existing, so it reported true forever after.
+test('global uninstall prunes the empty hooks/.copilot dirs it created — detect() flips back to false', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(true);
+    assert.equal(await copilotAdapter.detect(ctx), false);
+
+    await applyChanges(await copilotAdapter.install('slim', ctx));
+    assert.equal(await copilotAdapter.detect(ctx), true);
+
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+    assert.ok(
+      !existsSync(path.join(ctx.homeDir, '.copilot')),
+      '<home>/.copilot gone entirely when we created it',
+    );
+    assert.equal(await copilotAdapter.detect(ctx), false);
+    // the prune is bounded at the .copilot segment — the home dir survives
+    assert.ok(existsSync(ctx.homeDir));
+  });
+});
+
+test('global uninstall keeps a pre-existing .copilot dir holding foreign files', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(true);
+    const copilotDir = path.join(ctx.homeDir, '.copilot');
+    const foreignFile = path.join(copilotDir, 'config.json');
+    await mkdir(copilotDir, { recursive: true });
+    await writeFile(foreignFile, '{"banner": false}\n', 'utf8');
+
+    await applyChanges(await copilotAdapter.install('slim', ctx));
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+
+    // hooks/ was ours (created by install, empty after the delete) — pruned;
+    // the foreign file makes rmdir(.copilot) fail, so the user's dir is kept
+    assert.ok(!existsSync(path.join(copilotDir, 'hooks')));
+    assert.ok(existsSync(copilotDir), 'pre-existing .copilot dir must survive');
+    assert.equal(await readFile(foreignFile, 'utf8'), '{"banner": false}\n');
+  });
+});
+
+test('global uninstall keeps a hooks dir holding a foreign hook config', async () => {
+  await withCopilotHome(undefined, async () => {
+    const ctx = await makeCtx(true);
+    const hooksDir = path.dirname(globalHookConfigFile(ctx));
+    const foreignHook = path.join(hooksDir, 'other-tool.json');
+    await mkdir(hooksDir, { recursive: true });
+    await writeFile(foreignHook, '{"version": 1}\n', 'utf8');
+
+    await applyChanges(await copilotAdapter.install('slim', ctx));
+    await applyChanges(await copilotAdapter.uninstall(ctx));
+
+    assert.ok(!existsSync(globalHookConfigFile(ctx)), 'our config removed');
+    assert.ok(existsSync(hooksDir), 'foreign-bearing hooks dir kept');
+    assert.equal(await readFile(foreignHook, 'utf8'), '{"version": 1}\n');
+  });
+});
+
+// Regression (minor): the delete-when-only-ours rule treated ANY
+// `{"version": <x>}` leftover as our stub. We only ever write version 1; a
+// pre-existing file with another version (or unknown top-level keys) is user
+// data — uninstall must strip our entries and KEEP the file.
+test('regression: pre-existing config with a version we did not write survives uninstall', async () => {
+  const ctx = await makeCtx();
+  const original = `${JSON.stringify({ version: 2 }, null, 2)}\n`;
+  await mkdir(path.dirname(hookConfigFile(ctx)), { recursive: true });
+  await writeFile(hookConfigFile(ctx), original, 'utf8');
+
+  await applyChanges(await copilotAdapter.install('slim', ctx));
+  const installed = await readHookConfig(ctx);
+  assert.equal(installed.version, 2, 'install never rewrites a foreign version');
+  assert.equal(installed.hooks['postToolUse']?.length, 1);
+
+  await applyChanges(await copilotAdapter.uninstall(ctx));
+  assert.ok(existsSync(hookConfigFile(ctx)), 'version-2 file kept, not deleted');
+  assert.equal(await readFile(hookConfigFile(ctx), 'utf8'), original);
+});
+
+test('regression: unknown top-level keys keep the file through uninstall', async () => {
+  const ctx = await makeCtx();
+  const ourCommand = `${OUR_COPILOT_COMMAND_BASE} --mode slim`;
+  const ourEntry = {
+    type: 'command',
+    bash: ourCommand,
+    powershell: ourCommand,
+    timeoutSec: 10,
+  };
+  const original = `${JSON.stringify(
+    { version: 1, hooks: { postToolUse: [ourEntry] }, customKey: true },
+    null,
+    2,
+  )}\n`;
+  await mkdir(path.dirname(hookConfigFile(ctx)), { recursive: true });
+  await writeFile(hookConfigFile(ctx), original, 'utf8');
+
+  await applyChanges(await copilotAdapter.uninstall(ctx));
+  assert.ok(existsSync(hookConfigFile(ctx)), 'customKey-bearing file kept');
+  assert.equal(
+    await readFile(hookConfigFile(ctx), 'utf8'),
+    `${JSON.stringify({ version: 1, customKey: true }, null, 2)}\n`,
+  );
 });
 
 test('hook config: invalid JSON is not touched — install throws, status stays calm', async () => {

@@ -7,6 +7,7 @@ import path from 'node:path';
 import { claudeCodeAdapter } from '../../src/adapters/claude-code.ts';
 import { applyChanges } from '../../src/adapters/apply.ts';
 import { renderOutputStyle } from '../../src/packs/render.ts';
+import { describeHookCommand } from '../../src/paths.ts';
 import type { AdapterContext } from '../../src/adapters/types.ts';
 
 const HOOK_COMMAND = 'node /opt/compressor/dist/hook.js';
@@ -319,6 +320,121 @@ test('quoted hook command claims legacy unquoted entries (upgrade path)', async 
 
   await applyChanges(await claudeCodeAdapter.uninstall(quotedCtx));
   assert.ok(!existsSync(localSettingsFile(ctx)));
+});
+
+test('relocatable command form: claimed at the word boundary, near-miss names never touched', async () => {
+  const ctx = await makeCtx();
+  const nearMissPrefix = {
+    matcher: 'Read',
+    hooks: [{ type: 'command', command: 'my-compressor-hook --mode slim' }],
+  };
+  const nearMissSuffix = {
+    matcher: 'Read',
+    hooks: [{ type: 'command', command: 'compressor-hooks --mode slim' }],
+  };
+  const oursOld = {
+    matcher: 'Read|Bash|Grep|Glob',
+    hooks: [{ type: 'command', command: 'compressor-hook --mode slim' }],
+  };
+  await mkdir(path.dirname(localSettingsFile(ctx)), { recursive: true });
+  await writeFile(
+    localSettingsFile(ctx),
+    `${JSON.stringify({ hooks: { PostToolUse: [nearMissPrefix, nearMissSuffix, oursOld] } }, null, 2)}\n`,
+    'utf8',
+  );
+
+  const relocCtx: AdapterContext = { ...ctx, hookCommand: 'compressor-hook --mode optimized' };
+  await applyChanges(await claudeCodeAdapter.install('optimized', relocCtx));
+  assert.deepEqual(await readJson(localSettingsFile(ctx)), {
+    hooks: {
+      PostToolUse: [
+        nearMissPrefix,
+        nearMissSuffix,
+        {
+          matcher: 'Read|Bash|Grep|Glob',
+          hooks: [{ type: 'command', command: 'compressor-hook --mode optimized' }],
+        },
+      ],
+    },
+  });
+
+  // uninstall removes only ours; the near-miss entries survive
+  await applyChanges(await claudeCodeAdapter.uninstall(relocCtx));
+  assert.deepEqual(await readJson(localSettingsFile(ctx)), {
+    hooks: { PostToolUse: [nearMissPrefix, nearMissSuffix] },
+  });
+});
+
+test('upgrade path: old absolute entry replaced by a relocatable install — no duplicates', async () => {
+  const ctx = await makeCtx();
+  // the form a previous absolute-style install of THIS package wrote
+  const oldAbsolute = describeHookCommand('slim', undefined, 'absolute');
+  await mkdir(path.dirname(localSettingsFile(ctx)), { recursive: true });
+  await writeFile(
+    localSettingsFile(ctx),
+    `${JSON.stringify(
+      {
+        hooks: {
+          PostToolUse: [
+            { matcher: 'Read|Bash|Grep|Glob', hooks: [{ type: 'command', command: oldAbsolute }] },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+
+  const relocCtx: AdapterContext = { ...ctx, hookCommand: 'compressor-hook --mode slim' };
+  await applyChanges(await claudeCodeAdapter.install('slim', relocCtx));
+  assert.deepEqual(await readJson(localSettingsFile(ctx)), {
+    hooks: {
+      PostToolUse: [
+        {
+          matcher: 'Read|Bash|Grep|Glob',
+          hooks: [{ type: 'command', command: 'compressor-hook --mode slim' }],
+        },
+      ],
+    },
+  });
+});
+
+test('downgrade path: relocatable entry replaced by an absolute install — no duplicates', async () => {
+  const ctx = await makeCtx();
+  await mkdir(path.dirname(localSettingsFile(ctx)), { recursive: true });
+  await writeFile(
+    localSettingsFile(ctx),
+    `${JSON.stringify(
+      {
+        hooks: {
+          PostToolUse: [
+            {
+              matcher: 'Read|Bash|Grep|Glob',
+              hooks: [{ type: 'command', command: 'compressor-hook --mode slim' }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    )}\n`,
+    'utf8',
+  );
+
+  const absolute = 'node "/opt/compressor/dist/hook.js" --mode slim';
+  const absCtx: AdapterContext = { ...ctx, hookCommand: absolute };
+  await applyChanges(await claudeCodeAdapter.install('slim', absCtx));
+  assert.deepEqual(await readJson(localSettingsFile(ctx)), {
+    hooks: {
+      PostToolUse: [
+        {
+          matcher: 'Read|Bash|Grep|Glob',
+          hooks: [{ type: 'command', command: absolute }],
+        },
+      ],
+    },
+  });
 });
 
 test('detect: project scope always true; global scope requires a .claude dir', async () => {

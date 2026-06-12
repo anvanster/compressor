@@ -3,6 +3,13 @@ import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
 import { appendLedger } from '../ledger/write.ts';
+import {
+  noteRecoveryRead,
+  noteTruncation,
+  recoveryBudget,
+  recoveryBudgetExceeded,
+  recoveryDisabled,
+} from './recovery.ts';
 
 // Protocol-independent hook core shared by the Claude Code (PostToolUse) and
 // Copilot (postToolUse) protocol layers. Payload field names, tool-name
@@ -72,6 +79,71 @@ export function compressCall(
   } catch {
     // FAIL-OPEN: a broken hook must never break the user's agent.
     return { text: call.text, worthwhile: false };
+  }
+}
+
+/**
+ * Recovery-read budget (the structural pagination fix — see
+ * src/hook/recovery.ts). For a targeted READ of a file this session
+ * previously truncated, count the read against the budget and — once the
+ * budget is exhausted — demote the call to untargeted, so the engine
+ * compresses it under the normal policy. The marker inside the compressed
+ * result still tells the model what was omitted: degraded, not blinded.
+ *
+ * No session id (or kill switch, or non-read, or untargeted, or unknown
+ * file path) returns the call unchanged — exactly today's behavior. Reads of
+ * never-truncated files are not counted (noteRecoveryRead no-ops without a
+ * live truncation record), so ordinary ranged reads cost nothing.
+ */
+export function applyRecoveryBudget(
+  call: CompressibleCall,
+  sessionId: string | undefined,
+): CompressibleCall {
+  try {
+    if (sessionId === undefined || sessionId === '' || recoveryDisabled()) {
+      return call;
+    }
+    if (call.toolKind !== 'read' || !call.targeted || call.filePath === undefined) {
+      return call;
+    }
+    // Check first, then count: the synchronous check must not see this very
+    // read, so budget N means reads 1..N pass through and read N+1 compresses.
+    const exceeded = recoveryBudgetExceeded(sessionId, call.filePath, recoveryBudget());
+    noteRecoveryRead(sessionId, call.filePath);
+    return exceeded ? { ...call, targeted: false } : call;
+  } catch {
+    // FAIL-OPEN: budget trouble must never block recovery itself.
+    return call;
+  }
+}
+
+/** Transforms that actually CUT content (vs. lossless dedupe/ansi cleanup). */
+const CUTTING_TRANSFORMS: ReadonlySet<string> = new Set(['truncate', 'skeleton']);
+
+/**
+ * Fire-and-forget truncation note for the recovery budget: records that a
+ * worthwhile READ compression cut content (truncate/skeleton ran), so later
+ * targeted reads of the same file count as recovery. Transform ids come from
+ * the engine stats already carried on CompressedCall.
+ */
+export function noteTruncationIfCut(
+  sessionId: string | undefined,
+  call: CompressibleCall,
+  compressed: CompressedCall,
+): void {
+  try {
+    if (sessionId === undefined || sessionId === '' || recoveryDisabled()) {
+      return;
+    }
+    if (call.toolKind !== 'read' || call.filePath === undefined || !compressed.worthwhile) {
+      return;
+    }
+    const cut = compressed.stats?.transforms.some((t) => CUTTING_TRANSFORMS.has(t.id)) ?? false;
+    if (cut) {
+      noteTruncation(sessionId, call.filePath);
+    }
+  } catch {
+    // FAIL-OPEN: the budget must never break the hook.
   }
 }
 

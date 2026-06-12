@@ -30,7 +30,7 @@ A project that only publishes its wins is advertising. These were measured and r
 
 Requires Node **>= 20**.
 
-Once published, install the CLI globally:
+Install the CLI globally (recommended — also enables relocatable hook commands):
 
 ```sh
 npm install -g @astudioplus/compressor
@@ -150,12 +150,12 @@ Three views, deliberately not conflated:
 
 Stated plainly, because the alternative is users discovering them:
 
-- **Copilot compression is CLI-on-this-machine only.** The hook command embeds an absolute local path; cloud agents and teammates get a fail-open no-op, and the Copilot IDE surface runs no hook files. A relocatable invocation needs the package on npm first.
+- **Copilot compression runs in Copilot CLI (and potentially the cloud agent), never the IDE.** With a global npm install, `init` writes relocatable hook commands (`compressor-copilot-hook --mode <m>`) that work on any machine where `@astudioplus/compressor` is on PATH — a committed `.github/hooks/compressor.json` then works for teammates who install the package (and for the cloud agent only if the config is on the default branch *and* the package exists in its environment). Source-checkout installs keep absolute local paths by design (dev builds). The Copilot IDE surface runs no hook files at all.
 - **Cursor and AGENTS.md get instructions only.** No mechanism exists to rewrite built-in tool output there.
-- **Pagination bimodality is unsolved.** On the huge-log task the agent sometimes paginates (~457k context) and sometimes slurps the file (~248k) regardless of hook arm, and a marker-phrasing experiment failed to move it (run bench-20260610-181302). A structural fix (recovery-read budgets) is future work.
+- **Pagination bimodality: structural fix implemented, not yet measured.** On the huge-log task the agent sometimes paginates (~457k context) and sometimes slurps the file (~248k) regardless of hook arm, and a marker-phrasing experiment failed to move it (run bench-20260610-181302). The hook now budgets recovery reads (the first 3 targeted reads of a previously-truncated file pass through untouched; further ones are compressed; `COMPRESSOR_RECOVERY_BUDGET` tunes, `COMPRESSOR_NO_RECOVERY_BUDGET=1` disables) — whether this moves the bimodality has not yet been benchmarked.
 - **Output atoms are unproven in single-shot agentic use.** Ablation showed no marginal effect there; their measured value is prose tasks and multi-turn conversations. No harm measured either.
 - **Sample sizes are small.** Most results are 2–4 trials per cell; headline numbers are medians and the per-mode aggregate deltas have overlapping IQRs. Negative and directional results are labelled as such.
-- **Not yet on npm.** Install from source; the hook path is anchored to your clone.
+- **Benchmarking is a from-source feature.** The npm package ships the CLI, hooks, and library only; `compressor benchmark` needs the repo's `bench/` suites and fixtures.
 
 ## Further reading
 

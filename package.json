@@ -1,7 +1,7 @@
 {
   "name": "@astudioplus/compressor",
-  "version": "0.1.2",
-  "description": "Reduce token usage in AI coding agents (Claude Code, Copilot, Cursor) with instruction packs and tool-output compression hooks — savings you can measure.",
+  "version": "0.2.0",
+  "description": "Reduce token usage in AI coding agents (Claude Code, Copilot, Cursor) with instruction packs and tool-output compression hooks \u2014 savings you can measure.",
   "type": "module",
   "author": "Andrey Vasilevsky <anvanster@gmail.com>",
   "license": "MIT",
@@ -40,7 +40,9 @@
     "arm64"
   ],
   "bin": {
-    "compressor": "dist/cli/index.js"
+    "compressor": "dist/cli/index.js",
+    "compressor-hook": "dist/hook.js",
+    "compressor-copilot-hook": "dist/copilot-hook.js"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -58,8 +60,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && npm run bundle:hook && npm run bundle:copilot-hook",
-    "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --outfile=dist/hook.js",
-    "bundle:copilot-hook": "esbuild src/copilot-hook-entry.ts --bundle --platform=node --format=esm --outfile=dist/copilot-hook.js",
+    "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/hook.js",
+    "bundle:copilot-hook": "esbuild src/copilot-hook-entry.ts --bundle --platform=node --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/copilot-hook.js",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\""

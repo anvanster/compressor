@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
+import { EventEmitter } from 'node:events';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { writeHookOutput } from '../../src/hook/exit.ts';
+import type { HookStdout } from '../../src/hook/exit.ts';
 
 // Regression (critical): the 250ms settle cap only shortcuts the JS await —
 // it does not bound process lifetime. On modern Node, process.exit() performs
@@ -157,6 +160,49 @@ test('CLI protocol path has the same exit bound as the bundles', { skip: skipFif
   };
   assert.ok(parsed.hookSpecificOutput?.updatedToolOutput?.stdout?.includes('[compressor:'));
   assert.equal(result.signal, 'SIGKILL');
+});
+
+// Regression (minor): a parent that closes the pipe early makes the stdout
+// write fail with EPIPE — surfaced as an async 'error' EVENT on the stream,
+// NOT as a write() throw, so the try/catch around the write alone cannot keep
+// the always-exit-0 invariant: without a listener Node turns the event into an
+// uncaught exception and a non-zero exit (logged noise in Claude Code). The
+// write helper must attach a no-op 'error' listener before writing and swallow
+// synchronous failures too.
+
+/** Stand-in for a stdout whose pipe the parent already closed (EPIPE on write). */
+class BrokenPipeStdout extends EventEmitter {
+  write(_chunk: string, callback?: (error?: Error | null) => void): boolean {
+    queueMicrotask(() => {
+      const error = Object.assign(new Error('write EPIPE'), { code: 'EPIPE' });
+      // without writeHookOutput's no-op listener this emit throws
+      // ERR_UNHANDLED_ERROR — exactly the crash under regression test
+      this.emit('error', error);
+      callback?.(error);
+    });
+    return false;
+  }
+}
+
+test('writeHookOutput absorbs the async EPIPE error event and still resolves', async () => {
+  const stdout = new BrokenPipeStdout();
+  await writeHookOutput('{"hookSpecificOutput":{}}', stdout);
+  assert.equal(
+    stdout.listenerCount('error'),
+    1,
+    'a no-op error listener must be attached before the write',
+  );
+});
+
+test('writeHookOutput swallows a synchronously throwing stdout write', async () => {
+  const stdout: HookStdout = {
+    on: () => undefined,
+    write: (): boolean => {
+      throw new Error('EBADF: write after destroy');
+    },
+  };
+  // must resolve (never reject): settle + exit 0 proceed regardless
+  await writeHookOutput('payload', stdout);
 });
 
 test('healthy ledger: hook exits 0 quickly and the event is recorded', async (t) => {
