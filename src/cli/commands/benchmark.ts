@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
 import { buildVariants } from '../../bench/ablate.ts';
+import type { BenchAuth } from '../../bench/cell.ts';
 import { balanceWarning } from '../../bench/results.ts';
 import { runBenchmark } from '../../bench/runner.ts';
 import { loadSuite, suiteFixturesDir } from '../../bench/tasks.ts';
@@ -19,6 +20,10 @@ export interface BenchmarkCliOptions {
   modes: string;
   trials: string;
   model: string;
+  /** 'api' (default, ANTHROPIC_API_KEY) or 'subscription' (CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`) */
+  auth?: string;
+  /** subscription mode: hard executed-cell ceiling (default: all planned cells) */
+  maxCells?: string;
   ablate?: string;
   ablateAdd?: string;
   /** comma-separated atom categories (output|behavior) for group ablation */
@@ -63,6 +68,16 @@ export function parseHookArgArms(
       }
       return { label: entry.slice(0, eq).trim(), args: entry.slice(eq + 1).trim() };
     });
+}
+
+function parseAuth(value: string | undefined): BenchAuth {
+  if (value === undefined || value === 'api') {
+    return 'api';
+  }
+  if (value === 'subscription') {
+    return 'subscription';
+  }
+  throw new Error(`--auth must be 'api' or 'subscription', got '${value}'`);
 }
 
 function parsePositiveInt(value: string, flag: string): number {
@@ -188,7 +203,10 @@ function markerStylePreflightPayload(): string {
  * Either failing aborts the run with an actionable error. Skipped only under
  * COMPRESSOR_CLAUDE_BIN (the offline stub runs no styles/hooks by nature).
  */
-export async function assertTreatmentDelivery(model = 'claude-haiku-4-5'): Promise<void> {
+export async function assertTreatmentDelivery(
+  model = 'claude-haiku-4-5',
+  auth: BenchAuth = 'api',
+): Promise<void> {
   const runCanaryCell = async (
     label: string,
     setup: (workspace: string, scratch: string) => Promise<{ prompt: string; settings: Record<string, unknown> }>,
@@ -200,12 +218,20 @@ export async function assertTreatmentDelivery(model = 'claude-haiku-4-5'): Promi
       const { prompt, settings } = await setup(workspace, scratch);
       const settingsFile = path.join(scratch, 'cell-settings.json');
       await writeFile(settingsFile, JSON.stringify(settings), 'utf8');
+      // same auth discipline as cells: strip the other mode's credential so
+      // the canary proves the EXACT billing path the run will use
+      const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        CLAUDE_CONFIG_DIR: scratch,
+        COMPRESSOR_NO_LEDGER: '1',
+      };
+      delete env[auth === 'api' ? 'CLAUDE_CODE_OAUTH_TOKEN' : 'ANTHROPIC_API_KEY'];
       const { stdout } = await execFileAsync(
         'claude',
         ['-p', prompt, '--output-format', 'json', '--model', model, '--settings', settingsFile],
         {
           cwd: workspace,
-          env: { ...process.env, CLAUDE_CONFIG_DIR: scratch, COMPRESSOR_NO_LEDGER: '1' },
+          env,
           timeout: 120_000,
           maxBuffer: 8 * 1024 * 1024,
         },
@@ -414,18 +440,31 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     }
   }
 
+  const auth: BenchAuth = parseAuth(opts.auth);
   const bin = process.env.COMPRESSOR_CLAUDE_BIN;
-  if (bin === undefined && (process.env.ANTHROPIC_API_KEY ?? '') === '') {
+  if (bin === undefined && auth === 'api' && (process.env.ANTHROPIC_API_KEY ?? '') === '') {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set: cells run with an isolated CLAUDE_CONFIG_DIR that has no credentials (verified: keyless cells fail with "Not logged in" — your OAuth subscription is unreachable), so benchmarks need ANTHROPIC_API_KEY exported.',
+      'ANTHROPIC_API_KEY is not set: cells run with an isolated CLAUDE_CONFIG_DIR that has no credentials (verified: keyless cells fail with "Not logged in" — your OAuth subscription is unreachable), so API-billed benchmarks need ANTHROPIC_API_KEY exported. (To bill your Claude plan instead: --auth subscription with CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`.)',
+    );
+  }
+  if (bin === undefined && auth === 'subscription') {
+    if ((process.env.CLAUDE_CODE_OAUTH_TOKEN ?? '') === '') {
+      throw new Error(
+        "--auth subscription needs CLAUDE_CODE_OAUTH_TOKEN exported: run `claude setup-token` once (interactive OAuth), then export the printed token (config.local is a sensible home). Cells strip ANTHROPIC_API_KEY so billing is deterministically your Claude plan.",
+      );
+    }
+    console.log(
+      'auth: subscription — cells bill YOUR Claude plan usage (5-hour windows / weekly caps), not API dollars. No per-cell cost exists; ceiling is --max-cells, progress shows tokens consumed. Big runs compete with your own usage — consider off-hours and modest --concurrency.',
     );
   }
   await assertClaudeAnswersVersion(bin ?? 'claude');
 
   if (bin === undefined) {
     // real binary: prove styles + hooks actually reach cells before spending
-    // (the stub neither styles nor hooks by nature — gated, documented)
-    await assertTreatmentDelivery();
+    // (the stub neither styles nor hooks by nature — gated, documented).
+    // Canaries run under the SAME auth as cells: a dead setup-token fails
+    // here, before any capacity is consumed on real cells.
+    await assertTreatmentDelivery('claude-haiku-4-5', auth);
     console.log('treatment-delivery canaries passed (output style + PostToolUse hook)');
   }
 
@@ -435,8 +474,14 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
       .map((variant) => variant.id)
       .join(', ')}) × ${trials} trials`,
   );
-  console.log(`hard ceiling: $${maxBudgetUsd} (--max-budget-usd)`);
+  console.log(
+    auth === 'api'
+      ? `hard ceiling: $${maxBudgetUsd} (--max-budget-usd)`
+      : `hard ceiling: ${opts.maxCells ?? 'all planned'} cells (--max-cells) — plan-billed, no dollar accounting exists`,
+  );
 
+  const maxCells =
+    opts.maxCells === undefined ? undefined : parsePositiveInt(opts.maxCells, '--max-cells');
   const { runId, results, resultsFile } = await runBenchmark({
     suite,
     variants,
@@ -446,6 +491,8 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     concurrency,
     outDir,
     fixturesDir,
+    auth,
+    ...(maxCells !== undefined ? { maxCells } : {}),
     onProgress: (line) => console.log(line),
   });
 

@@ -67,3 +67,25 @@ test('the claude child process actually receives COMPRESSOR_NO_LEDGER=1', async 
   assert.ok(probe.configDir !== null && probe.configDir !== '');
   assert.notEqual(probe.configDir, process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude'));
 });
+
+test('cellEnv strips the other auth mode\'s credential (deterministic billing)', () => {
+  const savedKey = process.env['ANTHROPIC_API_KEY'];
+  const savedTok = process.env['CLAUDE_CODE_OAUTH_TOKEN'];
+  try {
+    process.env['ANTHROPIC_API_KEY'] = 'sk-test';
+    process.env['CLAUDE_CODE_OAUTH_TOKEN'] = 'oauth-test';
+    const api = cellEnv('/scratch', 'api');
+    assert.equal(api['ANTHROPIC_API_KEY'], 'sk-test');
+    assert.equal('CLAUDE_CODE_OAUTH_TOKEN' in api, false);
+    const sub = cellEnv('/scratch', 'subscription');
+    assert.equal(sub['CLAUDE_CODE_OAUTH_TOKEN'], 'oauth-test');
+    assert.equal('ANTHROPIC_API_KEY' in sub, false);
+    // default = api
+    assert.equal('CLAUDE_CODE_OAUTH_TOKEN' in cellEnv('/scratch'), false);
+  } finally {
+    if (savedKey === undefined) delete process.env['ANTHROPIC_API_KEY'];
+    else process.env['ANTHROPIC_API_KEY'] = savedKey;
+    if (savedTok === undefined) delete process.env['CLAUDE_CODE_OAUTH_TOKEN'];
+    else process.env['CLAUDE_CODE_OAUTH_TOKEN'] = savedTok;
+  }
+});

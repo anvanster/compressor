@@ -196,7 +196,9 @@ The ranking matches the token-destination economics of §3.1: atoms that change 
 
   Then either `npm link` (to get `compressor` on PATH) or invoke `node dist/cli/index.js` directly. Run benchmark commands from the repository root: the default suite path is cwd-relative and `bench/` fixtures ship in the repo, not in the npm package.
 - The `claude` CLI installed (the runs above used v2.1.170). The harness can point at a different binary via `COMPRESSOR_CLAUDE_BIN`.
-- `ANTHROPIC_API_KEY` exported: cell credentials resolve inside the per-cell `CLAUDE_CONFIG_DIR`, which holds none — probe-verified: a keyless cell fails with "Not logged in" rather than reaching the operator's OAuth subscription — so the API key is the only auth path. **All spend is real API spend.**
+- Auth, one of two explicit modes (cells strip the other mode's credential, so billing is deterministic):
+  - **`--auth api` (default)**: `ANTHROPIC_API_KEY` exported. Cell credentials resolve inside the per-cell `CLAUDE_CONFIG_DIR`, which holds none — probe-verified: a keyless cell fails with "Not logged in" rather than reaching the operator's OAuth subscription. **All spend is real API spend**, governed by `--max-budget-usd`.
+  - **`--auth subscription`**: `CLAUDE_CODE_OAUTH_TOKEN` exported (minted once via `claude setup-token`). Cells bill the operator's Claude plan — its 5-hour usage windows and weekly caps, competing with the operator's own sessions. No per-cell dollar cost exists, so the ceiling is `--max-cells` (group-atomic) and progress reports tokens consumed; an error-streak breaker stops the run if the token dies or the usage window exhausts mid-run. Runs report `authMode: subscription` in their meta — dollar columns are legitimately absent from such runs.
 - Costs below are what the recorded runs actually spent; your numbers will vary with model behaviour. The `--max-budget-usd` ceiling stops *scheduling* when reached but can overshoot by up to concurrency × max-cell-cost (in-flight cells); budget accordingly.
 
 ### Commands per run class

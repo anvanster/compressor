@@ -23,6 +23,8 @@ const HOOK_MATCHER = 'Read|Bash|Grep|Glob';
 export interface CellContext {
   runId: string;
   fixturesDir: string;
+  /** billing/auth mode for the claude child (default 'api') */
+  auth?: BenchAuth;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -165,16 +167,36 @@ async function judgeSuccess(
   }
 }
 
+/** How cells authenticate (and therefore who pays). */
+export type BenchAuth = 'api' | 'subscription';
+
 /**
  * Environment for the claude child process (and therefore for the PostToolUse
  * hook it spawns). CLAUDE_CONFIG_DIR isolates the cell; COMPRESSOR_NO_LEDGER
  * keeps benchmark cells out of the user's LIVE savings ledger — hook-bearing
  * cells run the real hook, and without the kill switch every worthwhile
  * compression would append a synthetic event to ~/.compressor/ledger,
- * corrupting what `compressor savings` reports. Exported for tests.
+ * corrupting what `compressor savings` reports.
+ *
+ * Auth is made DETERMINISTIC by stripping the other mode's credential:
+ * 'api' bills ANTHROPIC_API_KEY (OAuth token removed); 'subscription' bills
+ * the operator's Claude plan via CLAUDE_CODE_OAUTH_TOKEN from
+ * `claude setup-token` (API key removed). Subscription cells report no
+ * total_cost_usd — the runner switches to cell/token ceilings. Exported for
+ * tests.
  */
-export function cellEnv(scratch: string): NodeJS.ProcessEnv {
-  return { ...process.env, CLAUDE_CONFIG_DIR: scratch, COMPRESSOR_NO_LEDGER: '1' };
+export function cellEnv(scratch: string, auth: BenchAuth = 'api'): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    CLAUDE_CONFIG_DIR: scratch,
+    COMPRESSOR_NO_LEDGER: '1',
+  };
+  if (auth === 'api') {
+    delete env['CLAUDE_CODE_OAUTH_TOKEN'];
+  } else {
+    delete env['ANTHROPIC_API_KEY'];
+  }
+  return env;
 }
 
 async function invokeClaude(
@@ -183,6 +205,7 @@ async function invokeClaude(
   scratch: string,
   settingsFile: string,
   prompt: string,
+  auth: BenchAuth,
   resumeSessionId?: string,
 ): Promise<string> {
   const bin = process.env.COMPRESSOR_CLAUDE_BIN ?? 'claude';
@@ -212,7 +235,7 @@ async function invokeClaude(
   }
   const options = {
     cwd: workspace,
-    env: cellEnv(scratch),
+    env: cellEnv(scratch, auth),
     timeout: CLAUDE_TIMEOUT_MS,
     maxBuffer: MAX_BUFFER,
   };
@@ -436,7 +459,15 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
       }
       let parsed: ParsedResult;
       try {
-        const stdout = await invokeClaude(spec, workspace, scratch, settingsFile, prompt, resume);
+        const stdout = await invokeClaude(
+          spec,
+          workspace,
+          scratch,
+          settingsFile,
+          prompt,
+          ctx.auth ?? 'api',
+          resume,
+        );
         parsed = parseResultJson(stdout);
       } catch (error) {
         // single-shot keeps its original message; conversations get the label

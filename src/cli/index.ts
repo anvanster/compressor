@@ -156,6 +156,15 @@ program
   )
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
+  .option(
+    '--auth <mode>',
+    "api (ANTHROPIC_API_KEY, dollar ceiling) or subscription (CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`; bills your Claude plan's usage windows, ceiling via --max-cells)",
+    'api',
+  )
+  .option(
+    '--max-cells <n>',
+    'subscription mode: hard executed-cell ceiling, aligned to task×trial groups (default: all planned cells)',
+  )
   .option('--out <dir>', 'results directory', 'bench/results')
   .action(
     async (opts: {
@@ -172,6 +181,8 @@ program
       hookArgArms?: string;
       concurrency: string;
       maxBudgetUsd: string;
+      auth?: string;
+      maxCells?: string;
       out: string;
     }) => {
       const { runBenchmarkCommand } = await import('./commands/benchmark.ts');

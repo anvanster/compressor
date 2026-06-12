@@ -415,3 +415,107 @@ test('duplicated transcript lines (same requestId) do not inflate tool-call coun
   // PLAN.md dedupe rule: requestId/message.id, last occurrence wins
   assert.deepEqual(r.toolCalls, { Read: 1, Bash: 1 });
 });
+
+// ── subscription auth mode: plan-billed cells (no dollar cost exists) ───────
+
+const QA_SUITE: SuiteSpec = {
+  name: 'sub',
+  tasks: [
+    { id: 'q', prompt: 'q', fixture: 'qa', check: { kind: 'answer-regex', pattern: 'fake answer' } },
+  ],
+};
+
+test('subscription mode: no-cost cells do NOT trip the breaker; progress shows tokens', async (t) => {
+  const fixturesDir = await makeFixtures();
+  const outDir = await mkdtemp(join(tmpdir(), 'bench-out-'));
+  process.env.FAKE_CLAUDE_NO_COST = '1';
+  t.after(async () => {
+    delete process.env.FAKE_CLAUDE_NO_COST;
+    await rm(fixturesDir, { recursive: true, force: true });
+    await rm(outDir, { recursive: true, force: true });
+  });
+
+  const progress: string[] = [];
+  const { results } = await runBenchmark({
+    suite: QA_SUITE,
+    variants: [fullVariant],
+    trials: MAX_CONSECUTIVE_NO_COST_CELLS + 3,
+    model: 'test-model',
+    maxBudgetUsd: 5,
+    concurrency: 2,
+    outDir,
+    fixturesDir,
+    auth: 'subscription',
+    onProgress: (line) => progress.push(line),
+  });
+
+  // in API mode the same stub config stops after MAX_CONSECUTIVE_NO_COST_CELLS
+  // (pinned by the test above); under subscription every cell runs
+  assert.equal(results.filter((r) => r.error === undefined).length, results.length);
+  assert.ok(progress.every((line) => !line.includes('$')), 'no dollar display');
+  assert.ok(
+    progress.some((line) => /consumed \d+k tokens of plan usage/.test(line)),
+    `token progress missing: ${progress[0] ?? '(none)'}`,
+  );
+});
+
+test('subscription mode: --max-cells is a group-atomic hard ceiling', async (t) => {
+  const fixturesDir = await makeFixtures();
+  const outDir = await mkdtemp(join(tmpdir(), 'bench-out-'));
+  process.env.FAKE_CLAUDE_NO_COST = '1';
+  t.after(async () => {
+    delete process.env.FAKE_CLAUDE_NO_COST;
+    await rm(fixturesDir, { recursive: true, force: true });
+    await rm(outDir, { recursive: true, force: true });
+  });
+
+  // 2 variants per group; maxCells 3 lands mid-group → the started group
+  // finishes (4 executed), later groups skip
+  const { results } = await runBenchmark({
+    suite: QA_SUITE,
+    variants: [fullVariant, styledVariant],
+    trials: 4,
+    model: 'test-model',
+    maxBudgetUsd: 5,
+    concurrency: 1,
+    outDir,
+    fixturesDir,
+    auth: 'subscription',
+    maxCells: 3,
+    onProgress: () => {},
+  });
+
+  const executed = results.filter((r) => r.error === undefined);
+  const skipped = results.filter((r) => r.error?.startsWith('skipped: cell ceiling'));
+  assert.equal(executed.length, 4, 'started group completes all its arms');
+  assert.equal(skipped.length, 4, 'remaining groups skipped');
+  assert.match(skipped[0]?.error ?? '', /cell ceiling 3 reached/);
+});
+
+test('subscription mode: an unbroken error streak stops scheduling (dead token / exhausted window)', async (t) => {
+  const fixturesDir = await makeFixtures();
+  const outDir = await mkdtemp(join(tmpdir(), 'bench-out-'));
+  process.env.FAKE_CLAUDE_FAIL = '1';
+  t.after(async () => {
+    delete process.env.FAKE_CLAUDE_FAIL;
+    await rm(fixturesDir, { recursive: true, force: true });
+    await rm(outDir, { recursive: true, force: true });
+  });
+
+  const { results } = await runBenchmark({
+    suite: QA_SUITE,
+    variants: [fullVariant],
+    trials: 10,
+    model: 'test-model',
+    maxBudgetUsd: 5,
+    concurrency: 1,
+    outDir,
+    fixturesDir,
+    auth: 'subscription',
+    onProgress: () => {},
+  });
+
+  const skipped = results.filter((r) => r.error?.startsWith('skipped:'));
+  assert.ok(skipped.length >= 1, 'streak breaker engaged');
+  assert.match(skipped[0]?.error ?? '', /consecutive cells errored/);
+});

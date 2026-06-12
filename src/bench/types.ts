@@ -106,4 +106,10 @@ export interface RunMeta {
   startedAt: string;
   /** hard cost ceiling; the runner stops scheduling cells when exceeded */
   maxBudgetUsd: number;
+  /**
+   * 'subscription' when cells billed the operator's Claude plan via
+   * CLAUDE_CODE_OAUTH_TOKEN (no per-cell dollar cost exists; ceilings were
+   * cell-based). Absent = API-billed.
+   */
+  authMode?: 'subscription';
 }
