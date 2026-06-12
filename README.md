@@ -142,18 +142,20 @@ Every omission is marked, sized, and recoverable — truncation markers state th
 
 | Command | What it does | Key flags (defaults) |
 |---|---|---|
-| `init` | install the instruction pack + hook for the given agents | `--agent <name...>` (`claude-code`), `--mode optimized\|slim` (`optimized`), `--global`, `--dry-run` |
-| `set-mode <full\|optimized\|slim>` | switch mode; `full` removes all compressor artifacts (true baseline) | `--agent <name...>` (`claude-code`), `--global`, `--dry-run` |
+| `init` | install the instruction pack + hook for the given agents | `--agent <name...>` (`claude-code`), `--mode optimized\|slim` (`optimized`), `--global`, `--dry-run`, `--hook-command auto\|absolute\|relocatable` (`auto`: PATH-based `compressor-hook` commands when npm-installed with the bins on PATH; absolute dev-build paths in source checkouts) |
+| `set-mode <full\|optimized\|slim>` | switch mode; `full` removes all compressor artifacts (true baseline) | `--agent <name...>` (`claude-code`), `--global`, `--dry-run`, `--hook-command` (as `init`) |
 | `status` | show installation state per agent — derived from files and markers, no state file to drift | `--global` |
 | `uninstall` | remove all compressor-owned artifacts | `--agent <name...>` (`claude-code`), `--global`, `--dry-run` |
 | `compress` | compress stdin to stdout via the engine; stats on stderr | `--mode` (`optimized`), `--kind read\|bash\|search\|other` (`other`), `--file-path <path>`, `--marker-style plain\|deterrent\|informative` |
 | `count <file...>` | token counts per file — estimated by default | `--exact` (Anthropic `count_tokens`, needs `ANTHROPIC_API_KEY`), `--model` (`claude-sonnet-4-6`) |
 | `stats` | aggregate actual token usage from Claude Code transcripts | `--project <path>` (cwd), `--since` (`30d`) |
 | `savings` | show what the compression hook saved (live ledger, estimated tokens) | `--since` (`30d`, or `all`), `--by day\|tool\|mode` (`day`), `--html <path>`, `--ledger-dir <dir>` |
-| `benchmark` | run the benchmark suite: cells = task × variant × trial, results as JSONL | `--suite` (`bench/suites/basic.json`), `--modes` (`full,optimized,slim`), `--trials` (`5`), `--model` (`claude-sonnet-4-6`), `--ablate <ids>`, `--ablate-add <ids>`, `--ablate-group <output\|behavior>`, `--no-hook`, `--hook-args <args>`, `--marker-styles <styles>`, `--concurrency` (`2`), `--max-budget-usd` (`5`), `--out` (`bench/results`) |
+| `benchmark` | run the benchmark suite: cells = task × variant × trial, results as JSONL; treatment-delivery canaries gate every real run | `--suite` (`bench/suites/basic.json`), `--modes` (`full,optimized,slim`), `--trials` (`5`), `--model` (`claude-sonnet-4-6`), `--auth api\|subscription` (`api`; subscription bills your Claude plan via `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`), `--max-cells <n>` (subscription ceiling, group-atomic), `--ablate <ids>`, `--ablate-add <ids>`, `--ablate-group <output\|behavior>`, `--no-hook`, `--hook-args <args>`, `--marker-styles <styles>`, `--hook-arg-arms '<label>=<args>,…'` (per-arm hook args in one run), `--hook-arms` (hook-on/off arms, instructions held constant), `--concurrency` (`2`), `--max-budget-usd` (`5`, api mode), `--out` (`bench/results`) |
 | `report` | aggregate a run: per-variant medians + IQR, deltas vs full and vs ablation baselines | `--run <id>` (latest), `--compare <runs...>`, `--format table\|md\|json` (`table`), `--out` (`bench/results`) |
-| `hook post-tool-use` | Claude Code PostToolUse protocol entry: payload on stdin, updated output on stdout | `--mode` (`optimized`), `--marker-style` |
-| `hook copilot-post-tool-use` | Copilot postToolUse protocol entry: payload on stdin, `modifiedResult` JSON on stdout | `--mode` (`optimized`), `--marker-style` |
+| `hook post-tool-use` | Claude Code PostToolUse protocol entry: payload on stdin, updated output on stdout | `--mode` (`optimized`), `--marker-style`, `--recovery-budget <n\|off>` (overrides `COMPRESSOR_RECOVERY_BUDGET`/`COMPRESSOR_NO_RECOVERY_BUDGET`) |
+| `hook copilot-post-tool-use` | Copilot postToolUse protocol entry: payload on stdin, `modifiedResult` JSON on stdout | `--mode` (`optimized`), `--marker-style`, `--recovery-budget <n\|off>` |
+
+Installed hooks run as the dedicated bins `compressor-hook` / `compressor-copilot-hook` (the bundled entries directly — no CLI startup on the hot path); the `compressor hook …` subcommands exist for protocol testing.
 
 ## Seeing your savings
 

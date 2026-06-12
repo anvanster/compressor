@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Benchmark validity: cells no longer run `claude --bare`.** Probes proved
+  `--bare` silently ignores output styles (both scopes) and hooks (settings
+  file and `--settings`) while honoring `permissions` — every prior benchmark
+  arm was an identical unstyled, hookless baseline, and the entire pre-2026-06-11
+  results corpus is retracted (see docs/MEASUREMENTS.md). Isolation now rests on
+  the per-cell `CLAUDE_CONFIG_DIR`, verified to also isolate credentials.
+- **Treatment-delivery canaries** gate every real benchmark run: a micro-cell
+  must show the canary output style visibly shaping a reply and a canary
+  PostToolUse hook observably firing, or the run refuses to start.
+
+### Added
+
+- `benchmark --auth <api|subscription>`: subscription mode bills the operator's
+  Claude plan via `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`), with a
+  group-atomic `--max-cells` ceiling, token-consumption progress, an
+  error-streak breaker, `authMode` in run meta, and report cost columns
+  labelled as API-equivalent figures.
+- Same-run experiment arms: `--hook-arg-arms '<label>=<args>,…'` (per-arm hook
+  arguments) and `--hook-arms` (hook-on/off with instructions held constant).
+- Hook entries accept `--recovery-budget <n|off>` (argv overrides the
+  `COMPRESSOR_RECOVERY_BUDGET`/`COMPRESSOR_NO_RECOVERY_BUDGET` env vars), which
+  is how benchmark arms vary the recovery budget.
+
 ## [0.2.0] - 2026-06-11
 
 ### Added
