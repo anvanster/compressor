@@ -1,0 +1,6 @@
+# Keep shell scripts LF-only so `curl | bash` works regardless of host OS.
+*.sh text eol=lf
+install.sh text eol=lf
+
+# PowerShell scripts use CRLF on Windows.
+*.ps1 text eol=crlf

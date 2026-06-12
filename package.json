@@ -63,6 +63,7 @@
     "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=dist/hook.js",
     "bundle:copilot-hook": "esbuild src/copilot-hook-entry.ts --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --outfile=dist/copilot-hook.js",
     "bundle:opencode-plugin": "esbuild src/opencode-plugin-entry.ts --bundle --platform=node --format=esm --outfile=dist/opencode-plugin.js",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\""

@@ -6,6 +6,20 @@ Token optimization for AI coding agents. Two parts you install: **mode-switchabl
 
 Requires Node **>= 20**.
 
+One-line install from GitHub (builds from source, puts `compressor` on your PATH):
+
+```sh
+# macOS / Linux / WSL
+curl -fsSL https://raw.githubusercontent.com/anvanster/compressor/main/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/anvanster/compressor/main/install.ps1 | iex
+```
+
+Pin a tag/branch/commit with `COMPRESSOR_REF` (env var `$env:COMPRESSOR_REF` on Windows), e.g. `COMPRESSOR_REF=v0.3.0`.
+
 Install the CLI globally (recommended — also enables relocatable hook commands):
 
 ```sh

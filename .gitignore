@@ -6,6 +6,7 @@ bench/results/
 *.log
 config.local
 .repro-scratch/
+*.tgz
 
 # compressor's own install artifacts (dogfooding) — machine-specific hook paths
 # and generated output styles; never commit to the public repo
