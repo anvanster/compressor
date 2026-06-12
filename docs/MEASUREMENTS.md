@@ -26,6 +26,8 @@
 > retained as the honest record of the first corpus and will be superseded by
 > remeasured results.
 
+**Current, valid measured results live in [BENCHMARKING.md](BENCHMARKING.md)** (first valid runs: bench-20260612-110402 hook A/B, bench-20260612-113921 packs multi-turn — both canary-gated). This document remains the experimental record of the first corpus and its retraction.
+
 This document is the experimental record for compressor: what was measured, how, and what those measurements ruled in or out. It is the baseline state of affairs as of 2026-06-10. Every measured number cites its run id; raw per-cell data lives in `bench/results/<run-id>.jsonl` with run configuration in the adjacent `.meta.json`. Numbers that are estimates are labelled as estimates. Protocol claims marked *doc-verified* were checked against live vendor documentation, not recalled from memory.
 
 Three conventions, applied throughout:
