@@ -478,6 +478,11 @@ function headerLines(report: RunReport): string[] {
     lines.push(
       `suite ${report.meta.suite} | model ${report.meta.model} | trials ${report.meta.trials} | started ${report.meta.startedAt}`,
     );
+    if (report.meta.authMode === 'subscription') {
+      lines.push(
+        'auth: subscription — plan-billed; cost columns are API-equivalent figures, not dollars billed',
+      );
+    }
   }
   return lines;
 }

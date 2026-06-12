@@ -43,6 +43,8 @@ export interface BenchmarkCliOptions {
    * 'budget-on=,budget-off=--recovery-budget off'
    */
   hookArgArms?: string;
+  /** fan each hook-bearing variant into hook-on/hook-off arms (pure hook A/B) */
+  hookArms?: boolean;
   concurrency: string;
   maxBudgetUsd: string;
   out: string;
@@ -423,6 +425,7 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     ...(hookArgs !== undefined && hookArgs !== '' ? { hookArgs } : {}),
     ...(markerStyles.length > 0 ? { markerStyles } : {}),
     ...(hookArgArms.length > 0 ? { hookArgArms } : {}),
+    ...(opts.hookArms === true ? { hookArms: true } : {}),
   });
 
   const hooked = variants.find((variant) => variant.hook);

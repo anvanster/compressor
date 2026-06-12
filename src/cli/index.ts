@@ -154,6 +154,10 @@ program
     '--hook-arg-arms <arms>',
     "comma-separated '<label>=<args>' arms: each hook-bearing variant fans out into one arm per entry IN THE SAME RUN (empty args = control), e.g. 'budget-on=,budget-off=--recovery-budget off'",
   )
+  .option(
+    '--hook-arms',
+    'fan each hook-bearing variant into hook-on/hook-off arms IN THE SAME RUN (the pure compression-hook A/B, instructions held constant)',
+  )
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
   .option(
@@ -179,6 +183,7 @@ program
       hookArgs?: string;
       markerStyles?: string;
       hookArgArms?: string;
+      hookArms?: boolean;
       concurrency: string;
       maxBudgetUsd: string;
       auth?: string;

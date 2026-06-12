@@ -47,6 +47,14 @@ export interface BuildVariantsOptions {
    * {label:'budget-off', args:'--recovery-budget off'}].
    */
   hookArgArms?: Array<{ label: string; args: string }>;
+  /**
+   * Hook-presence ARMS: each hook-bearing variant fans out into
+   * '<id>-hook-on' (hook installed) and '<id>-hook-off' (no hook, same
+   * instructions) — the pure compression-hook A/B, in one run, holding the
+   * instruction pack constant. Same shared-ceiling rationale as the other
+   * fan-outs.
+   */
+  hookArms?: boolean;
 }
 
 const MARKER_STYLES: readonly MarkerStyle[] = ['plain', 'deterrent', 'informative'];
@@ -279,6 +287,34 @@ export function buildVariants(opts: BuildVariantsOptions): Variant[] {
           })
         : [variant],
     );
+  }
+
+  if (opts.hookArms === true) {
+    if (!expanded.some((variant) => variant.hook)) {
+      throw new Error(
+        '--hook-arms: no hook-bearing variants to fan out — remove --no-hook and include optimized/slim in --modes',
+      );
+    }
+    expanded = expanded.flatMap((variant) => {
+      if (!variant.hook) {
+        return [variant];
+      }
+      const off: Variant = {
+        ...variant,
+        id: `${variant.id}-hook-off`,
+        styleName: variant.styleName === null ? null : `${variant.styleName}-hook-off`,
+        hook: false,
+      };
+      delete off.hookArgs;
+      return [
+        {
+          ...variant,
+          id: `${variant.id}-hook-on`,
+          styleName: variant.styleName === null ? null : `${variant.styleName}-hook-on`,
+        },
+        off,
+      ];
+    });
   }
 
   const seenIds = new Set<string>();

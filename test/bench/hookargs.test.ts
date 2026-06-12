@@ -190,3 +190,34 @@ test('parseHookArgArms parses label=args entries incl. empty args; rejects missi
   assert.deepEqual(parseHookArgArms('  '), []);
   assert.throws(() => parseHookArgArms('nolabel'), /expected '<label>=<args>'/);
 });
+
+test('hookArms fans hook-bearing variants into hook-on/hook-off; full untouched', () => {
+  const variants = buildVariants({
+    modes: ['full', 'optimized'],
+    ...NO_ABLATION,
+    hook: true,
+    hookArgs: '--marker-style plain',
+    hookArms: true,
+  });
+  assert.deepEqual(
+    variants.map((v) => v.id).sort(),
+    ['full', 'optimized-hook-off', 'optimized-hook-on'],
+  );
+  const on = variants.find((v) => v.id === 'optimized-hook-on');
+  const off = variants.find((v) => v.id === 'optimized-hook-off');
+  assert.ok(on && off);
+  assert.equal(on.hook, true);
+  assert.equal(on.hookArgs, '--marker-style plain');
+  assert.equal(on.styleName, 'compressor-optimized-hook-on');
+  // hook-off: same instructions, no hook, no stale hookArgs
+  assert.equal(off.hook, false);
+  assert.equal(off.hookArgs, undefined);
+  assert.equal(off.styleBody, on.styleBody);
+  assert.equal(off.styleName, 'compressor-optimized-hook-off');
+
+  assert.throws(
+    () =>
+      buildVariants({ modes: ['full'], ...NO_ABLATION, hook: false, hookArms: true }),
+    /no hook-bearing variants/,
+  );
+});
