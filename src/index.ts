@@ -68,6 +68,19 @@ export type {
   ModeArg,
 } from './adapters/index.ts';
 
+// ledger (extension surface: read events, locate the dir, render reports)
+export { appendLedger, resolveLedgerDir, settleLedger } from './ledger/write.ts';
+export type { LedgerEvent } from './ledger/write.ts';
+export { readLedger } from './ledger/read.ts';
+export type { ReadLedgerOptions } from './ledger/read.ts';
+export {
+  aggregateSavings,
+  renderSavingsHtml,
+  savingsTotals,
+  windowLabel,
+} from './ledger/report.ts';
+export type { SavingsDimension, SavingsRow, SavingsTotals } from './ledger/report.ts';
+
 // hook
 export { handlePostToolUse } from './hook/post-tool-use.ts';
 export type { HookResult } from './hook/post-tool-use.ts';

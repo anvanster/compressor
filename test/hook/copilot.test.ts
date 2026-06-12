@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { handleCopilotPostToolUse } from '../../src/hook/copilot.ts';
+import { settleLedger } from '../../src/ledger/write.ts';
 
 // Worthwhile compressions fire fire-and-forget ledger appends; keep this
 // suite hermetic (never touch the real ~/.compressor). Ledger behavior has
@@ -249,6 +250,48 @@ test('bare-string toolResult (undocumented) is compressed directly to a string',
   const replaced = (JSON.parse(out) as CopilotResponse).modifiedResult.textResultForLlm;
   assert.ok(replaced.includes('[compressor:'));
   assert.equal(replaced.startsWith('"'), false, 'not JSON-wrapped');
+});
+
+// internal/VSCODE-HOOKS-VERIFICATION.md V3: VS Code agent mode also executes
+// the COMMAND hooks our copilot adapter writes (.github/hooks/*.json,
+// ~/.copilot/hooks) and ignores matchers — but it sends the SNAKE_CASE payload
+// (tool_name/tool_response), not Copilot's camelCase. This layer's camelCase
+// parse must find nothing: toolName '' and toolResult undefined → null output
+// and, crucially, NO ledger event. Pinned as a regression contract: if the
+// parse ever grows snake_case tolerance, VS Code payloads would start
+// compress-and-ledgering replacements VS Code never applies.
+test('regression: snake_case VS Code payload no-ops — null output, no ledger event', async () => {
+  const ledgerDir = mkdtempSync(join(tmpdir(), 'compressor-cp-vscode-ledger-'));
+  const prevNoLedger = process.env['COMPRESSOR_NO_LEDGER'];
+  const prevLedgerDir = process.env['COMPRESSOR_LEDGER_DIR'];
+  delete process.env['COMPRESSOR_NO_LEDGER']; // armed: an un-guarded compression would write
+  process.env['COMPRESSOR_LEDGER_DIR'] = ledgerDir;
+  try {
+    const payload = JSON.stringify({
+      tool_name: 'editFiles',
+      tool_input: { files: ['src/main.ts'] },
+      tool_use_id: 'tool-123',
+      tool_response: repetitiveLog(400), // big enough to compress if ever parsed
+      hook_event_name: 'PostToolUse',
+      session_id: 's1',
+      cwd: '/x',
+      transcript_path: '/t',
+    });
+    assert.equal(handleCopilotPostToolUse(payload, 'slim').output, null);
+    await settleLedger();
+    assert.deepEqual(readdirSync(ledgerDir), [], 'no phantom ledger event');
+  } finally {
+    if (prevNoLedger === undefined) {
+      delete process.env['COMPRESSOR_NO_LEDGER'];
+    } else {
+      process.env['COMPRESSOR_NO_LEDGER'] = prevNoLedger;
+    }
+    if (prevLedgerDir === undefined) {
+      delete process.env['COMPRESSOR_LEDGER_DIR'];
+    } else {
+      process.env['COMPRESSOR_LEDGER_DIR'] = prevLedgerDir;
+    }
+  }
 });
 
 test('toolResult with no string content at all is passthrough', () => {

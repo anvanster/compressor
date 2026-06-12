@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
+import { settleLedger } from '../../src/ledger/write.ts';
+import { settleRecovery } from '../../src/hook/recovery.ts';
 
 // Worthwhile compressions fire fire-and-forget ledger appends; keep this
 // suite hermetic (never touch the real ~/.compressor). Ledger behavior has
@@ -93,11 +95,11 @@ test('tiny output stays untouched (below savings floor)', () => {
   assert.equal(handlePostToolUse(bashPayload('ok\n'), 'slim').output, null);
 });
 
-test('unknown tool shape: only the longest string leaf is rewritten', () => {
+test('unknown response shape (matcher tool): only the longest string leaf is rewritten', () => {
   const huge = repetitiveLog(300);
   const payload = JSON.stringify({
-    tool_name: 'WebFetch',
-    tool_input: { url: 'https://example.com' },
+    tool_name: 'Grep',
+    tool_input: { pattern: 'warning' },
     tool_use_id: 'toolu_03',
     tool_response: {
       code: 200,
@@ -140,10 +142,10 @@ test('idempotency: compressed output fed back through is passthrough', () => {
   assert.equal(handlePostToolUse(second, 'slim').output, null);
 });
 
-test('string tool_response is compressed directly to a string', () => {
+test('string tool_response (matcher tool) is compressed directly to a string', () => {
   const payload = JSON.stringify({
-    tool_name: 'SomeTool',
-    tool_input: {},
+    tool_name: 'Glob',
+    tool_input: { pattern: '**/*.rs' },
     tool_use_id: 'toolu_05',
     tool_response: repetitiveLog(400),
   });
@@ -153,6 +155,99 @@ test('string tool_response is compressed directly to a string', () => {
   const parsed = JSON.parse(out) as Envelope<string>;
   assert.equal(typeof parsed.hookSpecificOutput.updatedToolOutput, 'string');
   assert.ok(parsed.hookSpecificOutput.updatedToolOutput.includes('[compressor:'));
+});
+
+// Cross-host matcher guard — internal/VSCODE-HOOKS-VERIFICATION.md V3:
+// VS Code agent mode executes hooks from the SAME config files our claude-code
+// adapter writes (.claude/settings.local.json) and IGNORES matcher values, so
+// this layer receives VS Code payloads (snake_case, STRING tool_response,
+// VS Code tool names). Absent the in-process guard, the bare-string leaf path
+// would compress-and-ledger a replacement VS Code never applies — a phantom
+// savings event. Tool names outside the installed matcher ('Read|Bash|Grep|
+// Glob') must no-op completely: no output, no ledger event, no recovery state.
+
+/** Hermetic env swap: real ledger writes allowed, into throwaway dirs. */
+async function withGuardDirs(
+  fn: (ledgerDir: string, recoveryDir: string) => Promise<void>,
+): Promise<void> {
+  const ledgerDir = mkdtempSync(join(tmpdir(), 'compressor-ptu-vscode-ledger-'));
+  const recoveryDir = mkdtempSync(join(tmpdir(), 'compressor-ptu-vscode-recovery-'));
+  const prevNoLedger = process.env['COMPRESSOR_NO_LEDGER'];
+  const prevLedgerDir = process.env['COMPRESSOR_LEDGER_DIR'];
+  const prevRecoveryDir = process.env['COMPRESSOR_RECOVERY_DIR'];
+  delete process.env['COMPRESSOR_NO_LEDGER']; // the ledger MUST be armed: an un-guarded compression would write
+  process.env['COMPRESSOR_LEDGER_DIR'] = ledgerDir;
+  process.env['COMPRESSOR_RECOVERY_DIR'] = recoveryDir;
+  try {
+    await fn(ledgerDir, recoveryDir);
+  } finally {
+    if (prevNoLedger === undefined) {
+      delete process.env['COMPRESSOR_NO_LEDGER'];
+    } else {
+      process.env['COMPRESSOR_NO_LEDGER'] = prevNoLedger;
+    }
+    if (prevLedgerDir === undefined) {
+      delete process.env['COMPRESSOR_LEDGER_DIR'];
+    } else {
+      process.env['COMPRESSOR_LEDGER_DIR'] = prevLedgerDir;
+    }
+    if (prevRecoveryDir === undefined) {
+      delete process.env['COMPRESSOR_RECOVERY_DIR'];
+    } else {
+      process.env['COMPRESSOR_RECOVERY_DIR'] = prevRecoveryDir;
+    }
+  }
+}
+
+/**
+ * Verbatim VS Code payload shape from the verification note (editFiles), with
+ * tool_response inflated from "File edited successfully" to a big repetitive
+ * string that WOULD compress absent the guard (the bare-string leaf path).
+ */
+function vscodePayload(toolName: string, toolInput: unknown, toolResponse: string): string {
+  return JSON.stringify({
+    tool_name: toolName,
+    tool_input: toolInput,
+    tool_use_id: 'tool-123',
+    tool_response: toolResponse,
+    hook_event_name: 'PostToolUse',
+    session_id: 's1',
+    cwd: '/x',
+    transcript_path: '/t',
+  });
+}
+
+test('VS Code editFiles payload: null output, no ledger event, no recovery state', async () => {
+  await withGuardDirs(async (ledgerDir, recoveryDir) => {
+    const payload = vscodePayload('editFiles', { files: ['src/main.ts'] }, repetitiveLog(400));
+    assert.equal(handlePostToolUse(payload, 'slim').output, null);
+    await settleLedger();
+    await settleRecovery();
+    assert.deepEqual(readdirSync(ledgerDir), [], 'no phantom ledger event');
+    assert.deepEqual(readdirSync(recoveryDir), [], 'no recovery-budget state');
+  });
+});
+
+test('VS Code runTerminalCommand payload: null output, no ledger event', async () => {
+  await withGuardDirs(async (ledgerDir, recoveryDir) => {
+    const payload = vscodePayload(
+      'runTerminalCommand',
+      { command: 'cargo build 2>&1' },
+      repetitiveLog(400),
+    );
+    assert.equal(handlePostToolUse(payload, 'slim').output, null);
+    await settleLedger();
+    await settleRecovery();
+    assert.deepEqual(readdirSync(ledgerDir), [], 'no phantom ledger event');
+    assert.deepEqual(readdirSync(recoveryDir), [], 'no recovery-budget state');
+  });
+});
+
+test('every other documented VS Code tool name no-ops too', () => {
+  for (const toolName of ['createFile', 'deleteFile', 'pushToGitHub']) {
+    const payload = vscodePayload(toolName, {}, repetitiveLog(400));
+    assert.equal(handlePostToolUse(payload, 'slim').output, null, toolName);
+  }
 });
 
 // big enough (cheapEstimator) to trip slim's truncate budget; no repeats so

@@ -63,6 +63,19 @@ test('write/read round-trip with monthly file naming', async () => {
   });
 });
 
+// the VS Code extension records with agent 'vscode' — the writer accepts it
+// and the reader's validation set round-trips it
+test("agent 'vscode' round-trips through write and read", async () => {
+  await withLedgerDir(async (dir) => {
+    await appendLedger(event({ agent: 'vscode', tool: 'read' }));
+    await settleLedger();
+    const events = await readLedger({ dir });
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.agent, 'vscode');
+    assert.equal(events[0]?.tool, 'read');
+  });
+});
+
 test('readLedger tolerates garbage lines and wrong shapes', async () => {
   await withLedgerDir(async (dir) => {
     const valid = JSON.stringify(event());
