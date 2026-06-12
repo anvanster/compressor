@@ -13,7 +13,7 @@ import type { Mode, ToolKind } from '../engine/types.ts';
 export interface LedgerEvent {
   /** ISO timestamp of the compression event */
   ts: string;
-  agent: 'claude-code' | 'copilot';
+  agent: 'claude-code' | 'copilot' | 'opencode';
   tool: ToolKind;
   mode: Mode;
   charsIn: number;

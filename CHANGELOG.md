@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hook entries accept `--recovery-budget <n|off>` (argv overrides the
   `COMPRESSOR_RECOVERY_BUDGET`/`COMPRESSOR_NO_RECOVERY_BUDGET` env vars), which
   is how benchmark arms vary the recovery budget.
+- **OpenCode adapter** (`init --agent opencode`): installs a self-contained
+  in-process compression plugin at `.opencode/plugins/compressor.js` (project)
+  or `~/.config/opencode/plugins/` (global) — OpenCode's `tool.execute.after`
+  hook mutates tool output directly, no subprocess on the hot path. Ledger
+  events carry agent `opencode`; the recovery budget works via the in-band
+  session id. Instructions reach OpenCode through the existing agents-md
+  adapter (it reads `AGENTS.md` natively). Plugin format doc-verified against
+  opencode.ai and the sst/opencode source; not yet live-verified, and `status`
+  says so.
 
 ## [0.2.0] - 2026-06-11
 

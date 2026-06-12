@@ -5,11 +5,14 @@ import type { FileChange } from './types.ts';
 /**
  * Dir names that bound upward pruning. A deleted config under one of these
  * may leave dirs our install created (e.g. <home>/.copilot/hooks/ after a
- * global copilot uninstall — an empty hooks dir flips detect() to true
- * forever); a foreign file anywhere in the chain makes rmdir fail and stops
- * the climb, so pre-existing dirs survive.
+ * global copilot uninstall, or <project>/.opencode/plugins/ after an opencode
+ * uninstall — an empty dir flips detect() to true forever); a foreign file
+ * anywhere in the chain makes rmdir fail and stops the climb, so pre-existing
+ * dirs survive. '.config' bounds the global opencode plugin path
+ * (~/.config/opencode/plugins/); rmdir only ever removes EMPTY dirs, so a
+ * real ~/.config is never at risk.
  */
-const PRUNE_BOUNDARIES = ['.claude', '.copilot'];
+const PRUNE_BOUNDARIES = ['.claude', '.copilot', '.opencode', '.config'];
 
 /** Remove now-empty dirs left after a delete, climbing no higher than the owning boundary segment. */
 async function pruneEmptyOwnedDirs(filePath: string): Promise<void> {

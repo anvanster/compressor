@@ -2,6 +2,7 @@ import type { CompressMeta, CompressStats, MarkerStyle, Mode, ToolKind } from '.
 import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
+import type { LedgerEvent } from '../ledger/write.ts';
 import { appendLedger } from '../ledger/write.ts';
 import {
   noteRecoveryRead,
@@ -11,8 +12,9 @@ import {
   recoveryDisabled,
 } from './recovery.ts';
 
-// Protocol-independent hook core shared by the Claude Code (PostToolUse) and
-// Copilot (postToolUse) protocol layers. Payload field names, tool-name
+// Protocol-independent hook core shared by the Claude Code (PostToolUse),
+// Copilot (postToolUse), and OpenCode (tool.execute.after) protocol layers.
+// Payload field names, tool-name
 // mapping, and response envelopes stay in the protocol layers; this module
 // only knows how to find compressible text in an unknown value and run the
 // engine with the hook's savings floor. Hot path: cheapEstimator only.
@@ -154,7 +156,7 @@ export function noteTruncationIfCut(
  * exiting. Privacy: sizes and transform ids only — no paths, no content.
  */
 export function recordCompression(
-  agent: 'claude-code' | 'copilot',
+  agent: LedgerEvent['agent'],
   call: CompressibleCall,
   compressed: CompressedCall,
   mode: Mode,

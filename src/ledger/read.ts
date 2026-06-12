@@ -13,7 +13,7 @@ export interface ReadLedgerOptions {
   since?: Date;
 }
 
-const AGENTS = new Set(['claude-code', 'copilot']);
+const AGENTS = new Set(['claude-code', 'copilot', 'opencode']);
 const TOOLS = new Set(['read', 'bash', 'search', 'other']);
 const MODES = new Set(['full', 'optimized', 'slim']);
 

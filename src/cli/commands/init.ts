@@ -28,6 +28,7 @@ const AGENT_EFFECT_NOTES: Record<AgentName, string> = {
   copilot: 'Copilot: hook config loads when the CLI starts — restart any running copilot session.',
   cursor: 'Cursor: rules apply to new chats.',
   'agents-md': 'AGENTS.md: read at agent startup.',
+  opencode: 'OpenCode: plugins load at startup — restart any running opencode session.',
 };
 
 export function effectNote(agents: readonly Pick<Adapter, 'name'>[]): string {
@@ -60,7 +61,13 @@ export function resolveHookCommandStyle(value: string | undefined): HookCommandS
   );
 }
 
-const AGENT_NAMES: readonly AgentName[] = ['claude-code', 'copilot', 'cursor', 'agents-md'];
+const AGENT_NAMES: readonly AgentName[] = [
+  'claude-code',
+  'copilot',
+  'cursor',
+  'agents-md',
+  'opencode',
+];
 
 export function resolveAgents(names: string[]): Adapter[] {
   return names.map((name) => {

@@ -110,9 +110,19 @@ Installs `.cursor/rules/compressor.mdc` (`alwaysApply: true`). A legacy `.cursor
 compressor init --agent agents-md
 ```
 
-Upserts a marked section in `AGENTS.md`, read natively by Cursor, Copilot, Codex, Windsurf and others. Claude Code does **not** read AGENTS.md (use the claude-code adapter). Instructions only — no hook mechanism exists through this file.
+Upserts a marked section in `AGENTS.md`, read natively by Cursor, Copilot, Codex, Windsurf, OpenCode and others. Claude Code does **not** read AGENTS.md (use the claude-code adapter). Instructions only — no hook mechanism exists through this file.
 
-Multiple agents in one go: `compressor init --agent claude-code copilot agents-md`.
+### OpenCode
+
+```sh
+compressor init --agent opencode            # project: .opencode/plugins/compressor.js
+compressor init --agent opencode --global   # machine-wide: ~/.config/opencode/plugins/
+compressor init --agent agents-md           # instructions (OpenCode reads AGENTS.md natively)
+```
+
+Installs an in-process compression plugin: OpenCode's `tool.execute.after` hook mutates tool output directly (no subprocess — the cheapest hot path of any integration). Plugins load at startup; restart any running opencode session. Instructions come via the agents-md adapter.
+
+Multiple agents in one go: `compressor init --agent claude-code copilot agents-md opencode`.
 
 ### Support matrix
 
@@ -122,11 +132,13 @@ Multiple agents in one go: `compressor init --agent claude-code copilot agents-m
 | copilot | yes (project only) | yes — Copilot CLI on this machine only [^2] | hook only [^3] |
 | cursor | yes (`.mdc` rules) | no [^4] | no (per-project standard) |
 | agents-md | yes (marked section) | no | no (per-project standard) |
+| opencode | via agents-md (OpenCode reads `AGENTS.md` natively) | yes — in-process plugin [^5] | yes (`~/.config/opencode/plugins`) |
 
 [^1]: At project scope the hook entry lives in `.claude/settings.local.json` because it embeds a machine-specific absolute path.
 [^2]: The installed command is an absolute local path: cloud agent and teammates get a fail-open no-op; the VS Code IDE runs no hook files.
 [^3]: `~/.copilot/hooks/compressor.json`, loaded by Copilot CLI only; Copilot has no user-global instructions mechanism.
 [^4]: Cursor `postToolUse` can replace MCP tool output only; built-in Read/Shell output cannot be rewritten.
+[^5]: OpenCode plugins run in-process (`tool.execute.after` mutates the tool output string directly) — no subprocess on the hot path. The plugin file format is doc-verified against opencode.ai and the sst/opencode source; not yet live-verified against a running OpenCode install, and `status` says so.
 
 ## Modes
 

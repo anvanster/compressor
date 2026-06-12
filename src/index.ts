@@ -57,6 +57,8 @@ export {
   copilotAdapter,
   cursorAdapter,
   agentsMdAdapter,
+  createOpencodeAdapter,
+  opencodeAdapter,
 } from './adapters/index.ts';
 export type {
   Adapter,

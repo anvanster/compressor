@@ -59,9 +59,10 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && npm run bundle:hook && npm run bundle:copilot-hook",
+    "build": "tsc -p tsconfig.build.json && npm run bundle:hook && npm run bundle:copilot-hook && npm run bundle:opencode-plugin",
     "bundle:hook": "esbuild src/hook-entry.ts --bundle --platform=node --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/hook.js",
     "bundle:copilot-hook": "esbuild src/copilot-hook-entry.ts --bundle --platform=node --format=esm --banner:js='#!/usr/bin/env node' --outfile=dist/copilot-hook.js",
+    "bundle:opencode-plugin": "esbuild src/opencode-plugin-entry.ts --bundle --platform=node --format=esm --outfile=dist/opencode-plugin.js",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test \"test/**/*.test.ts\""

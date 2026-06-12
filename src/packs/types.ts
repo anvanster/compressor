@@ -3,7 +3,7 @@ export type PackMode = 'optimized' | 'slim';
 
 export type AtomCategory = 'output' | 'behavior';
 
-export type AgentName = 'claude-code' | 'copilot' | 'cursor' | 'agents-md';
+export type AgentName = 'claude-code' | 'copilot' | 'cursor' | 'agents-md' | 'opencode';
 
 /**
  * One independently ablatable instruction. Rendered artifacts embed the atom
