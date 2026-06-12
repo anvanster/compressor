@@ -1,5 +1,6 @@
 import { exec, execFile } from 'node:child_process';
-import { stat } from 'node:fs/promises';
+import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { promisify } from 'node:util';
@@ -31,9 +32,37 @@ export interface BenchmarkCliOptions {
    * one arm per style WITHIN this run (shared budget ceiling, balanced groups)
    */
   markerStyles?: string;
+  /**
+   * comma-separated '<label>=<args>' arms: fans each hook-bearing variant out
+   * into one arm per entry WITHIN this run (empty args = control arm), e.g.
+   * 'budget-on=,budget-off=--recovery-budget off'
+   */
+  hookArgArms?: string;
   concurrency: string;
   maxBudgetUsd: string;
   out: string;
+}
+
+/** '<label>=<args>,<label>=<args>' → arms; labels validated in buildVariants. */
+export function parseHookArgArms(
+  value: string | undefined,
+): Array<{ label: string; args: string }> {
+  if (value === undefined || value.trim() === '') {
+    return [];
+  }
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((entry) => {
+      const eq = entry.indexOf('=');
+      if (eq <= 0) {
+        throw new Error(
+          `--hook-arg-arms: expected '<label>=<args>', got '${entry}' (empty args are allowed: 'control=')`,
+        );
+      }
+      return { label: entry.slice(0, eq).trim(), args: entry.slice(eq + 1).trim() };
+    });
 }
 
 function parsePositiveInt(value: string, flag: string): number {
@@ -147,6 +176,57 @@ function markerStylePreflightPayload(): string {
  * with two different styles and requiring the outputs to differ.
  * COMPRESSOR_NO_LEDGER keeps the probe out of the live savings ledger.
  */
+/**
+ * Preflight for recovery-budget experiments. Budget behavior is stateful, so
+ * a single stateless call cannot discriminate a stale bundle: probe with a
+ * hermetic recovery dir and a fixed session id — call 1 is an untargeted Read
+ * that gets truncated (creating the truncation record), call 2 is a TARGETED
+ * read of the same file under '--recovery-budget 0'. A bundle that honors the
+ * flag compresses call 2 (non-empty stdout); a stale bundle passes it through
+ * untouched (default budget 3) and every arm would measure identical behavior.
+ */
+export async function assertHookHandlesRecoveryBudget(baseHookCommand: string): Promise<void> {
+  const recoveryDir = await mkdtemp(path.join(tmpdir(), 'compressor-preflight-recovery-'));
+  const env = {
+    ...process.env,
+    COMPRESSOR_NO_LEDGER: '1',
+    COMPRESSOR_RECOVERY_DIR: recoveryDir,
+  };
+  const filePath = '/preflight/recovery-probe.txt';
+  const rows = Array.from(
+    { length: 900 },
+    (_, i) => `row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur adipiscing`,
+  ).join('\n');
+  const readPayload = (targeted: boolean): string =>
+    JSON.stringify({
+      session_id: 'preflight-recovery-session',
+      tool_name: 'Read',
+      tool_input: { file_path: filePath, ...(targeted ? { offset: 1, limit: 900 } : {}) },
+      tool_use_id: 'toolu_preflight_recovery',
+      tool_response: { type: 'text', file: { filePath, content: rows } },
+    });
+  try {
+    const first = await execWithInput(baseHookCommand, readPayload(false), env);
+    if (first.trim() === '') {
+      throw new Error(
+        `recovery-budget preflight: hook emitted nothing for an over-budget untargeted read (${baseHookCommand}) — broken or stale bundle; run 'npm run build' and retry`,
+      );
+    }
+    const second = await execWithInput(
+      `${baseHookCommand} --recovery-budget 0`,
+      readPayload(true),
+      env,
+    );
+    if (second.trim() === '') {
+      throw new Error(
+        `recovery-budget preflight: targeted read passed through despite '--recovery-budget 0' after a recorded truncation — the installed bundle ignores the flag (stale); run 'npm run build' and retry, or the experiment arms would be indistinguishable`,
+      );
+    }
+  } finally {
+    await rm(recoveryDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 export async function assertHookHandlesMarkerStyle(baseHookCommand: string): Promise<void> {
   const payload = markerStylePreflightPayload();
   const env = { ...process.env, COMPRESSOR_NO_LEDGER: '1' };
@@ -205,6 +285,7 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
 
   const hookArgs = opts.hookArgs?.trim();
   const markerStyles = parseIdList(opts.markerStyles);
+  const hookArgArms = parseHookArgArms(opts.hookArgArms);
   const variants = buildVariants({
     modes,
     ablate: parseIdList(opts.ablate),
@@ -213,6 +294,7 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     hook: opts.hook,
     ...(hookArgs !== undefined && hookArgs !== '' ? { hookArgs } : {}),
     ...(markerStyles.length > 0 ? { markerStyles } : {}),
+    ...(hookArgArms.length > 0 ? { hookArgArms } : {}),
   });
 
   const hooked = variants.find((variant) => variant.hook);
@@ -224,6 +306,9 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     // before spending a single API dollar on indistinguishable arms
     if (variants.some((v) => v.hook && v.hookArgs?.includes('--marker-style') === true)) {
       await assertHookHandlesMarkerStyle(hookCommand);
+    }
+    if (variants.some((v) => v.hook && v.hookArgs?.includes('--recovery-budget') === true)) {
+      await assertHookHandlesRecoveryBudget(hookCommand);
     }
   }
 

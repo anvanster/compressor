@@ -7,11 +7,13 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
+  applyRecoveryBudgetArg,
   DEFAULT_RECOVERY_BUDGET,
   noteRecoveryRead,
   noteTruncation,
   recoveryBudget,
   recoveryBudgetExceeded,
+  recoveryDisabled,
   settleRecovery,
 } from '../../src/hook/recovery.ts';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
@@ -510,4 +512,40 @@ test('hook entry: truncation state write lands and the process exits 0', async (
   const entry = state.files[BIG_FILE];
   assert.ok(entry, 'truncation record landed before exit');
   assert.equal(entry.recoveryReads, 0);
+});
+
+// ── --recovery-budget argv override (per-arm control for benchmarks) ────────
+
+test('applyRecoveryBudgetArg: argv sets the env the resolvers read; invalid is a no-op', () => {
+  const savedBudget = process.env['COMPRESSOR_RECOVERY_BUDGET'];
+  const savedKill = process.env['COMPRESSOR_NO_RECOVERY_BUDGET'];
+  try {
+    delete process.env['COMPRESSOR_RECOVERY_BUDGET'];
+    delete process.env['COMPRESSOR_NO_RECOVERY_BUDGET'];
+
+    applyRecoveryBudgetArg(['--mode', 'slim', '--recovery-budget', '5']);
+    assert.equal(recoveryBudget(), 5);
+    assert.equal(recoveryDisabled(), false);
+
+    applyRecoveryBudgetArg(['--recovery-budget', 'off']);
+    assert.equal(recoveryDisabled(), true);
+
+    // a numeric override re-enables after 'off' (argv wins, deterministic)
+    applyRecoveryBudgetArg(['--recovery-budget', '0']);
+    assert.equal(recoveryDisabled(), false);
+    assert.equal(recoveryBudget(), 0);
+
+    // fail-open: junk value and missing value change nothing
+    applyRecoveryBudgetArg(['--recovery-budget', '-3']);
+    assert.equal(recoveryBudget(), 0);
+    applyRecoveryBudgetArg(['--recovery-budget']);
+    assert.equal(recoveryBudget(), 0);
+    applyRecoveryBudgetArg([]);
+    assert.equal(recoveryBudget(), 0);
+  } finally {
+    if (savedBudget === undefined) delete process.env['COMPRESSOR_RECOVERY_BUDGET'];
+    else process.env['COMPRESSOR_RECOVERY_BUDGET'] = savedBudget;
+    if (savedKill === undefined) delete process.env['COMPRESSOR_NO_RECOVERY_BUDGET'];
+    else process.env['COMPRESSOR_NO_RECOVERY_BUDGET'] = savedKill;
+  }
 });

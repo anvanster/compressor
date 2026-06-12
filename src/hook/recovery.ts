@@ -53,6 +53,29 @@ export function recoveryDisabled(): boolean {
 }
 
 /**
+ * Apply a `--recovery-budget <n|off>` argv override by setting the env vars
+ * the resolvers above read at call time — argv wins over env with zero
+ * signature churn through the protocol layers. Benchmarks use this to vary
+ * the budget PER ARM (env is global to a run; hook commands are per-variant).
+ * Fail-open: a missing or invalid value changes nothing.
+ */
+export function applyRecoveryBudgetArg(argv: readonly string[]): void {
+  const idx = argv.indexOf('--recovery-budget');
+  const value = idx === -1 ? undefined : argv[idx + 1]?.trim();
+  if (value === undefined || value === '') {
+    return;
+  }
+  if (value === 'off') {
+    process.env['COMPRESSOR_NO_RECOVERY_BUDGET'] = '1';
+    return;
+  }
+  if (/^\d+$/.test(value)) {
+    process.env['COMPRESSOR_RECOVERY_BUDGET'] = value;
+    delete process.env['COMPRESSOR_NO_RECOVERY_BUDGET'];
+  }
+}
+
+/**
  * Budget from COMPRESSOR_RECOVERY_BUDGET: a non-negative integer (0 =
  * compress ALL targeted reads of truncated files). Anything else — unset,
  * empty, negative, fractional, junk — falls back to the measured default.

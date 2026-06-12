@@ -38,6 +38,15 @@ export interface BuildVariantsOptions {
    * keeps every arm present on exactly the same task×trial groups.
    */
   markerStyles?: string[];
+  /**
+   * Generic hook-args ARMS: each hook-bearing variant fans out into one
+   * variant per entry (id '<variant>-arm-<label>', the entry's args appended
+   * to hookArgs; empty args = a control arm running the base configuration).
+   * Same same-run/shared-ceiling rationale as markerStyles. Example, the
+   * recovery-budget A/B: [{label:'budget-on', args:''},
+   * {label:'budget-off', args:'--recovery-budget off'}].
+   */
+  hookArgArms?: Array<{ label: string; args: string }>;
 }
 
 const MARKER_STYLES: readonly MarkerStyle[] = ['plain', 'deterrent', 'informative'];
@@ -225,6 +234,49 @@ export function buildVariants(opts: BuildVariantsOptions): Variant[] {
                   : `${variant.hookArgs} --marker-style ${style}`,
             }),
           )
+        : [variant],
+    );
+  }
+
+  const hookArgArms = opts.hookArgArms ?? [];
+  if (hookArgArms.length > 0) {
+    const labels = new Set<string>();
+    for (const arm of hookArgArms) {
+      if (!/^[a-z0-9][a-z0-9-]*$/.test(arm.label)) {
+        throw new Error(
+          `--hook-arg-arms: label '${arm.label}' must be lowercase alphanumerics/dashes (it names variants and style files)`,
+        );
+      }
+      if (labels.has(arm.label)) {
+        throw new Error(`--hook-arg-arms: duplicate label '${arm.label}'`);
+      }
+      labels.add(arm.label);
+    }
+    if (!expanded.some((variant) => variant.hook)) {
+      throw new Error(
+        '--hook-arg-arms: no hook-bearing variants to fan out — remove --no-hook and include optimized/slim in --modes',
+      );
+    }
+    expanded = expanded.flatMap((variant) =>
+      variant.hook
+        ? hookArgArms.map((arm): Variant => {
+            const extra = arm.args.trim();
+            const joined =
+              variant.hookArgs === undefined || variant.hookArgs === ''
+                ? extra
+                : extra === ''
+                  ? variant.hookArgs
+                  : `${variant.hookArgs} ${extra}`;
+            return {
+              ...variant,
+              id: `${variant.id}-arm-${arm.label}`,
+              // unique style file per arm (same body): keeps duplicate checks
+              // meaningful and the installed outputStyle traceable per arm
+              styleName:
+                variant.styleName === null ? null : `${variant.styleName}-arm-${arm.label}`,
+              ...(joined === '' ? {} : { hookArgs: joined }),
+            };
+          })
         : [variant],
     );
   }

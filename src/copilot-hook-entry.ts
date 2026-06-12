@@ -2,6 +2,7 @@ import process from 'node:process';
 import type { MarkerStyle } from './engine/types.ts';
 import { handleCopilotPostToolUse } from './hook/copilot.ts';
 import { settleThenExit } from './hook/exit.ts';
+import { applyRecoveryBudgetArg } from './hook/recovery.ts';
 
 // Copilot postToolUse hook entry, bundled to dist/copilot-hook.js. Fail-open:
 // any failure means emit nothing and exit 0 so the original tool result
@@ -29,6 +30,7 @@ async function main(): Promise<string | null> {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
   }
   const payload = Buffer.concat(chunks).toString('utf8');
+  applyRecoveryBudgetArg(process.argv);
   return handleCopilotPostToolUse(
     payload,
     parseMode(process.argv),

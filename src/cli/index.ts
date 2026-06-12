@@ -150,6 +150,10 @@ program
     '--marker-styles <styles>',
     'comma-separated plain|deterrent|informative: each hook-bearing variant fans out into one arm per style IN THE SAME RUN (one budget ceiling, balanced task×trial groups)',
   )
+  .option(
+    '--hook-arg-arms <arms>',
+    "comma-separated '<label>=<args>' arms: each hook-bearing variant fans out into one arm per entry IN THE SAME RUN (empty args = control), e.g. 'budget-on=,budget-off=--recovery-budget off'",
+  )
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
   .option('--out <dir>', 'results directory', 'bench/results')
@@ -165,6 +169,7 @@ program
       hook: boolean;
       hookArgs?: string;
       markerStyles?: string;
+      hookArgArms?: string;
       concurrency: string;
       maxBudgetUsd: string;
       out: string;

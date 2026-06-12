@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildVariants } from '../../src/bench/ablate.ts';
 import { hookCommandForVariant } from '../../src/bench/cell.ts';
+import { parseHookArgArms } from '../../src/cli/commands/benchmark.ts';
 import type { Variant } from '../../src/bench/types.ts';
 
 const NO_ABLATION = { ablate: [], ablateAdd: [], ablateGroups: [] };
@@ -97,4 +98,95 @@ test('hookCommandForVariant appends hookArgs to the resolved hook command', asyn
       ),
     /hook requires baseMode optimized\|slim/,
   );
+});
+
+// ── --hook-arg-arms: generic per-arm fan-out (the recovery-budget A/B) ──────
+
+const BUDGET_ARMS = [
+  { label: 'budget-on', args: '' },
+  { label: 'budget-off', args: '--recovery-budget off' },
+];
+
+test('hookArgArms fans every hook-bearing variant into labeled arms, full untouched', () => {
+  const variants = buildVariants({
+    modes: ['full', 'optimized'],
+    ...NO_ABLATION,
+    hook: true,
+    hookArgArms: BUDGET_ARMS,
+  });
+  assert.deepEqual(
+    variants.map((v) => v.id).sort(),
+    ['full', 'optimized-arm-budget-off', 'optimized-arm-budget-on'],
+  );
+  const on = variants.find((v) => v.id === 'optimized-arm-budget-on');
+  const off = variants.find((v) => v.id === 'optimized-arm-budget-off');
+  assert.ok(on && off);
+  // control arm: no extra args; experiment arm carries them
+  assert.equal(on.hookArgs, undefined);
+  assert.equal(off.hookArgs, '--recovery-budget off');
+  // unique style file per arm, same body
+  assert.equal(on.styleName, 'compressor-optimized-arm-budget-on');
+  assert.equal(off.styleName, 'compressor-optimized-arm-budget-off');
+  assert.equal(on.styleBody, off.styleBody);
+});
+
+test('hookArgArms composes with shared hookArgs (shared first, arm args appended)', () => {
+  const variants = buildVariants({
+    modes: ['optimized'],
+    ...NO_ABLATION,
+    hook: true,
+    hookArgs: '--marker-style plain',
+    hookArgArms: BUDGET_ARMS,
+  });
+  const off = variants.find((v) => v.id === 'optimized-arm-budget-off');
+  const on = variants.find((v) => v.id === 'optimized-arm-budget-on');
+  assert.ok(on && off);
+  assert.equal(off.hookArgs, '--marker-style plain --recovery-budget off');
+  assert.equal(on.hookArgs, '--marker-style plain');
+});
+
+test('hookArgArms validation: bad label, duplicate label, no hooked variants', () => {
+  assert.throws(
+    () =>
+      buildVariants({
+        modes: ['optimized'],
+        ...NO_ABLATION,
+        hook: true,
+        hookArgArms: [{ label: 'Bad Label', args: '' }],
+      }),
+    /lowercase alphanumerics/,
+  );
+  assert.throws(
+    () =>
+      buildVariants({
+        modes: ['optimized'],
+        ...NO_ABLATION,
+        hook: true,
+        hookArgArms: [
+          { label: 'a', args: '' },
+          { label: 'a', args: '--x' },
+        ],
+      }),
+    /duplicate label/,
+  );
+  assert.throws(
+    () =>
+      buildVariants({
+        modes: ['full'],
+        ...NO_ABLATION,
+        hook: false,
+        hookArgArms: BUDGET_ARMS,
+      }),
+    /no hook-bearing variants/,
+  );
+});
+
+test('parseHookArgArms parses label=args entries incl. empty args; rejects missing =', () => {
+  assert.deepEqual(parseHookArgArms('budget-on=,budget-off=--recovery-budget off'), [
+    { label: 'budget-on', args: '' },
+    { label: 'budget-off', args: '--recovery-budget off' },
+  ]);
+  assert.deepEqual(parseHookArgArms(undefined), []);
+  assert.deepEqual(parseHookArgArms('  '), []);
+  assert.throws(() => parseHookArgArms('nolabel'), /expected '<label>=<args>'/);
 });
