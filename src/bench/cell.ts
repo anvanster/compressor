@@ -78,7 +78,7 @@ async function writeVariantArtifacts(
 ): Promise<string> {
   if (variant.styleBody !== null && variant.styleName !== null) {
     const fileName = `${variant.styleName}.md`;
-    // style resolution under --bare may use either scope: write both
+    // style resolution may use either scope: write both (belt-and-braces)
     const workspaceDir = path.join(workspace, '.claude', 'output-styles');
     const scratchDir = path.join(scratch, 'output-styles');
     await mkdir(workspaceDir, { recursive: true });
@@ -186,8 +186,17 @@ async function invokeClaude(
   resumeSessionId?: string,
 ): Promise<string> {
   const bin = process.env.COMPRESSOR_CLAUDE_BIN ?? 'claude';
+  // NO --bare: measured 2026-06-11, --bare silently ignores output styles
+  // (both scopes) and hooks (settings file AND --settings) while honoring
+  // permissions — every --bare cell is an unstyled, hookless full baseline,
+  // which invalidated the first results corpus. Isolation holds without it:
+  // CLAUDE_CONFIG_DIR=scratch REPLACES the user scope (settings, hooks,
+  // styles, plugins, memory, and OAuth credential lookup — keyless scratch
+  // cells fail with 'Not logged in', so the operator's subscription is
+  // unreachable), and fixture workspaces carry no CLAUDE.md. The
+  // treatment-delivery canaries in benchmark.ts hard-fail the run if a cell
+  // configured this way ever stops applying styles or firing hooks.
   const args = [
-    '--bare',
     '-p',
     prompt,
     '--output-format',

@@ -158,7 +158,7 @@ Two protocol layers share one core. Protocol facts below are doc-verified agains
 | No-op | emit nothing, exit 0 — original output passes through |
 | Firing | tool **success** only; PostToolUseFailure is a separate event, so failures pass through uncompressed — correct, error output is diagnostic |
 | Non-mechanisms | `decision: "block"` is not used for compression (the model still sees the original output); `updatedMCPToolOutput` exists for MCP tools but `updatedToolOutput` works for all |
-| Settings merge | hooks and permissions **merge across settings scopes** — a `--settings` file alone cannot silence the user's global hooks. Consequence one: at project scope our machine-specific hook command is written to `.claude/settings.local.json` (personal, conventionally gitignored), never the shared `settings.json`; global scope keeps everything in `~/.claude/settings.json`. Consequence two: the benchmark must isolate with `--bare`, not `--settings` alone. |
+| Settings merge | hooks and permissions **merge across settings scopes** — a `--settings` file alone cannot silence the user's global hooks. Consequence one: at project scope our machine-specific hook command is written to `.claude/settings.local.json` (personal, conventionally gitignored), never the shared `settings.json`; global scope keeps everything in `~/.claude/settings.json`. Consequence two: the benchmark isolates with a per-cell `CLAUDE_CONFIG_DIR`, which replaces the user scope wholesale (never with `--bare` — probe-verified 2026-06-11, `--bare` silently disables output styles and hooks entirely, which invalidated the first results corpus). |
 
 ### Copilot — postToolUse (`dist/copilot-hook.js`)
 
@@ -221,7 +221,7 @@ A run is a grid of cells, cell = (task × variant × trial). Variants are modes 
 
 1. Copy the fixture repo to a temp workspace (filtering out `fix.patch.json` — the answer key for scripted test stubs; copying it would hand the agent the literal solution), `git init` best-effort.
 2. Write the variant's artifacts: the output-style file, and a cell settings JSON carrying `outputStyle`, the hook entry (when the variant has one), and `permissions.defaultMode: "bypassPermissions"` — headless cells must work unprompted, and denied Edit/Bash calls corrupt the measurement (observed live in run bench-20260609-231151: denial-retry loops ran cells to as many as 53 turns with the correct fix in hand, against 3–11 turns once permissions were granted).
-3. Invoke `claude --bare -p "<prompt>" --output-format json --model <pinned> --settings cell.json` in the workspace. Isolation is belt-and-braces: `--bare` skips user hooks/plugins/CLAUDE.md entirely (doc-verified necessity — hooks merge across scopes, so `--settings` alone cannot silence them), and a per-cell `CLAUDE_CONFIG_DIR` scratch dir fully isolates `~/.claude` and relocates transcripts to where the cell can read them. `COMPRESSOR_NO_LEDGER=1` keeps the cell out of the live ledger.
+3. Invoke `claude -p "<prompt>" --output-format json --model <pinned> --settings cell.json` in the workspace — **without `--bare`** (probe-verified 2026-06-11: `--bare` silently ignores output styles and hooks, so a `--bare` cell measures an unstyled, hookless baseline regardless of its variant; this invalidated the first corpus). Isolation rests on the per-cell `CLAUDE_CONFIG_DIR` scratch dir, which replaces the user scope wholesale — settings, hooks, styles, plugins, memory, and credential lookup (a keyless cell fails "Not logged in"; the operator's OAuth subscription is unreachable) — and relocates transcripts to where the cell can read them. Treatment-delivery canaries (one style cell, one hook cell, ~$0.02) must pass before any run spends. `COMPRESSOR_NO_LEDGER=1` keeps the cell out of the live ledger.
 4. Usage comes from the result JSON (`usage`, `modelUsage`, `total_cost_usd`); per-turn breakdowns and tool-call counts come from the session transcript, deduped by `requestId` (the same API response can appear on multiple lines), sidechains included.
 5. Success is judged by a binary check — a shell command (`npm test`, `grep -q`, …) or an answer-regex over the result text. No vibes.
 
@@ -243,7 +243,11 @@ The report refuses to let bad cells masquerade as data: it flags **vacuous fixtu
 
 `test/fixtures/fake-claude.mjs` is a scripted stand-in selected via `COMPRESSOR_CLAUDE_BIN`; the e2e tests drive the real suite, fixtures, runner, aggregation and report through it with no network and no spend, including the non-vacuous-fixture property (check fails before the agent, passes after).
 
-### Headline results (for orientation; full records accompany each run id)
+### Headline results (RETRACTED 2026-06-11 — see docs/MEASUREMENTS.md)
+
+> Every number below came from `--bare` cells in which styles and hooks were
+> silently inactive; all arms were identical baselines and the deltas were noise.
+> Retained only as the record of what was believed before the flaw was found.
 
 - **Hook**: on big-file work, median context −24% (optimized) / −75% (slim) versus no-hook, with roughly −90% tails (−90.1% optimized / −89.5% slim, worst cell vs worst cell) — no-hook cells reached 3.0M context tokens (runs `bench-20260610-114234`, `bench-20260610-123102`). The huge-log task is bimodal (paginate vs slurp) in both arms; the hook effect is not separable from agent strategy there, and the bimodality is unsolved.
 - **Packs, multi-turn**: −11% to −24% output (optimized; slim −5% to −25%) on three of four conversation tasks; the fourth moved +3–4%, within noise (run `bench-20260610-183001`).

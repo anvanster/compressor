@@ -1,5 +1,31 @@
 # Measurements
 
+> **RETRACTION (2026-06-11) — every result in this document is invalid.**
+> Direct probes proved that `claude --bare` (used by every benchmark cell in every
+> run below) silently ignores output styles — from both the user and project scope —
+> and hooks — both from settings files and from `--settings` — while honoring the
+> `permissions` key. Every "optimized", "slim", "hook-on", ablation, and marker arm
+> was therefore configured identically to `full`: an unstyled, hookless baseline.
+> All reported deltas, including the negative results, were noise between identical
+> configurations. The flaw surfaced when a recovery-state join over the
+> 2026-06-11 budget experiment returned an impossible zero, and was confirmed by a
+> four-cell probe matrix (bare/no-bare × settings-file/`--settings`).
+>
+> Still valid: §1's methodology and infrastructure; the permission-denial discovery
+> (run bench-20260609-231151 — that mechanism was real and its fix measurable);
+> task solvability (100% success in every cell); live-session *function* of the
+> hook, styles, and ledger (verified in real sessions, where styles and hooks do
+> load). Not valid: every savings number, every arm comparison, every verdict in
+> §3, and the slim truncate-budget retune rationale.
+>
+> The harness is fixed (cells run without `--bare`; per-cell `CLAUDE_CONFIG_DIR`
+> isolation was verified to hold on its own, including credential isolation — a
+> keyless cell fails with "Not logged in" rather than reaching the operator's
+> OAuth subscription), and **treatment-delivery canaries** now prove style and
+> hook delivery in a real cell before a run may spend anything. This document is
+> retained as the honest record of the first corpus and will be superseded by
+> remeasured results.
+
 This document is the experimental record for compressor: what was measured, how, and what those measurements ruled in or out. It is the baseline state of affairs as of 2026-06-10. Every measured number cites its run id; raw per-cell data lives in `bench/results/<run-id>.jsonl` with run configuration in the adjacent `.meta.json`. Numbers that are estimates are labelled as estimates. Protocol claims marked *doc-verified* were checked against live vendor documentation, not recalled from memory.
 
 Three conventions, applied throughout:
@@ -15,7 +41,7 @@ Three conventions, applied throughout:
 The benchmark harness (`src/bench/`, driven by `compressor benchmark`) measures one *cell* at a time, where a cell = (task × variant × trial):
 
 1. **Isolated workspace.** The task's fixture repository is copied to a fresh temp directory and `git init`-ed. A second temp directory serves as a per-cell `CLAUDE_CONFIG_DIR` scratch, fully isolating the cell from the operator's `~/.claude` and relocating its session transcript somewhere the harness can read it.
-2. **Real agent, real model.** The cell invokes the actual `claude` binary: `claude --bare -p "<prompt>" --output-format json --model <pinned> --settings cell.json`. `--bare` is used because hooks and permissions *merge* across settings scopes (doc-verified), so `--settings` alone cannot silence the operator's own global hooks; `--bare` skips them entirely and the cell's settings file carries exactly the variant under test (output style, and the compression hook where the variant includes it). Multi-turn tasks chain turns with `--resume <session-id>`.
+2. **Real agent, real model.** The cell invokes the actual `claude` binary: `claude -p "<prompt>" --output-format json --model <pinned> --settings cell.json`. Cells deliberately do **not** use `--bare` — probe-verified 2026-06-11, `--bare` silently ignores output styles and hooks, which is precisely what invalidated the first corpus (see the retraction). Isolation holds without it: the per-cell `CLAUDE_CONFIG_DIR` scratch dir replaces the user scope entirely (settings, hooks, styles, plugins, memory, and credential lookup), so the operator's own configuration cannot leak into a cell. Treatment-delivery canaries prove style and hook delivery in a real cell before any spend. Multi-turn tasks chain turns with `--resume <session-id>`.
 3. **Actual usage, never estimators.** Token figures come from the result JSON's `usage`/`modelUsage`/`total_cost_usd` fields, with per-turn and multi-turn breakdowns from the session transcript (deduplicated by `requestId`, sidechains included). Neither of the codebase's two estimators contributes to a reported number: the hook's size thresholds use the cheap chars/3.5 estimator (the hook hot path never loads a tokenizer), and `js-tiktoken` — which undercounts Claude's tokenizer by roughly 15–20% (doc-verified) — is used only by the CLI `count` and `compress` commands, labelled "estimated" wherever it surfaces. Neither ever appears in a reported saving.
 4. **Hard budget ceiling.** Scheduling stops when cumulative spend reaches `--max-budget-usd`. The stop is group-atomic: cells are grouped by task × trial across all variants, and the stop decision is taken once per group, so a ceiling trip cannot leave one arm of a comparison measured and another skipped. This guard postdates run bench-20260610-123102, whose data contains exactly that asymmetry (one trial-4 arm completed, its counterpart skipped — see §3.2); later runs skip whole groups symmetrically (e.g. run bench-20260610-181302).
 5. **Trials with median + IQR.** The harness defaults to 5 trials; the runs to date used 1–4 (cost-bounded). Single-trial runs are smoke tests and are not interpreted.
@@ -170,7 +196,7 @@ The ranking matches the token-destination economics of §3.1: atoms that change 
 
   Then either `npm link` (to get `compressor` on PATH) or invoke `node dist/cli/index.js` directly. Run benchmark commands from the repository root: the default suite path is cwd-relative and `bench/` fixtures ship in the repo, not in the npm package.
 - The `claude` CLI installed (the runs above used v2.1.170). The harness can point at a different binary via `COMPRESSOR_CLAUDE_BIN`.
-- `ANTHROPIC_API_KEY` exported: cells run `claude --bare`, which never reads OAuth or keychain credentials (doc-verified), so an API key is the only auth path. **All spend is real API spend.**
+- `ANTHROPIC_API_KEY` exported: cell credentials resolve inside the per-cell `CLAUDE_CONFIG_DIR`, which holds none — probe-verified: a keyless cell fails with "Not logged in" rather than reaching the operator's OAuth subscription — so the API key is the only auth path. **All spend is real API spend.**
 - Costs below are what the recorded runs actually spent; your numbers will vary with model behaviour. The `--max-budget-usd` ceiling stops *scheduling* when reached but can overshoot by up to concurrency × max-cell-cost (in-flight cells); budget accordingly.
 
 ### Commands per run class

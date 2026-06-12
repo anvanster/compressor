@@ -1,5 +1,5 @@
 import { exec, execFile } from 'node:child_process';
-import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -177,6 +177,108 @@ function markerStylePreflightPayload(): string {
  * COMPRESSOR_NO_LEDGER keeps the probe out of the live savings ledger.
  */
 /**
+ * Treatment-delivery canaries — the guard born from the 2026-06-11
+ * invalidation: every prior run used `--bare`, which silently ignores output
+ * styles and hooks, so all arms were identical full baselines and $48 of
+ * results were noise. Fail-open treatment means ABSENCE IS SILENT; the only
+ * defense is proving delivery inside a real cell before any spend. Two micro
+ * cells (haiku, ~$0.02 total, outside the run ceiling):
+ *   style canary — a canary output style must visibly shape the reply;
+ *   hook canary  — a canary PostToolUse hook must observably fire on a Read.
+ * Either failing aborts the run with an actionable error. Skipped only under
+ * COMPRESSOR_CLAUDE_BIN (the offline stub runs no styles/hooks by nature).
+ */
+export async function assertTreatmentDelivery(model = 'claude-haiku-4-5'): Promise<void> {
+  const runCanaryCell = async (
+    label: string,
+    setup: (workspace: string, scratch: string) => Promise<{ prompt: string; settings: Record<string, unknown> }>,
+    check: (resultText: string, scratch: string) => Promise<string | null>,
+  ): Promise<void> => {
+    const workspace = await mkdtemp(path.join(tmpdir(), 'compressor-canary-w-'));
+    const scratch = await mkdtemp(path.join(tmpdir(), 'compressor-canary-s-'));
+    try {
+      const { prompt, settings } = await setup(workspace, scratch);
+      const settingsFile = path.join(scratch, 'cell-settings.json');
+      await writeFile(settingsFile, JSON.stringify(settings), 'utf8');
+      const { stdout } = await execFileAsync(
+        'claude',
+        ['-p', prompt, '--output-format', 'json', '--model', model, '--settings', settingsFile],
+        {
+          cwd: workspace,
+          env: { ...process.env, CLAUDE_CONFIG_DIR: scratch, COMPRESSOR_NO_LEDGER: '1' },
+          timeout: 120_000,
+          maxBuffer: 8 * 1024 * 1024,
+        },
+      );
+      const parsed: unknown = JSON.parse(stdout);
+      const resultText =
+        typeof parsed === 'object' && parsed !== null
+          ? String((parsed as Record<string, unknown>)['result'] ?? '')
+          : '';
+      const problem = await check(resultText, scratch);
+      if (problem !== null) {
+        throw new Error(
+          `treatment-delivery canary FAILED (${label}): ${problem} — a run in this state would measure identical arms and produce noise; not spending. (Did the claude CLI change how cells receive styles/hooks?)`,
+        );
+      }
+    } finally {
+      await rm(workspace, { recursive: true, force: true }).catch(() => {});
+      await rm(scratch, { recursive: true, force: true }).catch(() => {});
+    }
+  };
+
+  await runCanaryCell(
+    'output style',
+    async (workspace, _scratch) => {
+      const styleDir = path.join(workspace, '.claude', 'output-styles');
+      await mkdir(styleDir, { recursive: true });
+      await writeFile(
+        path.join(styleDir, 'canary.md'),
+        '---\ndescription: delivery canary\nkeep-coding-instructions: true\n---\n## Mandatory\nBegin every single reply with the exact word CANARY_STYLE_APPLIED in capitals.\n',
+        'utf8',
+      );
+      return {
+        prompt: 'Reply with the single word: done',
+        settings: { permissions: { defaultMode: 'bypassPermissions' }, outputStyle: 'canary' },
+      };
+    },
+    async (resultText) =>
+      resultText.includes('CANARY_STYLE_APPLIED')
+        ? null
+        : `the canary output style did not shape the reply (got: ${JSON.stringify(resultText.slice(0, 80))})`,
+  );
+
+  await runCanaryCell(
+    'PostToolUse hook',
+    async (workspace, scratch) => {
+      await writeFile(path.join(workspace, 'target.txt'), 'canary target\n', 'utf8');
+      return {
+        prompt: 'Use the Read tool to read target.txt, then reply with one word: done',
+        settings: {
+          permissions: { defaultMode: 'bypassPermissions' },
+          hooks: {
+            PostToolUse: [
+              {
+                matcher: 'Read',
+                hooks: [{ type: 'command', command: `touch "${path.join(scratch, 'HOOK_FIRED')}"` }],
+              },
+            ],
+          },
+        },
+      };
+    },
+    async (_resultText, scratch) => {
+      try {
+        await stat(path.join(scratch, 'HOOK_FIRED'));
+        return null;
+      } catch {
+        return 'the canary PostToolUse hook never fired on a Read';
+      }
+    },
+  );
+}
+
+/**
  * Preflight for recovery-budget experiments. Budget behavior is stateful, so
  * a single stateless call cannot discriminate a stale bundle: probe with a
  * hermetic recovery dir and a fixed session id — call 1 is an untargeted Read
@@ -315,10 +417,17 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
   const bin = process.env.COMPRESSOR_CLAUDE_BIN;
   if (bin === undefined && (process.env.ANTHROPIC_API_KEY ?? '') === '') {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set: claude --bare never reads OAuth/keychain, so benchmarks need ANTHROPIC_API_KEY exported.',
+      'ANTHROPIC_API_KEY is not set: cells run with an isolated CLAUDE_CONFIG_DIR that has no credentials (verified: keyless cells fail with "Not logged in" — your OAuth subscription is unreachable), so benchmarks need ANTHROPIC_API_KEY exported.',
     );
   }
   await assertClaudeAnswersVersion(bin ?? 'claude');
+
+  if (bin === undefined) {
+    // real binary: prove styles + hooks actually reach cells before spending
+    // (the stub neither styles nor hooks by nature — gated, documented)
+    await assertTreatmentDelivery();
+    console.log('treatment-delivery canaries passed (output style + PostToolUse hook)');
+  }
 
   const cellCount = suite.tasks.length * variants.length * trials;
   console.log(

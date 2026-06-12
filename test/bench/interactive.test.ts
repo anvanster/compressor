@@ -129,7 +129,7 @@ test('stub: --resume reuses the session id and appends to the transcript', async
     return JSON.parse(stdout) as Record<string, unknown>;
   };
 
-  const base = ['--bare', '--output-format', 'json', '--model', 'm'];
+  const base = ['--output-format', 'json', '--model', 'm'];
   const first = run([...base, '-p', 'first question']);
   const sessionId = first['session_id'];
   assert.ok(typeof sessionId === 'string' && sessionId.startsWith('fake-'));

@@ -4,6 +4,23 @@ Token optimization for AI coding agents. Three parts: **mode-switchable instruct
 
 ## Measured results
 
+> **RETRACTION (2026-06-11).** Every benchmark result previously published here is
+> **invalid**. All cells ran `claude --bare`, which — as we proved by direct probe —
+> silently ignores output styles and hooks while honoring permissions. Every arm of
+> every run was therefore an identical, unstyled, hookless baseline; all reported
+> deltas were noise between identical configurations. The flaw was caught by the
+> project's own instrumentation (an impossible-looking recovery-state join) and the
+> harness is fixed: cells no longer use `--bare`, and **treatment-delivery canaries**
+> now prove, in a real cell before any spend, that the style visibly shapes output
+> and the hook observably fires — a run that cannot prove delivery refuses to start.
+> What survives: the permission-denial discovery (real), task solvability (100%
+> success across all cells), the harness infrastructure, and **live-session function**
+> — the hook demonstrably compresses tool output and the ledger records it in real
+> Claude Code sessions. What does not survive: every savings claim. Remeasurement is
+> in progress; numbers will return with run ids when they are real.
+
+The tables below are retained for the record with their original run ids, struck through in spirit: **do not cite them.**
+
 All numbers come from benchmark runs against live Claude models (real API usage from result JSON and session transcripts, not estimates). Task success is checked by shell command, not judgment. Run ids refer to result files under `bench/results/`.
 
 | What | Measured effect | Run |
