@@ -124,17 +124,22 @@ export function renderSavingsHtml(
   // Self-contained on purpose: inline CSS, static SVG, no JS, no requests.
   // The window label is mandatory: this artifact is shared standalone and an
   // unqualified headline would read as all-time.
+  //
+  // Colors/font are driven by VS Code theme variables with the standalone
+  // (browser) values as fallbacks: in a webview the --vscode-* vars resolve to
+  // the active color scheme (readable on light AND dark themes); opened in a
+  // browser the vars are undefined and the fallbacks render exactly as before.
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>compressor savings</title>
 <style>
-body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 2rem auto; max-width: 760px; color: #1f2328; }
+body { font-family: var(--vscode-editor-font-family, ui-monospace, SFMono-Regular, Menlo, monospace); margin: 2rem auto; max-width: 760px; color: var(--vscode-foreground, #1f2328); background: var(--vscode-editor-background, #ffffff); }
 h1 { font-size: 1.3rem; } h2 { font-size: 1rem; margin-top: 1.6rem; }
-.totals { font-size: 0.95rem; } .footer, .empty { color: #57606a; font-size: 0.8rem; }
-svg .label, svg .value { font-size: 12px; fill: #1f2328; }
-svg .bar { fill: #4c9aff; }
+.totals { font-size: 0.95rem; } .footer, .empty { color: var(--vscode-descriptionForeground, #57606a); font-size: 0.8rem; }
+svg .label, svg .value { font-size: 12px; fill: var(--vscode-foreground, #1f2328); }
+svg .bar { fill: var(--vscode-charts-blue, #4c9aff); }
 </style>
 </head>
 <body>
