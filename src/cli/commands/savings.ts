@@ -117,10 +117,10 @@ export function renderSavings(
 }
 
 function parseBy(value: string): SavingsDimension {
-  if (value === 'day' || value === 'tool' || value === 'mode') {
+  if (value === 'day' || value === 'tool' || value === 'mode' || value === 'agent') {
     return value;
   }
-  throw new Error(`invalid --by '${value}' (expected day|tool|mode)`);
+  throw new Error(`invalid --by '${value}' (expected day|tool|mode|agent)`);
 }
 
 export async function runSavings(opts: SavingsOptions): Promise<void> {

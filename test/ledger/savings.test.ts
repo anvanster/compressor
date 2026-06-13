@@ -59,6 +59,16 @@ test('aggregateSavings by mode', () => {
   ]);
 });
 
+test('terminal --by agent uses friendly agent labels', () => {
+  const mixed: LedgerEvent[] = [
+    event({ agent: 'claude-code', estTokensIn: 286, estTokensOut: 86 }),
+    event({ agent: 'vscode', estTokensIn: 200, estTokensOut: 58 }),
+  ];
+  const out = renderSavings(mixed, 'agent', '/tmp/ledger-dir', 'last 30 days');
+  assert.ok(out.includes('Claude Code'), 'claude-code → Claude Code');
+  assert.ok(out.includes('Copilot (VS Code)'), 'vscode → Copilot (VS Code)');
+});
+
 test('terminal rendering labels estimates and draws bars', () => {
   const out = renderSavings(handBuilt, 'day', '/tmp/ledger-dir', 'last 30 days');
   assert.ok(out.includes('saved 4,200 chars (exact)'), 'exact chars total');
@@ -116,8 +126,9 @@ test('empty-window message distinguishes window from truly empty ledger', () => 
 test('html report is self-contained with one SVG chart per dimension', () => {
   const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
   assert.ok(html.includes('<svg'), 'inline SVG charts');
-  assert.equal(html.match(/<svg/g)?.length, 3, 'by day + by tool + by mode');
+  assert.equal(html.match(/<svg/g)?.length, 4, 'by day + by agent + by tool + by mode');
   assert.ok(html.includes('by day') && html.includes('by tool') && html.includes('by mode'));
+  assert.ok(html.includes('by agent'), 'agent breakdown section');
   assert.ok(html.includes('2026-06-09') && html.includes('read') && html.includes('slim'));
   assert.ok(html.includes('estimated — cheap estimator, not billable counts'));
   assert.ok(!html.includes('http://') || !html.includes('src='), 'no external requests');

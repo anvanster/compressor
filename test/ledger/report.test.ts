@@ -77,11 +77,20 @@ test('windowLabel humanizes --since values', () => {
 test('renderSavingsHtml: SVG charts per dimension, estimated label, window label', () => {
   const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
   assert.ok(html.includes('<svg'), 'inline SVG charts');
-  assert.equal(html.match(/<svg/g)?.length, 3, 'by day + by tool + by mode');
+  assert.equal(html.match(/<svg/g)?.length, 4, 'by day + by agent + by tool + by mode');
+  assert.ok(html.includes('<h2>by agent</h2>'), 'agent breakdown section');
+  assert.ok(html.includes('Copilot (VS Code)'), 'friendly agent label for vscode events');
   assert.ok(html.includes('estimated — cheap estimator, not billable counts'));
   assert.ok(html.includes('last 30 days'), 'carries the window label');
   assert.ok(html.includes('4,200 chars'), 'totals rendered');
   assert.ok(!html.includes('<script'), 'no JS — self-contained artifact');
+});
+
+test('aggregateSavings by agent: friendly labels, sorted by saved tokens', () => {
+  assert.deepEqual(aggregateSavings(handBuilt, 'agent'), [
+    { label: 'Claude Code', savedChars: 3700, savedTokens: 1057, totalChars: 5000, totalTokens: 1429, events: 2 },
+    { label: 'Copilot (VS Code)', savedChars: 500, savedTokens: 142, totalChars: 700, totalTokens: 200, events: 1 },
+  ]);
 });
 
 test('renderSavingsHtml: two-tone bars (total track + saved overlay), no truncation', () => {

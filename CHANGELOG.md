@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`by agent` breakdown in `compressor savings`.** The report (HTML + the VS
+  Code webview) now renders a fourth section grouping savings by the agent that
+  produced them, and the terminal supports `compressor savings --by agent`.
+  Agents get friendly labels — `Claude Code`, `Copilot CLI`, `Copilot (VS Code)`
+  (the extension's tools), `OpenCode` — so a single shared ledger makes it clear
+  which surface saved what. `SavingsDimension` gains `'agent'`.
+
 ### Changed
 
 - **Savings report bars are now two-tone and self-sizing.** Each bar's full

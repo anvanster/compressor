@@ -7,7 +7,18 @@ import type { LedgerEvent } from './write.ts';
 // chars (exact) and tokens (cheap estimator, NOT billable counts); the
 // measured ground truth lives in `compressor benchmark`.
 
-export type SavingsDimension = 'day' | 'tool' | 'mode';
+export type SavingsDimension = 'day' | 'tool' | 'mode' | 'agent';
+
+// Friendly agent labels for the 'by agent' view: the raw ledger values are
+// terse and 'vscode' vs 'copilot' is non-obvious (both are Copilot surfaces —
+// the VS Code extension's tools vs the Copilot CLI hook). Unknown agents fall
+// back to their raw value.
+const AGENT_LABELS: Record<string, string> = {
+  'claude-code': 'Claude Code',
+  copilot: 'Copilot CLI',
+  vscode: 'Copilot (VS Code)',
+  opencode: 'OpenCode',
+};
 
 export interface SavingsRow {
   label: string;
@@ -53,6 +64,8 @@ function labelFor(event: LedgerEvent, by: SavingsDimension): string {
       return event.tool;
     case 'mode':
       return event.mode;
+    case 'agent':
+      return AGENT_LABELS[event.agent] ?? event.agent;
   }
 }
 
@@ -156,7 +169,7 @@ export function renderSavingsHtml(
   window: string,
 ): string {
   const { savedChars, savedTokens } = savingsTotals(events);
-  const sections = (['day', 'tool', 'mode'] as const)
+  const sections = (['day', 'agent', 'tool', 'mode'] as const)
     .map((by) => `<h2>by ${by}</h2>\n${svgBarChart(aggregateSavings(events, by))}`)
     .join('\n');
   // Self-contained on purpose: inline CSS, static SVG, no JS, no requests.

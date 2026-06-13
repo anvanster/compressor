@@ -117,7 +117,7 @@ program
   .command('savings')
   .description('show what the compression hook saved (live ledger, estimated tokens)')
   .option('--since <window>', "lookback window: e.g. 7d, 30d, or 'all'", '30d')
-  .option('--by <dimension>', 'aggregate by day|tool|mode', 'day')
+  .option('--by <dimension>', 'aggregate by day|tool|mode|agent', 'day')
   .option('--html <path>', 'also write a self-contained HTML report (inline SVG, no JS)')
   .option('--ledger-dir <dir>', 'ledger directory (default: COMPRESSOR_LEDGER_DIR or ~/.compressor/ledger)')
   .action(async (opts: { since?: string; by?: string; html?: string; ledgerDir?: string }) => {
