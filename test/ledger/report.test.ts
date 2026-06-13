@@ -35,22 +35,22 @@ const handBuilt: LedgerEvent[] = [
 
 test('aggregateSavings by day: per-day sums, ascending date order', () => {
   assert.deepEqual(aggregateSavings(handBuilt, 'day'), [
-    { label: '2026-06-09', savedChars: 3700, savedTokens: 1057, events: 2 },
-    { label: '2026-06-10', savedChars: 500, savedTokens: 142, events: 1 },
+    { label: '2026-06-09', savedChars: 3700, savedTokens: 1057, totalChars: 5000, totalTokens: 1429, events: 2 },
+    { label: '2026-06-10', savedChars: 500, savedTokens: 142, totalChars: 700, totalTokens: 200, events: 1 },
   ]);
 });
 
 test('aggregateSavings by tool: sorted by saved tokens descending', () => {
   assert.deepEqual(aggregateSavings(handBuilt, 'tool'), [
-    { label: 'read', savedChars: 3000, savedTokens: 857, events: 1 },
-    { label: 'bash', savedChars: 1200, savedTokens: 342, events: 2 },
+    { label: 'read', savedChars: 3000, savedTokens: 857, totalChars: 4000, totalTokens: 1143, events: 1 },
+    { label: 'bash', savedChars: 1200, savedTokens: 342, totalChars: 1700, totalTokens: 486, events: 2 },
   ]);
 });
 
 test('aggregateSavings by mode: sorted by saved tokens descending', () => {
   assert.deepEqual(aggregateSavings(handBuilt, 'mode'), [
-    { label: 'optimized', savedChars: 3000, savedTokens: 857, events: 1 },
-    { label: 'slim', savedChars: 1200, savedTokens: 342, events: 2 },
+    { label: 'optimized', savedChars: 3000, savedTokens: 857, totalChars: 4000, totalTokens: 1143, events: 1 },
+    { label: 'slim', savedChars: 1200, savedTokens: 342, totalChars: 1700, totalTokens: 486, events: 2 },
   ]);
 });
 
@@ -82,4 +82,24 @@ test('renderSavingsHtml: SVG charts per dimension, estimated label, window label
   assert.ok(html.includes('last 30 days'), 'carries the window label');
   assert.ok(html.includes('4,200 chars'), 'totals rendered');
   assert.ok(!html.includes('<script'), 'no JS — self-contained artifact');
+});
+
+test('renderSavingsHtml: two-tone bars (total track + saved overlay), no truncation', () => {
+  const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
+  assert.ok(html.includes('class="bar-total"'), 'total-token track');
+  assert.ok(html.includes('class="bar-saved"'), 'saved-portion overlay');
+  // value shows saved of total, the visual prop the bar encodes
+  assert.ok(html.includes('saved ≈857 / 1,143 tok'), 'read row: saved-of-total value');
+  assert.ok(html.includes('<title>'), 'hover detail with chars breakdown');
+  // The value column sits at a FIXED x sized into the SVG width — assert each
+  // chart's widest value string fits inside its declared viewBox width.
+  for (const svg of html.match(/<svg[^>]*viewBox="0 0 (\d+)[^>]*>[\s\S]*?<\/svg>/g) ?? []) {
+    const vbWidth = Number(/viewBox="0 0 (\d+)/.exec(svg)?.[1] ?? '0');
+    const valueXs = [...svg.matchAll(/<text x="(\d+)" y="\d+" class="value"/g)].map((m) =>
+      Number(m[1]),
+    );
+    for (const x of valueXs) {
+      assert.ok(x < vbWidth, `value text x=${x} must start inside viewBox width ${vbWidth}`);
+    }
+  }
 });

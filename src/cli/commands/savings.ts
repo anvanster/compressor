@@ -46,18 +46,26 @@ export function parseSince(value: string): Date | undefined {
 
 const BAR_WIDTH = 40;
 
-function bar(value: number, max: number): string {
-  if (value <= 0 || max <= 0) {
+/**
+ * Two-tone bar: the full width encodes the row's TOTAL original tokens
+ * (relative to the largest row); filled cells (█) are the saved portion,
+ * shaded cells (░) the remainder. Reads as "this much of the total was saved".
+ */
+function bar(saved: number, total: number, max: number): string {
+  if (total <= 0 || max <= 0) {
     return '';
   }
-  return '█'.repeat(Math.max(1, Math.round((value / max) * BAR_WIDTH)));
+  const totalCells = Math.max(1, Math.round((total / max) * BAR_WIDTH));
+  const savedCells = saved <= 0 ? 0 : Math.min(totalCells, Math.round((saved / max) * BAR_WIDTH));
+  return '█'.repeat(savedCells) + '░'.repeat(totalCells - savedCells);
 }
 
 function chartLines(rows: readonly SavingsRow[]): string[] {
-  const max = Math.max(...rows.map((r) => r.savedTokens), 1);
+  const max = Math.max(...rows.map((r) => r.totalTokens), 1);
   const labelWidth = Math.max(...rows.map((r) => r.label.length), 0);
   return rows.map(
-    (r) => `  ${r.label.padEnd(labelWidth)}  ${bar(r.savedTokens, max).padEnd(BAR_WIDTH)}  ≈ ${fmt(r.savedTokens)} tok`,
+    (r) =>
+      `  ${r.label.padEnd(labelWidth)}  ${bar(r.savedTokens, r.totalTokens, max).padEnd(BAR_WIDTH)}  ≈ ${fmt(r.savedTokens)} / ${fmt(r.totalTokens)} tok`,
   );
 }
 

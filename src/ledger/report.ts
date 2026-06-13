@@ -13,6 +13,10 @@ export interface SavingsRow {
   label: string;
   savedChars: number;
   savedTokens: number;
+  /** total original chars (charsIn) — the bar's full length encodes this */
+  totalChars: number;
+  /** total original tokens (estTokensIn), estimated */
+  totalTokens: number;
   events: number;
 }
 
@@ -60,9 +64,13 @@ export function aggregateSavings(
   const groups = new Map<string, SavingsRow>();
   for (const event of events) {
     const label = labelFor(event, by);
-    const row = groups.get(label) ?? { label, savedChars: 0, savedTokens: 0, events: 0 };
+    const row =
+      groups.get(label) ??
+      { label, savedChars: 0, savedTokens: 0, totalChars: 0, totalTokens: 0, events: 0 };
     row.savedChars += event.charsIn - event.charsOut;
     row.savedTokens += event.estTokensIn - event.estTokensOut;
+    row.totalChars += event.charsIn;
+    row.totalTokens += event.estTokensIn;
     row.events += 1;
     groups.set(label, row);
   }
@@ -89,25 +97,55 @@ function escapeHtml(text: string): string {
     .replaceAll('"', '&quot;');
 }
 
+/** Compact per-row value: saved of total tokens (the bar shows the proportion). */
+function barValue(row: SavingsRow): string {
+  return `saved ≈${fmt(row.savedTokens)} / ${fmt(row.totalTokens)} tok`;
+}
+
+/**
+ * Two-tone stacked bars: the full bar length encodes the TOTAL original tokens
+ * (estTokensIn) so rows are comparable by magnitude, and the accent segment is
+ * the saved portion within it — a visual "how much of this did compressor
+ * remove". The value column sits at a FIXED x (after the bar track) and the
+ * SVG is sized to fit the longest value string, so labels never truncate
+ * (the old layout floated the value after a variable-width bar and clipped it).
+ */
 function svgBarChart(rows: readonly SavingsRow[]): string {
   if (rows.length === 0) {
     return '<p class="empty">no events in this window</p>';
   }
-  const rowH = 26;
+  const rowH = 30;
   const labelW = 120;
-  const barMax = 420;
-  const valueW = 140;
-  const width = labelW + barMax + valueW;
+  const barMax = 300;
+  const barH = 16;
+  const gap = 14;
+  const charW = 7.5; // ui-monospace advance at 12px; over-reserve is harmless
+  const maxTotal = Math.max(...rows.map((r) => r.totalTokens), 1);
+  const valueW = Math.ceil(Math.max(...rows.map((r) => barValue(r).length)) * charW) + 8;
+  const width = labelW + barMax + gap + valueW;
   const height = rows.length * rowH + 10;
-  const max = Math.max(...rows.map((r) => r.savedTokens), 1);
   const parts = rows.map((r, i) => {
     const y = 5 + i * rowH;
-    const w = r.savedTokens <= 0 ? 0 : Math.max(2, Math.round((r.savedTokens / max) * barMax));
-    return [
-      `<text x="${labelW - 10}" y="${y + 17}" text-anchor="end" class="label">${escapeHtml(r.label)}</text>`,
-      `<rect x="${labelW}" y="${y + 4}" width="${w}" height="16" rx="3" class="bar"/>`,
-      `<text x="${labelW + w + 8}" y="${y + 17}" class="value">≈ ${fmt(r.savedTokens)} tok (${fmt(r.savedChars)} chars)</text>`,
-    ].join('');
+    const cy = y + 17;
+    const totalW =
+      r.totalTokens <= 0 ? 0 : Math.max(2, Math.round((r.totalTokens / maxTotal) * barMax));
+    const savedW =
+      r.savedTokens <= 0 ? 0 : Math.min(totalW, Math.round((r.savedTokens / maxTotal) * barMax));
+    const title =
+      `${r.label}: saved ≈${fmt(r.savedTokens)} tok (${fmt(r.savedChars)} chars) ` +
+      `of ≈${fmt(r.totalTokens)} tok (${fmt(r.totalChars)} chars) total · ${fmt(r.events)} events`;
+    return (
+      `<g><title>${escapeHtml(title)}</title>` +
+      [
+        `<text x="${labelW - 10}" y="${cy}" text-anchor="end" class="label">${escapeHtml(r.label)}</text>`,
+        `<rect x="${labelW}" y="${y + 4}" width="${totalW}" height="${barH}" rx="3" class="bar-total"/>`,
+        savedW > 0
+          ? `<rect x="${labelW}" y="${y + 4}" width="${savedW}" height="${barH}" rx="3" class="bar-saved"/>`
+          : '',
+        `<text x="${labelW + barMax + gap}" y="${cy}" class="value">${escapeHtml(barValue(r))}</text>`,
+      ].join('') +
+      `</g>`
+    );
   });
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img">${parts.join('')}</svg>`;
 }
@@ -139,7 +177,8 @@ body { font-family: var(--vscode-editor-font-family, ui-monospace, SFMono-Regula
 h1 { font-size: 1.3rem; } h2 { font-size: 1rem; margin-top: 1.6rem; }
 .totals { font-size: 0.95rem; } .footer, .empty { color: var(--vscode-descriptionForeground, #57606a); font-size: 0.8rem; }
 svg .label, svg .value { font-size: 12px; fill: var(--vscode-foreground, #1f2328); }
-svg .bar { fill: var(--vscode-charts-blue, #4c9aff); }
+svg .bar-total { fill: var(--vscode-foreground, #1f2328); opacity: 0.16; }
+svg .bar-saved { fill: var(--vscode-charts-blue, #4c9aff); }
 </style>
 </head>
 <body>

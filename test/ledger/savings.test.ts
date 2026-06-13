@@ -38,24 +38,24 @@ const handBuilt: LedgerEvent[] = [
 test('aggregateSavings by day: per-day sums in ascending order', () => {
   const rows = aggregateSavings(handBuilt, 'day');
   assert.deepEqual(rows, [
-    { label: '2026-06-09', savedChars: 3700, savedTokens: 1057, events: 2 },
-    { label: '2026-06-10', savedChars: 500, savedTokens: 142, events: 1 },
+    { label: '2026-06-09', savedChars: 3700, savedTokens: 1057, totalChars: 5000, totalTokens: 1429, events: 2 },
+    { label: '2026-06-10', savedChars: 500, savedTokens: 142, totalChars: 700, totalTokens: 200, events: 1 },
   ]);
 });
 
 test('aggregateSavings by tool: sorted by savings descending', () => {
   const rows = aggregateSavings(handBuilt, 'tool');
   assert.deepEqual(rows, [
-    { label: 'read', savedChars: 3000, savedTokens: 857, events: 1 },
-    { label: 'bash', savedChars: 1200, savedTokens: 342, events: 2 },
+    { label: 'read', savedChars: 3000, savedTokens: 857, totalChars: 4000, totalTokens: 1143, events: 1 },
+    { label: 'bash', savedChars: 1200, savedTokens: 342, totalChars: 1700, totalTokens: 486, events: 2 },
   ]);
 });
 
 test('aggregateSavings by mode', () => {
   const rows = aggregateSavings(handBuilt, 'mode');
   assert.deepEqual(rows, [
-    { label: 'optimized', savedChars: 3000, savedTokens: 857, events: 1 },
-    { label: 'slim', savedChars: 1200, savedTokens: 342, events: 2 },
+    { label: 'optimized', savedChars: 3000, savedTokens: 857, totalChars: 4000, totalTokens: 1143, events: 1 },
+    { label: 'slim', savedChars: 1200, savedTokens: 342, totalChars: 1700, totalTokens: 486, events: 2 },
   ]);
 });
 
@@ -65,7 +65,9 @@ test('terminal rendering labels estimates and draws bars', () => {
   assert.ok(out.includes('≈ 1,199 tokens'), 'estimated tokens total');
   assert.ok(out.includes('estimated — cheap estimator, not billable counts'));
   assert.ok(out.includes('events: 3'));
-  assert.ok(out.includes('█'), 'ANSI block bars');
+  assert.ok(out.includes('█'), 'ANSI block bars (saved)');
+  assert.ok(out.includes('░'), 'two-tone remainder (total − saved)');
+  assert.ok(out.includes('tok'), 'saved-of-total token value');
   assert.ok(out.includes('2026-06-09'));
   assert.ok(out.includes('2026-06-10'));
   assert.ok(out.includes('compressor benchmark'), 'points at measured savings');
