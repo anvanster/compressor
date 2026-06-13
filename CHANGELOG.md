@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.1] - 2026-06-13
 
 ### Added
 
@@ -15,9 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Agents get friendly labels — `Claude Code`, `Copilot CLI`, `Copilot (VS Code)`
   (the extension's tools), `OpenCode` — so a single shared ledger makes it clear
   which surface saved what. `SavingsDimension` gains `'agent'`.
+- **Engine primitives exported** from the package root — `skeleton`,
+  `stripComments`, `langFromPath`, `hasLineNumbers`, and the `CodeLang` type —
+  so consumers can build specialized read tools (the VS Code extension's code
+  outline uses `skeleton` directly).
 
 ### Changed
 
+- **Savings report adapts to the active editor theme.** Report colors and font
+  are driven by `--vscode-*` variables with the previous values as fallbacks,
+  so the VS Code webview is readable on any color scheme; the standalone
+  `compressor savings --html` artifact renders identically in a browser.
 - **Savings report bars are now two-tone and self-sizing.** Each bar's full
   length encodes the total original tokens (`estTokensIn`) and a bright accent
   segment shows the saved portion within it — a clearer "how much of this did
