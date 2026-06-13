@@ -11,6 +11,11 @@ export type {
   Policy,
   ToolKind,
 } from './engine/index.ts';
+// engine primitives, for consumers building specialized read tools (e.g. the
+// VS Code extension's compressor_outline): skeleton view (imports+signatures
+// with recoverable gaps) and comment-strip, both line-number preserving.
+export { skeleton, stripComments, langFromPath, hasLineNumbers } from './engine/tiers/code.ts';
+export type { CodeLang } from './engine/tiers/code.ts';
 
 // tokens
 export { cheapEstimator, estimateTokens, tiktokenEstimator } from './tokens/estimate.ts';
