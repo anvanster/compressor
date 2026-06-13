@@ -86,6 +86,21 @@ test('renderSavingsHtml: SVG charts per dimension, estimated label, window label
   assert.ok(!html.includes('<script'), 'no JS — self-contained artifact');
 });
 
+test('renderSavingsHtml: label column widens for long labels (no left clip)', () => {
+  const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
+  const widthFor = (dim: string): number => {
+    const m = new RegExp(`<h2>by ${dim}</h2>\\s*<svg[^>]*viewBox="0 0 (\\d+)`).exec(html);
+    return m === null ? 0 : Number(m[1]);
+  };
+  // "Copilot (VS Code)" is far longer than a date label, so the agent chart
+  // must reserve a wider label column than the day chart (a fixed labelW
+  // clipped the right-aligned agent labels off the left edge).
+  assert.ok(
+    widthFor('agent') > widthFor('day'),
+    `agent width ${widthFor('agent')} must exceed day width ${widthFor('day')}`,
+  );
+});
+
 test('aggregateSavings by agent: friendly labels, sorted by saved tokens', () => {
   assert.deepEqual(aggregateSavings(handBuilt, 'agent'), [
     { label: 'Claude Code', savedChars: 3700, savedTokens: 1057, totalChars: 5000, totalTokens: 1429, events: 2 },

@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segment shows the saved portion within it — a clearer "how much of this did
   compressor remove" visual. The per-row value moved to a fixed column whose
   width is sized into the SVG, fixing the truncated `(103,…`/`(105,…` labels.
+  The left label column likewise auto-sizes to the longest label, so long
+  `by agent` labels like `Copilot (VS Code)` no longer clip off the left edge.
   Applies to both the HTML report (`compressor savings --html` and the VS Code
   webview) and the terminal view (`█` saved / `░` remaining, `saved / total
   tok`). `SavingsRow` gains `totalChars`/`totalTokens`; bars carry a `<title>`

@@ -128,11 +128,17 @@ function svgBarChart(rows: readonly SavingsRow[]): string {
     return '<p class="empty">no events in this window</p>';
   }
   const rowH = 30;
-  const labelW = 120;
   const barMax = 300;
   const barH = 16;
   const gap = 14;
   const charW = 7.5; // ui-monospace advance at 12px; over-reserve is harmless
+  // labelW fits the longest label: agent labels like "Copilot (VS Code)" are
+  // wider than day/tool/mode, and the labels are right-aligned at labelW-10, so
+  // a fixed width would clip them off the left edge of the SVG.
+  const labelW = Math.max(
+    120,
+    Math.ceil(Math.max(...rows.map((r) => r.label.length)) * charW) + 16,
+  );
   const maxTotal = Math.max(...rows.map((r) => r.totalTokens), 1);
   const valueW = Math.ceil(Math.max(...rows.map((r) => barValue(r).length)) * charW) + 8;
   const width = labelW + barMax + gap + valueW;
