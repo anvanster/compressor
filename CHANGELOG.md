@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`compressor benchmark --competitor <name>`** — add a third-party
+  instruction pack as an output-only arm for a head-to-head. The real upstream
+  pack loads from `<suiteDir>/../competitors` and is delivered via the same
+  output-style channel as compressor (only the instruction body differs; no
+  hook, since these tools are output-shaping). Ships `caveman` (the viral
+  juliusbrussee/caveman skill) and `bench/suites/caveman.json`. First result in
+  [docs/COMPRESSOR-VS-CAVEMAN.md](COMPRESSOR-VS-CAVEMAN.md): at 100% success on
+  every arm, compressor cut ~49–52% of token cost vs Caveman's ~42%, and on the
+  log-heavy task Caveman *increased* context (+19%) where compressor's hook cut
+  it −25%.
+
 ## [0.3.3] - 2026-06-14
 
 ### Fixed
