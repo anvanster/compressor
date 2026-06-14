@@ -39,6 +39,10 @@ Full vs optimized vs slim as installed product configurations (instruction pack 
 
 The honest headline: **−10% to −79% output reduction in conversational coding depending on conversation type, zero measured quality loss.** The effect is largest exactly where an unconstrained model writes the most prose (reviews, critiques).
 
+### vs the viral Caveman prompt (run bench-20260614-020738)
+
+Head-to-head against [juliusbrussee/caveman](https://github.com/juliusbrussee/caveman) — output-shaping pack vs compressor's input compression. At **100% success on every arm**, compressor cut **~49–52%** of token cost vs Caveman's **~42%**; on the log-heavy task Caveman *raised* context **+19%** (input-blind, extra tool calls) where compressor's hook cut it **−25%**. Caveman's only clean win was −7.6% output on the simplest prose Q&A. Full table + method: [COMPRESSOR-VS-CAVEMAN.md](COMPRESSOR-VS-CAVEMAN.md).
+
 ### Caveats that ride with every number above
 
 - Small n: 4–5 trials per cell. Medians with spreads are reported; only the review conversation's separation is distribution-level. No statistical-significance claims.

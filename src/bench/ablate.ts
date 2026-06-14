@@ -55,6 +55,13 @@ export interface BuildVariantsOptions {
    * fan-outs.
    */
   hookArms?: boolean;
+  /**
+   * Pre-built competitor variants (e.g. the Caveman pack) appended as-is. They
+   * carry hook:false and an arbitrary styleBody, so the hook-args/marker/arm
+   * fan-outs below skip them; they pass straight through to the run for a
+   * head-to-head against the compressor modes.
+   */
+  competitors?: Variant[];
 }
 
 const MARKER_STYLES: readonly MarkerStyle[] = ['plain', 'deterrent', 'informative'];
@@ -83,6 +90,11 @@ function modeVariant(mode: Mode, hook: boolean): Variant {
 
 export function buildVariants(opts: BuildVariantsOptions): Variant[] {
   const variants: Variant[] = opts.modes.map((mode) => modeVariant(mode, opts.hook));
+  // competitors are output-only (hook:false): append before the fan-outs, which
+  // operate on hook-bearing variants and leave these untouched.
+  if (opts.competitors !== undefined) {
+    variants.push(...opts.competitors);
+  }
 
   if (opts.ablateAdd.length > 0 && !opts.modes.includes('optimized')) {
     throw new Error(

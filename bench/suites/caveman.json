@@ -1,0 +1,59 @@
+{
+  "name": "caveman",
+  "tasks": [
+    {
+      "id": "huge-log-diagnosis",
+      "prompt": "The test suite is failing — full output in test-output.txt (you can also re-run it). Find the root cause and fix it. Do not modify the tests.",
+      "fixture": "huge-log-diagnosis",
+      "check": {
+        "kind": "command",
+        "command": "node --test test-*.mjs"
+      },
+      "tags": [
+        "log-heavy",
+        "hook-target",
+        "input-heavy"
+      ]
+    },
+    {
+      "id": "large-file-edit",
+      "prompt": "The snapshot:prune command in commands.mjs ships the wrong retention default: its --keep option must default to 30. Update that one entry. Do not modify the tests.",
+      "fixture": "large-file-edit",
+      "check": {
+        "kind": "command",
+        "command": "node --test test.mjs"
+      },
+      "tags": [
+        "large-file",
+        "input-heavy"
+      ]
+    },
+    {
+      "id": "explain-codebase",
+      "prompt": "How does a plugin intercept an event before other handlers see it? Explain the mechanism.",
+      "fixture": "explain-codebase",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "before[\\s-]?dispatch[\\s\\S]*cancel|cancel[\\s\\S]*before[\\s-]?dispatch",
+        "flags": "i"
+      },
+      "tags": [
+        "output-heavy"
+      ]
+    },
+    {
+      "id": "review-diff",
+      "prompt": "Review changes.patch against this codebase. Identify any bugs the patch introduces, with file/function references, and assess the overall change.",
+      "fixture": "review-diff",
+      "check": {
+        "kind": "answer-regex",
+        "pattern": "^(?=[\\s\\S]*(?:applyTierDiscount|applyVolumePricing))(?=[\\s\\S]*(?:<=\\s*tiers\\.length|past the end|out[ -]of[ -]bounds|off[ -]by[ -]one|\\bundefined\\b|TypeError))(?=[\\s\\S]*(?:scheduleRetry|chargeWithRetry))(?=[\\s\\S]*(?:swap|transpos|revers|flip|backwards|inverted|wrong order|order of (?:the )?(?:argument|arg|parameter)s?|(?:argument|parameter) order|(?:delay|backoff)[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?attempt|attempt[^.\\n]{0,60}\\bas\\b[^.\\n]{0,30}(?:the )?(?:delay|backoff)))",
+        "flags": "i"
+      },
+      "tags": [
+        "output-heavy",
+        "prose"
+      ]
+    }
+  ]
+}

@@ -198,6 +198,10 @@ program
     '--hook-arms',
     'fan each hook-bearing variant into hook-on/hook-off arms IN THE SAME RUN (the pure compression-hook A/B, instructions held constant)',
   )
+  .option(
+    '--competitor <name...>',
+    "add a competitor pack as an output-only arm for a head-to-head (known: caveman); the real pack loads from <suiteDir>/../competitors",
+  )
   .option('--concurrency <n>', 'cells run in parallel', '2')
   .option('--max-budget-usd <usd>', 'hard cost ceiling; scheduling stops when reached', '5')
   .option(
@@ -224,6 +228,7 @@ program
       markerStyles?: string;
       hookArgArms?: string;
       hookArms?: boolean;
+      competitor?: string[];
       concurrency: string;
       maxBudgetUsd: string;
       auth?: string;

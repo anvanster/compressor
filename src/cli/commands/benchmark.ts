@@ -6,10 +6,11 @@ import process from 'node:process';
 import { promisify } from 'node:util';
 import { buildVariants } from '../../bench/ablate.ts';
 import type { BenchAuth } from '../../bench/cell.ts';
+import { COMPETITORS, competitorVariant, isCompetitor } from '../../bench/competitors.ts';
 import { balanceWarning } from '../../bench/results.ts';
 import { runBenchmark } from '../../bench/runner.ts';
-import { loadSuite, suiteFixturesDir } from '../../bench/tasks.ts';
-import type { SuiteSpec } from '../../bench/types.ts';
+import { loadSuite, suiteCompetitorsDir, suiteFixturesDir } from '../../bench/tasks.ts';
+import type { SuiteSpec, Variant } from '../../bench/types.ts';
 import type { Mode } from '../../engine/types.ts';
 import { resolveHookCommand } from '../../paths.ts';
 
@@ -45,6 +46,8 @@ export interface BenchmarkCliOptions {
   hookArgArms?: string;
   /** fan each hook-bearing variant into hook-on/hook-off arms (pure hook A/B) */
   hookArms?: boolean;
+  /** competitor packs to add as output-only arms (e.g. 'caveman') for a head-to-head */
+  competitor?: string[];
   concurrency: string;
   maxBudgetUsd: string;
   out: string;
@@ -413,6 +416,16 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
   const fixturesDir = suiteFixturesDir(suitePath);
   await assertFixtures(fixturesDir, suite);
 
+  // competitor packs (real upstream assets) load from <suiteDir>/../competitors
+  const competitorNames = opts.competitor ?? [];
+  const competitors: Variant[] = [];
+  for (const name of competitorNames) {
+    if (!isCompetitor(name)) {
+      throw new Error(`--competitor: unknown '${name}' (known: ${COMPETITORS.join(', ')})`);
+    }
+    competitors.push(await competitorVariant(name, suiteCompetitorsDir(suitePath)));
+  }
+
   const hookArgs = opts.hookArgs?.trim();
   const markerStyles = parseIdList(opts.markerStyles);
   const hookArgArms = parseHookArgArms(opts.hookArgArms);
@@ -426,6 +439,7 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     ...(markerStyles.length > 0 ? { markerStyles } : {}),
     ...(hookArgArms.length > 0 ? { hookArgArms } : {}),
     ...(opts.hookArms === true ? { hookArms: true } : {}),
+    ...(competitors.length > 0 ? { competitors } : {}),
   });
 
   const hooked = variants.find((variant) => variant.hook);

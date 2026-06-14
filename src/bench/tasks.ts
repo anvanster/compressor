@@ -162,3 +162,8 @@ export async function loadSuite(suitePath: string): Promise<SuiteSpec> {
 export function suiteFixturesDir(suitePath: string): string {
   return path.resolve(path.dirname(suitePath), '..', 'fixtures');
 }
+
+/** Competitor-pack root alongside a suite file: <suiteDir>/../competitors. */
+export function suiteCompetitorsDir(suitePath: string): string {
+  return path.resolve(path.dirname(suitePath), '..', 'competitors');
+}
