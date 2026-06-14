@@ -1,6 +1,11 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import process from 'node:process';
 import { Command } from 'commander';
+
+// Single source of truth: read the version from package.json so `--version`
+// can never drift from the published package (dist/cli/index.js → ../../).
+const { version } = createRequire(import.meta.url)('../../package.json') as { version: string };
 
 const program = new Command();
 
@@ -9,7 +14,7 @@ program
   .description(
     'Token optimization for AI coding agents: instruction packs, tool-output compression, measured savings',
   )
-  .version('0.3.0');
+  .version(version);
 
 program
   .command('init')
