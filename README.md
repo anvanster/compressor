@@ -50,6 +50,13 @@ compressor set-mode slim             # switch modes
 compressor set-mode full             # removes everything — a true baseline
 ```
 
+`init`, `set-mode`, and `uninstall` modify your agent config files, so they
+first show the diff, warn you, and back up every changed file before writing
+(in a terminal they also prompt to confirm). Preview without writing using
+`--dry-run`; skip the prompt with `--yes`; turn off the backup with
+`--no-backup`. Undo the last change with `compressor restore` (or
+`compressor restore --list` to pick one).
+
 What `init` installs at project scope:
 
 - `.claude/output-styles/compressor-<mode>.md` — the instruction pack as an output style (system prompt, cache-friendly)

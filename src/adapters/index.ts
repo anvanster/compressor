@@ -25,6 +25,15 @@ export { agentsMdAdapter } from './agents-md.ts';
 export { createOpencodeAdapter, opencodeAdapter } from './opencode.ts';
 export { applyChanges, renderChanges } from './apply.ts';
 export {
+  applyWithBackup,
+  writeBackup,
+  listBackups,
+  readManifest,
+  planRestore,
+  resolveBackupDir,
+} from './backup.ts';
+export type { ApplyOptions, ApplyResult, BackupManifest, BackupSummary } from './backup.ts';
+export {
   upsertMarkedSection,
   removeMarkedSection,
   readMarkedSection,

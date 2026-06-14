@@ -9,9 +9,16 @@ export interface SetModeOptions extends ScopeOptions {
 export async function runSetMode(mode: string, opts: SetModeOptions): Promise<void> {
   const agents = resolveAgents(opts.agent);
   if (mode === 'full') {
-    await uninstallForAgents(agents, opts);
+    const outcome = await uninstallForAgents(agents, opts);
+    if (outcome === 'aborted') {
+      return;
+    }
     const names = agents.map((adapter) => adapter.name).join(', ');
-    const suffix = opts.dryRun === true ? ' (dry-run: nothing written)' : '';
+    if (outcome === 'empty') {
+      console.log(`Mode full: no compressor artifacts to remove for ${names}.`);
+      return;
+    }
+    const suffix = outcome === 'dryRun' ? ' (dry-run: nothing written)' : '';
     console.log(
       `Mode full: compressor artifacts removed for ${names} (true baseline, no instruction pack, no hook). ${effectNote(agents)}${suffix}`,
     );

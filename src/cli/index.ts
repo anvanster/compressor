@@ -18,6 +18,8 @@ program
   .option('--mode <mode>', 'pack mode (optimized|slim)', 'optimized')
   .option('--global', 'install at user level instead of project level')
   .option('--dry-run', 'print planned changes without writing')
+  .option('-y, --yes', 'apply without the interactive confirmation prompt')
+  .option('--no-backup', 'do not back up changed files before applying')
   .option(
     '--hook-command <style>',
     'hook command style: auto|absolute|relocatable (auto: relocatable when compressor-hook is on PATH and this is not a source checkout)',
@@ -29,6 +31,8 @@ program
       mode: string;
       global?: boolean;
       dryRun?: boolean;
+      yes?: boolean;
+      backup?: boolean;
       hookCommand?: string;
     }) => {
       const { runInit } = await import('./commands/init.ts');
@@ -43,6 +47,8 @@ program
   .option('--agent <name...>', 'agent adapters to target', ['claude-code'])
   .option('--global', 'apply at user level instead of project level')
   .option('--dry-run', 'print planned changes without writing')
+  .option('-y, --yes', 'apply without the interactive confirmation prompt')
+  .option('--no-backup', 'do not back up changed files before applying')
   .option(
     '--hook-command <style>',
     'hook command style: auto|absolute|relocatable (auto: relocatable when compressor-hook is on PATH and this is not a source checkout)',
@@ -51,7 +57,14 @@ program
   .action(
     async (
       mode: string,
-      opts: { agent: string[]; global?: boolean; dryRun?: boolean; hookCommand?: string },
+      opts: {
+        agent: string[];
+        global?: boolean;
+        dryRun?: boolean;
+        yes?: boolean;
+        backup?: boolean;
+        hookCommand?: string;
+      },
     ) => {
       const { runSetMode } = await import('./commands/set-mode.ts');
       await runSetMode(mode, opts);
@@ -73,9 +86,31 @@ program
   .option('--agent <name...>', 'agent adapters to target', ['claude-code'])
   .option('--global', 'apply at user level instead of project level')
   .option('--dry-run', 'print planned changes without writing')
-  .action(async (opts: { agent: string[]; global?: boolean; dryRun?: boolean }) => {
-    const { runUninstall } = await import('./commands/uninstall.ts');
-    await runUninstall(opts);
+  .option('-y, --yes', 'apply without the interactive confirmation prompt')
+  .option('--no-backup', 'do not back up changed files before applying')
+  .action(
+    async (opts: {
+      agent: string[];
+      global?: boolean;
+      dryRun?: boolean;
+      yes?: boolean;
+      backup?: boolean;
+    }) => {
+      const { runUninstall } = await import('./commands/uninstall.ts');
+      await runUninstall(opts);
+    },
+  );
+
+program
+  .command('restore')
+  .description('restore files from a backup taken by init/set-mode/uninstall')
+  .option('--from <file>', 'restore a specific backup manifest (default: the most recent)')
+  .option('--list', 'list available backups instead of restoring')
+  .option('--dry-run', 'print planned changes without writing')
+  .option('-y, --yes', 'restore without the interactive confirmation prompt')
+  .action(async (opts: { from?: string; list?: boolean; dryRun?: boolean; yes?: boolean }) => {
+    const { runRestore } = await import('./commands/restore.ts');
+    await runRestore(opts);
   });
 
 program

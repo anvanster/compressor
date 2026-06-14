@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Backups + a confirmation step for the file-mutating commands.** `init`,
+  `set-mode`, and `uninstall` now back up every file they change (the recorded
+  `before` state, as a JSON manifest under `~/.compressor/backups`, override
+  with `COMPRESSOR_BACKUP_DIR`) BEFORE writing, warn that config files will
+  change, and — in an interactive terminal — prompt to confirm. If the backup
+  can't be written, nothing is modified. New flags: `--yes` (skip the prompt)
+  and `--no-backup`. New `compressor restore` command (`--list`, `--from
+  <file>`, `--dry-run`, `--yes`) undoes a change set; the restore is itself
+  backed up first. Library exports: `applyWithBackup`, `writeBackup`,
+  `listBackups`, `readManifest`, `planRestore`, `resolveBackupDir`.
+
 ## [0.3.1] - 2026-06-13
 
 ### Added

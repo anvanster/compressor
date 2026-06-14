@@ -1,7 +1,6 @@
-import { applyChanges, renderChanges } from '../../adapters/index.ts';
-import type { Adapter } from '../../adapters/index.ts';
-import { buildContext, resolveAgents } from './init.ts';
-import type { ScopeOptions } from './init.ts';
+import type { Adapter, FileChange } from '../../adapters/index.ts';
+import { buildContext, confirmAndApply, resolveAgents } from './init.ts';
+import type { ApplyOutcome, ScopeOptions } from './init.ts';
 
 export interface UninstallOptions extends ScopeOptions {
   agent: string[];
@@ -10,24 +9,33 @@ export interface UninstallOptions extends ScopeOptions {
 export async function uninstallForAgents(
   agents: Adapter[],
   opts: ScopeOptions,
-): Promise<void> {
+): Promise<ApplyOutcome> {
   const ctx = buildContext(opts.global === true, 'optimized', false);
+  const changes: FileChange[] = [];
   for (const adapter of agents) {
-    const changes = await adapter.uninstall(ctx);
-    const rendered = renderChanges(changes);
-    if (rendered !== '') {
-      console.log(rendered);
-    }
-    if (opts.dryRun !== true) {
-      await applyChanges(changes);
-    }
+    changes.push(...(await adapter.uninstall(ctx)));
   }
+  const { outcome } = await confirmAndApply(changes, {
+    command: `uninstall${opts.global === true ? ' --global' : ''}`,
+    scopeLabel: opts.global === true ? 'your user config (~)' : 'this project',
+    dryRun: opts.dryRun,
+    yes: opts.yes,
+    backup: opts.backup,
+  });
+  return outcome;
 }
 
 export async function runUninstall(opts: UninstallOptions): Promise<void> {
   const agents = resolveAgents(opts.agent);
-  await uninstallForAgents(agents, opts);
+  const outcome = await uninstallForAgents(agents, opts);
+  if (outcome === 'aborted') {
+    return;
+  }
   const names = agents.map((adapter) => adapter.name).join(', ');
-  const suffix = opts.dryRun === true ? ' (dry-run: nothing written)' : '';
+  if (outcome === 'empty') {
+    console.log(`No compressor artifacts to remove for ${names}.`);
+    return;
+  }
+  const suffix = outcome === 'dryRun' ? ' (dry-run: nothing written)' : '';
   console.log(`Compressor artifacts removed for ${names}.${suffix}`);
 }

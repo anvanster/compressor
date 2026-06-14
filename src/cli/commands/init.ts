@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import process from 'node:process';
-import { applyChanges, getAdapter, renderChanges } from '../../adapters/index.ts';
-import type { Adapter, AdapterContext } from '../../adapters/index.ts';
+import { applyWithBackup, getAdapter, renderChanges, resolveBackupDir } from '../../adapters/index.ts';
+import type { Adapter, AdapterContext, FileChange } from '../../adapters/index.ts';
 import type { AgentName, PackMode } from '../../packs/types.ts';
 import {
   describeHookCommand,
@@ -10,12 +10,82 @@ import {
   resolveHookCommand,
 } from '../../paths.ts';
 import type { HookCommandStyle } from '../../paths.ts';
+import { isInteractive, promptYesNo } from '../confirm.ts';
 
 export interface ScopeOptions {
   global?: boolean;
   dryRun?: boolean;
   /** --hook-command auto|absolute|relocatable (default auto) */
   hookCommand?: string;
+  /** skip the interactive confirmation prompt */
+  yes?: boolean;
+  /** default true; false disables the safety backup (--no-backup) */
+  backup?: boolean;
+}
+
+export type ApplyOutcome = 'applied' | 'dryRun' | 'aborted' | 'empty';
+
+/**
+ * Render the planned changes, warn the user that config files will change, note
+ * the backup, confirm (interactive only), then apply via applyWithBackup. The
+ * diff/summary go to stdout; the warning/prompt to stderr (pipe-safe).
+ */
+export async function confirmAndApply(
+  changes: FileChange[],
+  opts: {
+    command: string;
+    scopeLabel: string;
+    dryRun?: boolean;
+    yes?: boolean;
+    backup?: boolean;
+    backupDir?: string;
+  },
+): Promise<{ outcome: ApplyOutcome; backupPath?: string }> {
+  if (changes.length === 0) {
+    return { outcome: 'empty' };
+  }
+  const rendered = renderChanges(changes);
+  if (rendered !== '') {
+    console.log(rendered);
+  }
+  if (opts.dryRun === true) {
+    return { outcome: 'dryRun' };
+  }
+
+  const fileCount = new Set(changes.map((c) => c.path)).size;
+  console.error(`\n⚠ compressor will modify ${fileCount} file(s) in ${opts.scopeLabel}.`);
+  if (opts.backup === false) {
+    console.error('  --no-backup: no backup will be taken.');
+  } else {
+    console.error(
+      `  A backup is saved under ${resolveBackupDir()} first — undo with \`compressor restore\`.`,
+    );
+  }
+  if (opts.yes !== true) {
+    if (isInteractive()) {
+      if (!(await promptYesNo('Proceed? [y/N]'))) {
+        console.error('Aborted; nothing changed.');
+        return { outcome: 'aborted' };
+      }
+    } else {
+      console.error(
+        '  (non-interactive shell — proceeding; pass --dry-run to preview, or --yes to silence this notice)',
+      );
+    }
+  }
+
+  const result = await applyWithBackup(changes, {
+    backup: opts.backup,
+    command: opts.command,
+    ...(opts.backupDir === undefined ? {} : { backupDir: opts.backupDir }),
+  });
+  if (result.backupPath !== undefined) {
+    console.log(`Backup saved: ${result.backupPath}`);
+  }
+  return {
+    outcome: 'applied',
+    ...(result.backupPath === undefined ? {} : { backupPath: result.backupPath }),
+  };
 }
 
 export interface InitOptions extends ScopeOptions {
@@ -116,18 +186,26 @@ export async function installForAgents(
     // (Copilot postToolUse is fail-open = silent no-op)
     resolveCopilotHookCommand(mode, undefined, style);
   }
+  const changes: FileChange[] = [];
   for (const adapter of agents) {
-    const changes = await adapter.install(mode, ctx);
-    const rendered = renderChanges(changes);
-    if (rendered !== '') {
-      console.log(rendered);
-    }
-    if (opts.dryRun !== true) {
-      await applyChanges(changes);
-    }
+    changes.push(...(await adapter.install(mode, ctx)));
   }
   const names = agents.map((adapter) => adapter.name).join(', ');
-  const suffix = opts.dryRun === true ? ' (dry-run: nothing written)' : '';
+  const { outcome } = await confirmAndApply(changes, {
+    command: `init --mode ${mode}${opts.global === true ? ' --global' : ''}`,
+    scopeLabel: opts.global === true ? 'your user config (~)' : 'this project',
+    dryRun: opts.dryRun,
+    yes: opts.yes,
+    backup: opts.backup,
+  });
+  if (outcome === 'aborted') {
+    return;
+  }
+  if (outcome === 'empty') {
+    console.log(`Nothing to change for ${names} — already at mode ${mode}.`);
+    return;
+  }
+  const suffix = outcome === 'dryRun' ? ' (dry-run: nothing written)' : '';
   // name the installed hook-command form when a hook-bearing agent is present
   const styleNote = !needsHookBundle && !hasCopilot
     ? ''
@@ -136,7 +214,7 @@ export async function installForAgents(
       : ' Hook command: absolute (this machine).';
   console.log(`Mode ${mode} installed for ${names}.${styleNote} ${effectNote(agents)}${suffix}`);
   if (hasCopilot && opts.global === true) {
-    const verb = opts.dryRun === true ? 'would be installed' : 'installed';
+    const verb = outcome === 'dryRun' ? 'would be installed' : 'installed';
     console.log(
       `Copilot --global: hook ${verb} machine-wide (Copilot CLI); instructions were NOT installed (no global mechanism) — run init --agent copilot in each repo for instruction packs.`,
     );
