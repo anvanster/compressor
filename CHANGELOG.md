@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-06-14
+
+### Fixed
+
+- **Export the backup/restore API from the package root.** 0.3.2 shipped the
+  backup module but only re-exported it on the internal adapters barrel, so
+  consumers importing from `@astudioplus/compressor` (the VS Code extension)
+  could not reach `applyWithBackup` / `writeBackup` / `listBackups` /
+  `readManifest` / `planRestore` / `resolveBackupDir` (or the `ApplyOptions` /
+  `ApplyResult` / `BackupManifest` / `BackupSummary` types). They are now
+  exported from the root, with a regression test pinning the public surface.
+
 ## [0.3.2] - 2026-06-14
 
 ### Added

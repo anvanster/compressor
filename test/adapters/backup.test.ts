@@ -110,6 +110,23 @@ test('applyWithBackup aborts without modifying when the backup cannot be written
   assert.equal(await readFile(file, 'utf8'), 'SAFE', 'target file untouched after backup failure');
 });
 
+test('the backup API is exported from the PACKAGE ROOT (not just the adapters barrel)', async () => {
+  // 0.3.2 shipped backup.js but never re-exported it from src/index.ts, so
+  // consumers importing from '@astudioplus/compressor' (the VS Code extension)
+  // could not reach applyWithBackup. Guard the package-root surface here.
+  const root = await import('../../src/index.ts');
+  for (const name of [
+    'applyWithBackup',
+    'writeBackup',
+    'listBackups',
+    'readManifest',
+    'planRestore',
+    'resolveBackupDir',
+  ]) {
+    assert.equal(typeof (root as Record<string, unknown>)[name], 'function', `root exports ${name}`);
+  }
+});
+
 test('listBackups: newest first', async () => {
   const { backups, file } = await tmp();
   await writeBackup([{ path: file, before: 'a', after: 'b' }], {
