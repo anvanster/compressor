@@ -133,6 +133,18 @@ program
   );
 
 program
+  .command('retrieve')
+  .description(
+    'fetch the exact bytes a compression marker omitted; prints to stdout (CCR). The hook passes this command’s output through uncompressed.',
+  )
+  .argument('<handle>', 'the retrieve handle from a `compressor retrieve <handle>` marker')
+  .option('--lines <range>', 'a 1-based inclusive line range A-B to slice from the chunk')
+  .action(async (handle: string, opts: { lines?: string }) => {
+    const { runRetrieve } = await import('./commands/retrieve.ts');
+    await runRetrieve(handle, opts);
+  });
+
+program
   .command('count')
   .description('count tokens per file (estimated by default, --exact via Anthropic API)')
   .argument('<file...>', 'files to count')
