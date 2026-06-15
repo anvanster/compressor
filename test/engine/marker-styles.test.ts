@@ -497,6 +497,88 @@ test('idempotency holds for every marker style', () => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// CCR-ON style invariance (the engine boundary for INVARIANT-A-under-CCR).
+// The CCR-OFF "differ only in marker lines" test above proves each style emits
+// distinct descriptive prose. On the CCR-ON (hook) path the NON-FILE marker is
+// a bare swappable placeholder with NO per-style prose — so the engine output
+// must be BYTE-IDENTICAL across plain/deterrent/informative, and the collected
+// placeholders stable. These arms exercise every non-file CCR branch — the line
+// range marker (truncate), the log-filter marker, the count-LINES marker
+// (log-filter then truncate ⇒ positions are no longer file lines), and the
+// count-CHARS marker (truncateChars over one giant line) — not just truncate
+// over bash.
+function bashLogThenTruncate(): string {
+  const passes = Array.from({ length: 200 }, (_, i) => `  ✓ case ${i} ok (2 ms)`);
+  const tail = Array.from(
+    { length: 800 },
+    (_, i) =>
+      `detail line ${String(i).padStart(5, '0')} kaboom processing some payload data here verbose`,
+  );
+  return [
+    'PASS src/a.test.ts',
+    ...passes,
+    'FAIL src/b.test.ts',
+    '  ✗ broke',
+    ...tail,
+    'Tests: 1 failed, 200 passed',
+  ].join('\n');
+}
+
+interface CcrArm {
+  name: string;
+  content: string;
+  expectTransforms: readonly string[];
+}
+
+const CCR_ARMS: readonly CcrArm[] = [
+  { name: 'non-file truncate (range marker)', content: bigBashOutput(), expectTransforms: ['truncate'] },
+  { name: 'non-file log-filter', content: bigTestLog(), expectTransforms: ['log-filter'] },
+  {
+    name: 'non-file log-filter + truncate (count-lines marker)',
+    content: bashLogThenTruncate(),
+    expectTransforms: ['log-filter', 'truncate'],
+  },
+  {
+    name: 'non-file truncate-chars (count-chars marker)',
+    content: `${'A'.repeat(40000)} end`,
+    expectTransforms: ['truncate'],
+  },
+];
+
+const NONFILE_META: CompressMeta = { tool: 'bash', mode: 'slim' };
+
+test('CCR-ON non-file markers are BYTE-IDENTICAL across styles (and placeholders stable)', () => {
+  for (const arm of CCR_ARMS) {
+    const results = STYLES.map((style) =>
+      compress(arm.content, NONFILE_META, styledPolicy(style), estimate, { collectOmissions: true }),
+    );
+    const [plain, deterrent, informative] = results;
+    assert.ok(plain && deterrent && informative);
+    // the intended transform(s) actually fired (so the CCR branch was exercised)
+    for (const id of arm.expectTransforms) {
+      assert.ok(
+        plain.stats.transforms.some((t) => t.id === id),
+        `${arm.name}: expected ${id} to fire, got ${plain.stats.transforms.map((t) => t.id).join(',')}`,
+      );
+    }
+    // omissions were collected and their placeholders are embedded
+    assert.ok(plain.omissions && plain.omissions.length >= 1, `${arm.name}: collected omissions`);
+    for (const o of plain.omissions) {
+      assert.ok(plain.content.includes(o.placeholder), `${arm.name}: placeholder embedded`);
+    }
+    // BYTE-IDENTICAL content across all three styles (the CCR clause carries no
+    // per-style prose — a regression re-introducing style text would diverge here)
+    assert.equal(deterrent.content, plain.content, `${arm.name}: deterrent === plain (CCR-on)`);
+    assert.equal(informative.content, plain.content, `${arm.name}: informative === plain (CCR-on)`);
+    // placeholders stable across styles (same count, same tokens, same order)
+    const placeholders = (r: (typeof results)[number]): string[] =>
+      (r?.omissions ?? []).map((o) => o.placeholder);
+    assert.deepEqual(placeholders(deterrent), placeholders(plain), `${arm.name}: stable placeholders`);
+    assert.deepEqual(placeholders(informative), placeholders(plain), `${arm.name}: stable placeholders`);
+  }
+});
+
 test('compress takes the style from policy.markerStyle (plain default unchanged)', () => {
   const result = compress(
     bigBashOutput(),

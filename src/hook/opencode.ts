@@ -3,6 +3,7 @@ import type { CompressibleCall } from './core.ts';
 import {
   applyRecoveryBudget,
   compressCall,
+  isCompressorRetrieve,
   isRecord,
   noteTruncationIfCut,
   recordCompression,
@@ -76,6 +77,13 @@ export function handleToolExecuteAfter(input: unknown, output: unknown, mode: Mo
       typeof input['sessionID'] === 'string' ? input['sessionID'] : undefined;
     const args = isRecord(input['args']) ? input['args'] : {};
 
+    // CCR passthrough guard (§3): never re-compress the output of a
+    // `compressor retrieve` command — that slice was deliberately pulled back
+    // in full. OpenCode's bash command lives in input.args.command.
+    if (tool === 'bash' && isCompressorRetrieve(args['command'])) {
+      return;
+    }
+
     const raw: CompressibleCall = {
       toolKind: tool,
       targeted: tool === 'read' && (args['offset'] != null || args['limit'] != null),
@@ -88,7 +96,9 @@ export function handleToolExecuteAfter(input: unknown, output: unknown, mode: Mo
     // previously-truncated file is demoted to untargeted (compressed).
     const call = applyRecoveryBudget(raw, sessionId);
 
-    const compressed = compressCall(call, mode);
+    // markerStyle stays default (undefined) for OpenCode; sessionId scopes the
+    // CCR stash so retrieve handles point at this session's chunks.
+    const compressed = compressCall(call, mode, undefined, sessionId);
     if (!compressed.worthwhile) {
       return;
     }

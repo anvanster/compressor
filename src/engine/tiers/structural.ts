@@ -1,9 +1,43 @@
-import type { AppliedTransform, CompressMeta, Estimator, MarkerStyle, Policy } from '../types.ts';
-import { OMISSION_MARKER } from '../types.ts';
+import type {
+  AppliedTransform,
+  CompressMeta,
+  Estimator,
+  MarkerStyle,
+  Omission,
+  Policy,
+} from '../types.ts';
+import { ccrPlaceholder, OMISSION_MARKER } from '../types.ts';
 
 export interface TierResult {
   content: string;
   transform?: AppliedTransform;
+}
+
+/**
+ * CCR omission collector threaded through the NON-FILE marker branches when —
+ * and only when — compress() runs with collectOmissions enabled (the hook
+ * path). It is the engine's purity boundary: `add(text)` mints a unique
+ * placeholder, records {placeholder, text} as DATA, and returns the token to
+ * embed in the marker's recovery clause. NO hashing, NO IO — the impure hook
+ * layer (compressCall) does the stash + placeholder→handle swap. When the sink
+ * is undefined (the default OFF path) markers render exactly today's descriptive
+ * text and nothing is collected (INVARIANT A).
+ */
+export interface OmissionSink {
+  add(text: string): string;
+}
+
+/** A concrete sink: assigns sequential placeholders and accumulates omissions. */
+export function createOmissionSink(): OmissionSink & { omissions: Omission[] } {
+  const omissions: Omission[] = [];
+  return {
+    omissions,
+    add(text: string): string {
+      const placeholder = ccrPlaceholder(omissions.length);
+      omissions.push({ placeholder, text });
+      return placeholder;
+    },
+  };
 }
 
 export function tierResult(before: string, after: string, id: string): TierResult {
@@ -112,6 +146,29 @@ export function formatMatchLines(scan: FailureScan): string {
   return scan.lines.join(', ') + (scan.count > 3 ? ' (first 3)' : '');
 }
 
+// A non-file (Bash/search/MCP) omission marker.
+//   OFF path (sink undefined): returns `descriptive` verbatim — today's exact
+//     marker, byte-for-byte (INVARIANT A).
+//   ON path (sink present): stashes `omitted` and returns the head + a bare
+//     placeholder token as the ENTIRE recovery clause. compressCall swaps the
+//     placeholder for `— retrieve: compressor retrieve <handle>` on stash
+//     success, or `— re-run with a narrower filter (grep, --quiet, head) to
+//     retrieve` defensively on failure (INVARIANT B) — so the swapped marker
+//     reads cleanly and never carries a raw token to the model.
+// The CCR-on form deliberately drops the per-style descriptive prose (deterrent
+// "likely irrelevant", informative match counts): a CCR marker is the hook's
+// own retrieval treatment, not the marker-style experiment baseline, and a bare
+// swappable token keeps the placeholder→clause replacement mechanical and
+// double-separator-free. `head` already ends right after "est tokens)".
+function nonFileMarker(
+  sink: OmissionSink | undefined,
+  head: string,
+  omitted: string,
+  descriptive: string,
+): string {
+  return sink === undefined ? descriptive : `${head} ${sink.add(omitted)}]`;
+}
+
 export function omissionMarker(
   a: number,
   b: number,
@@ -119,10 +176,13 @@ export function omissionMarker(
   meta: CompressMeta,
   style: MarkerStyle,
   omittedLines: readonly string[],
+  sink?: OmissionSink,
 ): string {
   const head = `[compressor: lines ${a}-${b} omitted (~${estTokens} est tokens)`;
   const limit = b - a + 1;
   if (meta.tool === 'read' && meta.filePath !== undefined) {
+    // FILE-READ branch: unchanged, no CCR. File cuts keep today's offset/limit
+    // re-read marker (staleness-proof, §7/B) and never touch the sink.
     const file = meta.filePath;
     if (style === 'deterrent') {
       return `${head} — likely irrelevant; Read ${file} offset=${a} limit=${limit} ONLY if the problem you are chasing points into this range]`;
@@ -137,17 +197,24 @@ export function omissionMarker(
     }
     return `${head} — Read ${file} with offset=${a} and limit=${limit} to retrieve]`;
   }
-  if (style === 'deterrent') {
-    return `${head} — likely irrelevant; re-run with a narrower filter (grep, --quiet, head) ONLY if the problem you are chasing points into this range]`;
+  // NON-FILE branch (Bash/search/MCP): the recovery clause is CCR-eligible.
+  const omitted = omittedLines.join('\n');
+  const descriptive =
+    style === 'deterrent'
+      ? `${head} — likely irrelevant; re-run with a narrower filter (grep, --quiet, head) ONLY if the problem you are chasing points into this range]`
+      : style === 'informative'
+        ? informativeRangeMarker(head, a, omittedLines)
+        : `${head} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
+  return nonFileMarker(sink, head, omitted, descriptive);
+}
+
+/** The off-path informative non-file marker for a line range (today's exact text). */
+function informativeRangeMarker(head: string, a: number, omittedLines: readonly string[]): string {
+  const scan = scanFailureLines(omittedLines, a);
+  if (scan.count === 0) {
+    return `${head} — no error/failure/warning lines in the omitted range; safe to skip. Re-run with a narrower filter (grep, --quiet, head) only if needed]`;
   }
-  if (style === 'informative') {
-    const scan = scanFailureLines(omittedLines, a);
-    if (scan.count === 0) {
-      return `${head} — no error/failure/warning lines in the omitted range; safe to skip. Re-run with a narrower filter (grep, --quiet, head) only if needed]`;
-    }
-    return `${head} — ${scan.count} lines matching error/fail/warn at lines ${formatMatchLines(scan)} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
-  }
-  return `${head} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
+  return `${head} — ${scan.count} lines matching error/fail/warn at lines ${formatMatchLines(scan)} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
 }
 
 /** For omissions whose original file line range is unknown: no offset/limit claim. */
@@ -158,9 +225,11 @@ function countMarker(
   meta: CompressMeta,
   style: MarkerStyle,
   omitted: string,
+  sink?: OmissionSink,
 ): string {
   const head = `[compressor: ${count} ${unit} omitted (~${estTokens} est tokens)`;
   if (meta.tool === 'read' && meta.filePath !== undefined) {
+    // FILE-READ branch: unchanged, no CCR (staleness-proof re-read; §7/B).
     const file = meta.filePath;
     if (style === 'deterrent') {
       return `${head} — likely irrelevant; Read ${file} ONLY if the problem you are chasing points into the omitted content]`;
@@ -173,16 +242,22 @@ function countMarker(
     }
     return `${head} — Read ${file} to retrieve]`;
   }
-  if (style === 'deterrent') {
-    return `${head} — likely irrelevant; re-run with a narrower filter (grep, --quiet, head) ONLY if the problem you are chasing points into the omitted content]`;
-  }
-  if (style === 'informative') {
-    const matches = scanFailureLines(omitted.split('\n')).count;
-    return matches === 0
-      ? `${head} — no error/failure/warning lines in the omitted content; safe to skip. Re-run with a narrower filter (grep, --quiet, head) only if needed]`
-      : `${head} — ${matches} lines matching error/fail/warn in the omitted content — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
-  }
-  return `${head} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
+  // NON-FILE branch (Bash/search/MCP): the recovery clause is CCR-eligible.
+  const descriptive =
+    style === 'deterrent'
+      ? `${head} — likely irrelevant; re-run with a narrower filter (grep, --quiet, head) ONLY if the problem you are chasing points into the omitted content]`
+      : style === 'informative'
+        ? informativeCountMarker(head, omitted)
+        : `${head} — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
+  return nonFileMarker(sink, head, omitted, descriptive);
+}
+
+/** The off-path informative non-file count marker (today's exact text). */
+function informativeCountMarker(head: string, omitted: string): string {
+  const matches = scanFailureLines(omitted.split('\n')).count;
+  return matches === 0
+    ? `${head} — no error/failure/warning lines in the omitted content; safe to skip. Re-run with a narrower filter (grep, --quiet, head) only if needed]`
+    : `${head} — ${matches} lines matching error/fail/warn in the omitted content — re-run with a narrower filter (grep, --quiet, head) to retrieve]`;
 }
 
 /** Fallback for content too few-lined to truncate by lines (minified blobs etc.). */
@@ -191,6 +266,7 @@ function truncateChars(
   meta: CompressMeta,
   policy: Policy,
   estimate: Estimator,
+  sink?: OmissionSink,
 ): TierResult {
   const est = estimate(content);
   const ratio = policy.truncateBudget / est;
@@ -205,6 +281,7 @@ function truncateChars(
     meta,
     policy.markerStyle,
     omitted,
+    sink,
   );
   const next = `${content.slice(0, headChars)}\n${marker}\n${content.slice(content.length - tailChars)}`;
   return tierResult(content, next, 'truncate');
@@ -216,6 +293,7 @@ export function truncateHeadTail(
   policy: Policy,
   estimate: Estimator,
   positionsAreFileLines = true,
+  sink?: OmissionSink,
 ): TierResult {
   const est = estimate(content);
   if (est <= policy.truncateBudget) return { content };
@@ -223,7 +301,7 @@ export function truncateHeadTail(
   const total = lines.length;
   const ratio = policy.truncateBudget / est;
   const keep = Math.max(2, Math.floor(total * ratio));
-  if (keep >= total) return truncateChars(content, meta, policy, estimate);
+  if (keep >= total) return truncateChars(content, meta, policy, estimate, sink);
   const headCount = Math.max(1, Math.floor(keep * 0.6));
   const tailCount = Math.max(1, keep - headCount);
   const omitStart = headCount + 1;
@@ -238,10 +316,18 @@ export function truncateHeadTail(
   const b = lineNumberOf(omittedLines[omittedLines.length - 1] ?? '');
   const marker =
     a !== undefined && b !== undefined && a <= b
-      ? omissionMarker(a, b, estOmitted, meta, policy.markerStyle, omittedLines)
+      ? omissionMarker(a, b, estOmitted, meta, policy.markerStyle, omittedLines, sink)
       : positionsAreFileLines
-        ? omissionMarker(omitStart, omitEnd, estOmitted, meta, policy.markerStyle, omittedLines)
-        : countMarker(omittedLines.length, 'lines', estOmitted, meta, policy.markerStyle, omitted);
+        ? omissionMarker(omitStart, omitEnd, estOmitted, meta, policy.markerStyle, omittedLines, sink)
+        : countMarker(
+            omittedLines.length,
+            'lines',
+            estOmitted,
+            meta,
+            policy.markerStyle,
+            omitted,
+            sink,
+          );
   const next = [...lines.slice(0, headCount), marker, ...lines.slice(total - tailCount)].join('\n');
   return tierResult(content, next, 'truncate');
 }
