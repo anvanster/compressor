@@ -174,16 +174,25 @@ function errorText(error: unknown): string {
 /** Synthetic over-budget PostToolUse payload: distinct rows so only the
  * truncation tier fires and its marker line carries the style. ~51k chars
  * (~14.6k est tokens) clears every mode's touch and truncate thresholds. */
+// A FILE READ, not bash: CCR (Phase 2) supersedes the marker-style recovery
+// clause for non-file (bash/search/MCP) output — plain and deterrent become
+// byte-identical there (both carry a content-addressed retrieve handle). File
+// reads are NOT CCR-eligible (staleness-proof re-read; CCR-PLAN §7/B), so their
+// offset/limit markers still vary by style — the property this preflight needs
+// to discriminate a flag-honoring bundle from a stale flag-blind one.
 function markerStylePreflightPayload(): string {
+  const filePath = '/preflight/marker-style-probe.txt';
   const rows = Array.from(
     { length: 900 },
-    (_, i) => `row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur adipiscing`,
+    (_, i) =>
+      `${String(i + 1).padStart(6)}→row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur`,
   ).join('\n');
   return JSON.stringify({
-    tool_name: 'Bash',
-    tool_input: { command: 'echo preflight' },
+    session_id: 'preflight-marker-style-session',
+    tool_name: 'Read',
+    tool_input: { file_path: filePath },
     tool_use_id: 'toolu_preflight',
-    tool_response: { stdout: rows, stderr: '', interrupted: false, isImage: false },
+    tool_response: { type: 'text', file: { filePath, content: rows } },
   });
 }
 
@@ -362,7 +371,14 @@ export async function assertHookHandlesRecoveryBudget(baseHookCommand: string): 
 
 export async function assertHookHandlesMarkerStyle(baseHookCommand: string): Promise<void> {
   const payload = markerStylePreflightPayload();
-  const env = { ...process.env, COMPRESSOR_NO_LEDGER: '1' };
+  // Disable the recovery budget for the probe: the payload is now a file Read,
+  // and recording a truncation would otherwise write recovery state to the real
+  // dir. (Bash payloads, which this used to be, never touched that state.)
+  const env = {
+    ...process.env,
+    COMPRESSOR_NO_LEDGER: '1',
+    COMPRESSOR_NO_RECOVERY_BUDGET: '1',
+  };
   const outputs: string[] = [];
   for (const style of ['plain', 'deterrent'] as const) {
     let stdout: string;

@@ -3,6 +3,7 @@ import type { CompressibleCall, Leaf } from './core.ts';
 import {
   applyRecoveryBudget,
   compressCall,
+  isCompressorRetrieve,
   isRecord,
   noteTruncationIfCut,
   pickLeaf,
@@ -129,6 +130,13 @@ export function handleCopilotPostToolUse(
       return { output: null };
     }
 
+    // CCR passthrough guard (§3): never re-compress the output of a
+    // `compressor retrieve` command — that slice was deliberately pulled back
+    // in full. Copilot's bash command lives in the (sniffed) toolArgs.
+    if (tool === 'bash' && isCompressorRetrieve(toolArgs['command'])) {
+      return { output: null };
+    }
+
     // Documented shape: the text the model sees is toolResult.textResultForLlm.
     // Unknown shapes fall back to the generic longest-string-leaf walk.
     let text: string | null = null;
@@ -156,7 +164,7 @@ export function handleCopilotPostToolUse(
     // previously-truncated file is demoted to untargeted (compressed).
     const call = applyRecoveryBudget(raw, sessionId);
 
-    const compressed = compressCall(call, mode, markerStyle);
+    const compressed = compressCall(call, mode, markerStyle, sessionId);
     if (!compressed.worthwhile) {
       return { output: null };
     }

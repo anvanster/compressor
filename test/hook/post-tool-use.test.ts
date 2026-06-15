@@ -15,6 +15,11 @@ import { settleRecovery } from '../../src/hook/recovery.ts';
 // test/hook/recovery.test.ts).
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_RECOVERY_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-ptu-recovery-'));
+// CCR stash is default-on for the hook path; point it at a temp dir so the
+// non-file (bash) retrieve markers below write hermetically, never touching the
+// real os.tmpdir()/compressor-ccr. (Handles are returned fail-open regardless,
+// so markers stay deterministic.)
+process.env['COMPRESSOR_CCR_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-ptu-ccr-'));
 
 function repetitiveLog(lines: number): string {
   return Array.from(
@@ -39,6 +44,11 @@ interface Envelope<T> {
 
 function bashPayload(stdout: string): string {
   return JSON.stringify({
+    // A usable session_id is required for the CCR stash to actually persist a
+    // chunk; without it the marker would degrade to the descriptive re-run hint
+    // (an unwritten chunk is a guaranteed retrieve miss — see the empty-session
+    // wiring test in ccr-wiring.test.ts).
+    session_id: 'sess-ptu',
     tool_name: 'Bash',
     tool_input: { command: 'cargo build 2>&1' },
     tool_use_id: 'toolu_01',
@@ -264,35 +274,41 @@ function stdoutOf(output: string | null): string {
   return (JSON.parse(output) as Envelope<BashOutput>).hookSpecificOutput.updatedToolOutput.stdout;
 }
 
-test('marker style defaults to the policy value (plain)', () => {
+// CCR (Phase 2) supersedes the marker-STYLE recovery clause for NON-FILE
+// (bash/search/MCP) outputs on the hook path: instead of a style-specific
+// re-run hint, the marker now carries a content-addressed retrieve handle
+// (`— retrieve: compressor retrieve <handle>`), the same across every style.
+// File-read markers keep their offset/limit style variants — exercised at the
+// engine level in test/engine/marker-styles.test.ts (CCR doesn't touch them).
+test('bash output gets a CCR retrieve marker by default (CCR on)', () => {
   const stdout = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
-  assert.match(stdout, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
+  assert.match(stdout, /— retrieve: compressor retrieve [A-Za-z0-9_-]{16}\]/);
+  // INVARIANT B: no raw placeholder token may reach the model
+  assert.ok(!stdout.includes('⟦ccr:'), 'no raw placeholder leaked');
   assert.ok(!stdout.includes('likely irrelevant'));
 });
 
-test('--marker-style deterrent override changes ONLY the marker line', () => {
+test('marker style no longer changes the bash recovery clause (CCR supersedes it)', () => {
   const plain = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
   const deterrent = stdoutOf(
     handlePostToolUse(bashPayload(distinctLog(600)), 'slim', 'deterrent').output,
   );
-  assert.ok(deterrent.includes('likely irrelevant'), 'deterrent phrasing present');
-  assert.ok(deterrent.includes('ONLY if the problem you are chasing'));
-  const sansMarkers = (text: string): string =>
-    text
-      .split('\n')
-      .filter((line) => !line.includes('[compressor:'))
-      .join('\n');
-  assert.equal(sansMarkers(deterrent), sansMarkers(plain), 'non-marker content identical');
+  // both arms emit the same CCR retrieve clause; the deterrent prose is gone
+  assert.ok(!deterrent.includes('likely irrelevant'), 'no style prose on the CCR path');
+  assert.match(deterrent, /— retrieve: compressor retrieve [A-Za-z0-9_-]{16}\]/);
+  // deterministic handle ⇒ identical input yields byte-identical output
+  assert.equal(deterrent, plain, 'CCR marker is style-invariant for non-file output');
 });
 
-test('--marker-style informative override reports the omitted-range scan', () => {
-  const rows = distinctLog(600).split('\n');
-  rows[300] = 'Error: kaboom while processing row 00300'; // 1-based line 301
-  const stdout = stdoutOf(
-    handlePostToolUse(bashPayload(rows.join('\n')), 'slim', 'informative').output,
-  );
-  assert.ok(
-    stdout.includes('1 lines matching error/fail/warn at lines 301'),
-    `expected scan report in: ${stdout.slice(0, 400)}`,
-  );
+test('COMPRESSOR_NO_CCR=1 falls back to the descriptive re-run hint, no placeholder', (t) => {
+  const saved = process.env['COMPRESSOR_NO_CCR'];
+  process.env['COMPRESSOR_NO_CCR'] = '1';
+  t.after(() => {
+    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
+    else process.env['COMPRESSOR_NO_CCR'] = saved;
+  });
+  const stdout = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
+  assert.match(stdout, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
+  assert.ok(!stdout.includes('⟦ccr:'), 'no raw placeholder leaked under the kill switch');
+  assert.ok(!stdout.includes('compressor retrieve'), 'no retrieve handle when CCR is off');
 });

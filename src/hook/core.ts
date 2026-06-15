@@ -1,9 +1,17 @@
-import type { CompressMeta, CompressStats, MarkerStyle, Mode, ToolKind } from '../engine/types.ts';
+import type {
+  CompressMeta,
+  CompressResult,
+  CompressStats,
+  MarkerStyle,
+  Mode,
+  ToolKind,
+} from '../engine/types.ts';
 import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
 import type { LedgerEvent } from '../ledger/write.ts';
 import { appendLedger } from '../ledger/write.ts';
+import { ccrDisabled, stashChunk } from './ccr.ts';
 import {
   noteRecoveryRead,
   noteTruncation,
@@ -59,10 +67,76 @@ function lengthSansMarkers(text: string): number {
     .join('\n').length;
 }
 
+/**
+ * The descriptive recovery clause substituted for any CCR placeholder that
+ * could NOT be turned into a real handle (stash disabled/failed/partial, or a
+ * stray token from a malformed result). It is exactly the plain non-file
+ * re-run hint the engine emits when CCR is off, so the model still has a
+ * working recovery path. INVARIANT B's defensive backstop: after this runs, no
+ * ENGINE-MINTED `⟦ccr:N⟧` can remain in the content the model sees (a model-
+ * supplied literal of the same shape in kept content is left untouched).
+ */
+const CCR_FALLBACK_CLAUSE = '— re-run with a narrower filter (grep, --quiet, head) to retrieve';
+
+/**
+ * Turn the engine's placeholder-bearing content into model-safe content
+ * (INVARIANT B). When CCR is enabled AND the stash actually persisted (usable
+ * sessionId): for each collected omission, stash the exact bytes and replace
+ * its unique placeholder with a real retrieve instruction. Then DEFENSIVELY
+ * replace any placeholder THE ENGINE MINTED IN THIS RESULT that still survives
+ * — a lingering token (kill switch / unwritten stash) — with the descriptive
+ * fallback clause, so a stash miss/disable degrades to today's working re-run
+ * hint and a raw `⟦ccr:N⟧` can never reach the model. Throws propagate to
+ * compressCall, which fails open to the ORIGINAL uncompressed text.
+ *
+ * SCOPING (model-literal safety): the backstop only sweeps the EXACT tokens
+ * this result's omissions carry — never the open-ended `⟦ccr:\d+⟧` pattern —
+ * so a model-supplied literal `⟦ccr:N⟧` in KEPT content is left untouched
+ * (it was never an engine token; rewriting it would corrupt kept output). The
+ * engine owns only `result.omissions`; nothing outside that set is ours to
+ * replace.
+ *
+ * The kill switch (COMPRESSOR_NO_CCR=1) and a non-persisting stash (empty/
+ * unusable sessionId) both short-circuit the stash loop entirely: no writes,
+ * no `compressor retrieve` markers that would only ever miss — every minted
+ * placeholder falls straight through to the descriptive fallback.
+ */
+function swapPlaceholders(content: string, result: CompressResult, sessionId: string): string {
+  let swapped = content;
+  const omissions = result.omissions ?? [];
+  // Stash only when CCR is on AND the write can actually land: an empty/unusable
+  // sessionId never persists a chunk (sessionDir() rejects it), so emitting a
+  // `compressor retrieve <handle>` marker for it would be a guaranteed miss.
+  // Treat it like the kill switch — let the placeholder fall through to the
+  // defensive fallback (today's working re-run hint).
+  if (!ccrDisabled() && sessionId !== '') {
+    for (const omission of omissions) {
+      // stashChunk is fail-open: it always returns a handle (even if writing
+      // fails); a later retrieve miss degrades to the re-run hint. The handle is
+      // deterministic (hash of text) so the swapped marker is byte-stable for a
+      // given input — prompt-cache friendly.
+      const handle = stashChunk(sessionId, omission.text);
+      swapped = swapped
+        .split(omission.placeholder)
+        .join(`— retrieve: compressor retrieve ${handle}`);
+    }
+  }
+  // Defensive backstop, SCOPED to engine-minted tokens: replace only the exact
+  // placeholders this result carries. A token left here means its stash was
+  // skipped (kill switch / unusable sessionId) — degrade it to the re-run hint.
+  // Model-supplied `⟦ccr:N⟧` literals in kept content are NOT in this set and
+  // are preserved verbatim.
+  for (const omission of omissions) {
+    swapped = swapped.split(omission.placeholder).join(CCR_FALLBACK_CLAUSE);
+  }
+  return swapped;
+}
+
 export function compressCall(
   call: CompressibleCall,
   mode: Mode,
   markerStyle?: MarkerStyle,
+  sessionId?: string,
 ): CompressedCall {
   try {
     const meta: CompressMeta = { tool: call.toolKind, mode, targeted: call.targeted };
@@ -71,15 +145,27 @@ export function compressCall(
     }
     const base = policyFor(mode);
     const policy = markerStyle === undefined ? base : { ...base, markerStyle };
-    const result = compress(call.text, meta, policy, cheapEstimator);
-    // marker-stripped so worthwhileness is style-invariant (see above)
+    // CCR omission-collection is ON only here (the hook path): the engine emits
+    // placeholder tokens for non-file cuts and carries the omitted bytes out as
+    // data. Every other caller leaves it OFF and sees today's markers verbatim.
+    const result = compress(call.text, meta, policy, cheapEstimator, { collectOmissions: true });
+    // marker-stripped so worthwhileness is style-invariant (see above). The
+    // placeholder lives INSIDE a `[compressor: …]` marker line, so the floor —
+    // which already excludes marker lines — stays content-only with or without
+    // CCR; computing it before the swap is therefore identical to after.
     const saved = call.text.length - lengthSansMarkers(result.content);
     if (saved < MIN_SAVED_CHARS || saved < call.text.length * MIN_SAVED_RATIO) {
+      // Below floor ⇒ original returned ⇒ no placeholders were ever in scope and
+      // no stash writes happen (the swap is skipped) — no waste, nothing leaks.
       return { text: call.text, worthwhile: false };
     }
-    return { text: result.content, worthwhile: true, stats: result.stats };
+    // Worthwhile ⇒ make the content model-safe: stash + placeholder→handle, then
+    // the defensive sweep. INVARIANT B: a raw placeholder must never leave here.
+    const text = swapPlaceholders(result.content, result, sessionId ?? '');
+    return { text, worthwhile: true, stats: result.stats };
   } catch {
-    // FAIL-OPEN: a broken hook must never break the user's agent.
+    // FAIL-OPEN: a broken hook (incl. any error in the stash/swap path) must
+    // never break the user's agent — return the ORIGINAL uncompressed text.
     return { text: call.text, worthwhile: false };
   }
 }
@@ -179,6 +265,23 @@ export function recordCompression(
   } catch {
     // FAIL-OPEN: the ledger must never break the hook.
   }
+}
+
+/**
+ * CCR passthrough detector (§3): true when a value is a bash/command string
+ * that invokes `compressor retrieve`. The output of such a command is an exact
+ * original slice the model deliberately pulled back from the stash; re-running
+ * compression on it would re-cut and re-stash content that is, by definition,
+ * wanted in full — so each protocol layer treats a positive match as a no-op.
+ *
+ * Robust + best-effort: accepts any whitespace between the words (so
+ * `compressor   retrieve`, a leading path like `npx compressor retrieve`, or a
+ * pipeline still matches), case-insensitively. A non-string input is not a
+ * command and returns false — the caller then compresses normally (fail-safe:
+ * the worst case is compressing a retrieved slice, never a crash).
+ */
+export function isCompressorRetrieve(command: unknown): boolean {
+  return typeof command === 'string' && /\bcompressor\s+retrieve\b/i.test(command);
 }
 
 export type LeafPath = ReadonlyArray<string | number>;
