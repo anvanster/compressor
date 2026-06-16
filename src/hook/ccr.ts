@@ -59,34 +59,41 @@ const HANDLE_RE = /^[A-Za-z0-9_-]{16}$/;
 /** Session-dir naming: the same sanitized alphabet sessionDir() can ever emit. */
 const SESSION_DIR_RE = /^[A-Za-z0-9._-]{1,128}$/;
 
-/** Kill switch: COMPRESSOR_NO_CCR=1 turns the stash fully off (writes and reads). */
-export function ccrDisabled(): boolean {
-  return process.env['COMPRESSOR_NO_CCR'] === '1';
+/**
+ * Opt-in gate: CCR is OFF by default and active ONLY when COMPRESSOR_CCR=1.
+ * Absent, empty, '0', or any other value leaves the stash fully off (writes and
+ * reads). There is no kill switch — off IS the default; the var only turns CCR
+ * ON.
+ */
+export function ccrEnabled(): boolean {
+  return process.env['COMPRESSOR_CCR'] === '1';
 }
 
 /**
- * Apply a `--ccr <on|off>` argv override by setting the env var the kill switch
- * (ccrDisabled) reads at call time — argv wins over env with zero signature
- * churn through the protocol layers, exactly like recovery.ts's
+ * Apply a `--ccr <on|off>` argv override by setting the env var the opt-in gate
+ * (ccrEnabled / COMPRESSOR_CCR) reads at call time — argv wins over env with
+ * zero signature churn through the protocol layers, exactly like recovery.ts's
  * applyRecoveryBudgetArg. Benchmarks use this to vary CCR PER ARM in ONE run
- * (`--hook-arg-arms "ccr-on=,ccr-off=--ccr off"`): the env is global to a run,
- * but hook commands are per-variant, so the flag toggles the kill switch for
- * just that arm's hook invocations.
+ * (`--hook-arg-arms "ccr-on=--ccr on,ccr-off="`): the env is global to a run,
+ * but hook commands are per-variant, so the flag toggles CCR for just that arm's
+ * hook invocations.
  *
- * Fail-open: a missing or unrecognized value changes nothing (the env-level
- * kill switch keeps whatever it already was). `off` sets COMPRESSOR_NO_CCR=1;
- * `on` deletes it (so a later `on` arm re-enables after an `off` arm in the
- * same process, argv-wins-deterministic, mirroring the recovery toggle).
+ * POLARITY FLIP (vs the old kill-switch comment): CCR is now default-OFF opt-in,
+ * so `on` ENABLES (sets COMPRESSOR_CCR=1) and `off` returns to the default by
+ * DELETING the var. A later `on` arm re-enables after an `off` arm in the same
+ * process (argv-wins-deterministic across sequential arms, mirroring the
+ * recovery toggle). Fail-open: a missing or unrecognized value changes nothing
+ * (the env-level state keeps whatever it already was — and the default is off).
  */
 export function applyCcrArg(argv: readonly string[]): void {
   const idx = argv.indexOf('--ccr');
   const value = idx === -1 ? undefined : argv[idx + 1]?.trim();
-  if (value === 'off') {
-    process.env['COMPRESSOR_NO_CCR'] = '1';
+  if (value === 'on') {
+    process.env['COMPRESSOR_CCR'] = '1';
     return;
   }
-  if (value === 'on') {
-    delete process.env['COMPRESSOR_NO_CCR'];
+  if (value === 'off') {
+    delete process.env['COMPRESSOR_CCR'];
   }
 }
 
@@ -273,7 +280,7 @@ export function stashChunk(sessionId: string, text: string): string {
   let handle = '';
   try {
     handle = handleFor(text);
-    if (ccrDisabled()) {
+    if (!ccrEnabled()) {
       return handle;
     }
     const root = resolveCcrDir();
@@ -419,8 +426,9 @@ export { readFileNoFollow as _readFileNoFollowForTest };
  * The handle is VALIDATED against the strict allowlist and REJECTED (null) if
  * it doesn't match — a handle is never sanitized, because a sanitized handle is
  * no longer the hash of anything and a malformed one (`../`, absolute, overlong)
- * is an attack, not a typo. Returns null on a kill switch, validation failure,
- * miss, or any error (fail-open). Path safety lives in locateChunk; the final
+ * is an attack, not a typo. Returns null when CCR is off (the default), on a
+ * validation failure, miss, or any error (fail-open). Path safety lives in
+ * locateChunk; the final
  * read is O_NOFOLLOW-hardened (readFileNoFollow) to close the lstat→read
  * symlink-swap TOCTOU.
  */
@@ -429,7 +437,7 @@ export async function readChunk(
   lines?: { start: number; end: number },
 ): Promise<string | null> {
   try {
-    if (ccrDisabled()) {
+    if (!ccrEnabled()) {
       return null;
     }
     // strict allowlist — reject, never sanitize
@@ -539,7 +547,7 @@ async function capSession(session: SessionFiles): Promise<void> {
  */
 export async function sweep(keepSession?: string): Promise<void> {
   try {
-    if (ccrDisabled()) {
+    if (!ccrEnabled()) {
       return;
     }
     const root = resolveCcrDir();

@@ -413,10 +413,17 @@ export async function assertCcrRetrieveWorks(
   cellPath: string,
 ): Promise<void> {
   const ccrDir = await mkdtemp(path.join(tmpdir(), 'compressor-preflight-ccr-'));
+  // CCR is default-OFF opt-in: the retrieve subprocesses below read the stash and
+  // must run with CCR ENABLED (COMPRESSOR_CCR=1), exactly as a CCR-on cell's
+  // `compressor retrieve` does — otherwise readChunk no-ops and every round-trip
+  // is a guaranteed miss. (The hook invocation enables CCR via its `--ccr on`
+  // argv, which applyCcrArg maps to COMPRESSOR_CCR=1 in that subprocess; setting
+  // it here covers the retrieve subprocesses that take no such flag.)
   const env = {
     ...process.env,
     PATH: cellPath,
     COMPRESSOR_NO_LEDGER: '1',
+    COMPRESSOR_CCR: '1',
     COMPRESSOR_CCR_DIR: ccrDir,
   };
   try {
@@ -561,11 +568,15 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     ...(competitors.length > 0 ? { competitors } : {}),
   });
 
-  // Treatment-delivery canary for the CCR A/B (CCR-2): a malformed arm spec
-  // fails OPEN toward CCR-ON (the more expensive arm) and silently, so when a
-  // `--ccr` experiment is configured, REQUIRE exactly one arm to disable CCR and
-  // at least one to leave it on — otherwise both arms measure the same treatment
-  // and the run is pure noise. applyCcrArg recognizes only `--ccr off`/`--ccr on`.
+  // Treatment-delivery canary for the CCR A/B (CCR-2): CCR is now default-OFF
+  // opt-in (COMPRESSOR_CCR=1 enables; absent = off), so a malformed/absent arm
+  // fails toward CCR-OFF (the baseline). The new silent-failure risk INVERTS:
+  // an "on" arm that omits an explicit `--ccr on` measures off-vs-off and the
+  // run is pure noise. So when a `--ccr` experiment is configured, REQUIRE the
+  // ON treatment to be EXPLICITLY present (`--ccr on`) and exactly one arm to be
+  // the off baseline (empty args, or an explicit `--ccr off`). This canary
+  // guarantees the ON treatment is actually delivered, not silently absent.
+  // applyCcrArg recognizes only `--ccr on`/`--ccr off`.
   const hasCcrArm = hookArgArms.some((arm) => /(^|\s)--ccr(\s|$)/.test(arm.args));
   if (hasCcrArm) {
     const armCcrState = (args: string): 'off' | 'on' => {
@@ -573,17 +584,18 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
       const v = m?.[1];
       if (v !== undefined && v !== 'off' && v !== 'on') {
         throw new Error(
-          `--hook-arg-arms: unrecognized '--ccr ${v}' (expected 'on' or 'off') — applyCcrArg would ignore it and the arm would fail toward CCR-ON, silently measuring the same treatment as the on-arm`,
+          `--hook-arg-arms: unrecognized '--ccr ${v}' (expected 'on' or 'off') — applyCcrArg would ignore it and the arm would fail toward CCR-OFF (the baseline), silently measuring the same treatment as the off-arm`,
         );
       }
-      // applyCcrArg fail-open: only `off` disables CCR; anything else leaves it on
-      return v === 'off' ? 'off' : 'on';
+      // CCR is default-off opt-in: it is ON only when `--ccr on` is explicit;
+      // an explicit `--ccr off` OR an absent flag leaves it at the off baseline.
+      return v === 'on' ? 'on' : 'off';
     };
     const offArms = hookArgArms.filter((arm) => armCcrState(arm.args) === 'off');
     const onArms = hookArgArms.filter((arm) => armCcrState(arm.args) === 'on');
     if (offArms.length !== 1 || onArms.length < 1) {
       throw new Error(
-        `--hook-arg-arms CCR A/B requires exactly ONE arm with '--ccr off' and at least one without (CCR on); got ${offArms.length} off / ${onArms.length} on. Use e.g. --hook-arg-arms 'ccr-on=,ccr-off=--ccr off'.`,
+        `--hook-arg-arms CCR A/B requires exactly ONE off-baseline arm (empty args or '--ccr off') and at least one arm with an EXPLICIT '--ccr on'; got ${offArms.length} off / ${onArms.length} on. Use e.g. --hook-arg-arms 'ccr-on=--ccr on,ccr-off='.`,
       );
     }
   }

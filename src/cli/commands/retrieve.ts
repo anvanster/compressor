@@ -58,7 +58,7 @@ function parseRange(value: string | undefined): { start: number; end: number } |
 /**
  * Print the exact stashed bytes for `handle` (or a 1-based inclusive line
  * sub-range via --lines) to stdout. On a miss — bad/expired handle, a rejected
- * (e.g. traversal) handle, the kill switch, or any store error — write a concise
+ * (e.g. traversal) handle, CCR being off (the default), or any store error — write a concise
  * re-run note to stderr and set a NON-ZERO exit code so the model sees the miss.
  *
  * NEVER throws (fail-open): a thrown readChunk or write is caught and treated as
