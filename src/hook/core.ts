@@ -11,7 +11,7 @@ import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
 import type { LedgerEvent } from '../ledger/write.ts';
 import { appendLedger } from '../ledger/write.ts';
-import { ccrDisabled, stashChunk } from './ccr.ts';
+import { ccrEnabled, stashChunk } from './ccr.ts';
 import {
   noteRecoveryRead,
   noteTruncation,
@@ -84,7 +84,7 @@ const CCR_FALLBACK_CLAUSE = '— re-run with a narrower filter (grep, --quiet, h
  * sessionId): for each collected omission, stash the exact bytes and replace
  * its unique placeholder with a real retrieve instruction. Then DEFENSIVELY
  * replace any placeholder THE ENGINE MINTED IN THIS RESULT that still survives
- * — a lingering token (kill switch / unwritten stash) — with the descriptive
+ * — a lingering token (CCR off by default / unwritten stash) — with the descriptive
  * fallback clause, so a stash miss/disable degrades to today's working re-run
  * hint and a raw `⟦ccr:N⟧` can never reach the model. Throws propagate to
  * compressCall, which fails open to the ORIGINAL uncompressed text.
@@ -96,10 +96,11 @@ const CCR_FALLBACK_CLAUSE = '— re-run with a narrower filter (grep, --quiet, h
  * engine owns only `result.omissions`; nothing outside that set is ours to
  * replace.
  *
- * The kill switch (COMPRESSOR_NO_CCR=1) and a non-persisting stash (empty/
- * unusable sessionId) both short-circuit the stash loop entirely: no writes,
- * no `compressor retrieve` markers that would only ever miss — every minted
- * placeholder falls straight through to the descriptive fallback.
+ * CCR being off by default (COMPRESSOR_CCR unset; only '1' enables it) and a
+ * non-persisting stash (empty/unusable sessionId) both short-circuit the stash
+ * loop entirely: no writes, no `compressor retrieve` markers that would only
+ * ever miss — every minted placeholder falls straight through to the
+ * descriptive fallback.
  */
 function swapPlaceholders(content: string, result: CompressResult, sessionId: string): string {
   let swapped = content;
@@ -107,9 +108,9 @@ function swapPlaceholders(content: string, result: CompressResult, sessionId: st
   // Stash only when CCR is on AND the write can actually land: an empty/unusable
   // sessionId never persists a chunk (sessionDir() rejects it), so emitting a
   // `compressor retrieve <handle>` marker for it would be a guaranteed miss.
-  // Treat it like the kill switch — let the placeholder fall through to the
+  // Treat it like CCR being off — let the placeholder fall through to the
   // defensive fallback (today's working re-run hint).
-  if (!ccrDisabled() && sessionId !== '') {
+  if (ccrEnabled() && sessionId !== '') {
     for (const omission of omissions) {
       // stashChunk is fail-open: it always returns a handle (even if writing
       // fails); a later retrieve miss degrades to the re-run hint. The handle is
@@ -123,7 +124,7 @@ function swapPlaceholders(content: string, result: CompressResult, sessionId: st
   }
   // Defensive backstop, SCOPED to engine-minted tokens: replace only the exact
   // placeholders this result carries. A token left here means its stash was
-  // skipped (kill switch / unusable sessionId) — degrade it to the re-run hint.
+  // skipped (CCR off / unusable sessionId) — degrade it to the re-run hint.
   // Model-supplied `⟦ccr:N⟧` literals in kept content are NOT in this set and
   // are preserved verbatim.
   for (const omission of omissions) {

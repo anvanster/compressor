@@ -14,8 +14,11 @@ import { settleLedger } from '../../src/ledger/write.ts';
 // test/hook/recovery.test.ts).
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_RECOVERY_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-cp-recovery-'));
-// CCR stash is default-on for the hook path; point it at a temp dir so non-file
-// (bash) retrieve markers write hermetically, never touching the real stash.
+// CCR is default-OFF opt-in; SET COMPRESSOR_CCR=1 so the non-file (bash)
+// retrieve-marker tests below actually exercise the stash (otherwise they go
+// vacuous), and point it at a temp dir so it writes hermetically, never touching
+// the real stash.
+process.env['COMPRESSOR_CCR'] = '1';
 process.env['COMPRESSOR_CCR_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-cp-ccr-'));
 
 function repetitiveLog(lines: number): string {
@@ -322,7 +325,7 @@ function distinctLog(lines: number): string {
 // (bash) output on the hook path: the marker carries a content-addressed
 // retrieve handle instead, identical across styles. File-read style variants
 // are covered at the engine level (test/engine/marker-styles.test.ts).
-test('bash output gets a CCR retrieve marker by default (CCR on)', () => {
+test('bash output gets a CCR retrieve marker when CCR is on (COMPRESSOR_CCR=1)', () => {
   const out = handleCopilotPostToolUse(
     copilotPayload('bash', { command: 'cargo build 2>&1' }, distinctLog(600)),
     'slim',

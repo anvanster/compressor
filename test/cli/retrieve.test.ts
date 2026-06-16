@@ -21,18 +21,21 @@ import { runRetrieve } from '../../src/cli/commands/retrieve.ts';
 //   - a 1-based inclusive --lines slice; malformed --lines ⇒ whole chunk + note
 //   - a miss (expired / never stashed / traversal handle) ⇒ stderr note, exit 1,
 //     NOTHING on stdout, nothing read outside the store
-//   - the kill switch (COMPRESSOR_NO_CCR=1) ⇒ a miss
+//   - CCR off by default (COMPRESSOR_CCR unset) ⇒ a miss even for a present handle
 //   - END-TO-END: a real-hook compress→marker→retrieve loop returns the exact
 //     omitted bytes
 //   - the command is registered (parsing `retrieve <handle>` reaches runRetrieve)
 //
 // HERMETIC: COMPRESSOR_CCR_DIR → a fresh temp dir per test, restored + removed;
-// the kill switch is never left set; process.stdout/stderr.write and
+// the opt-in var is restored when toggled; process.stdout/stderr.write and
 // process.exitCode are captured and restored around each runRetrieve.
 
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_NO_RECOVERY_BUDGET'] = '1';
-delete process.env['COMPRESSOR_NO_CCR'];
+// CCR is default-OFF opt-in: SET it so the stash→retrieve happy-paths actually
+// persist and read back (otherwise they go vacuous). The default-off test below
+// locally deletes it.
+process.env['COMPRESSOR_CCR'] = '1';
 
 const CLI_ENTRY = fileURLToPath(new URL('../../src/cli/index.ts', import.meta.url));
 
@@ -150,7 +153,7 @@ test('runRetrieve with a malformed --lines retrieves the WHOLE chunk and notes i
 });
 
 // ---------------------------------------------------------------------------
-// Miss: expired/never-stashed, traversal/malformed handle, kill switch
+// Miss: expired/never-stashed, traversal/malformed handle, CCR off by default
 // ---------------------------------------------------------------------------
 
 test('a never-stashed handle ⇒ stderr re-run note, exit 1, nothing on stdout', async (t) => {
@@ -175,22 +178,23 @@ test('a malformed/traversal handle ⇒ miss (readChunk rejects), nothing read ou
   assert.equal(await readChunk('../etc/passwd'), null, 'readChunk rejects the traversal handle');
 });
 
-test('kill switch COMPRESSOR_NO_CCR=1 ⇒ a valid, present handle still misses', async (t) => {
+test('CCR off by default (COMPRESSOR_CCR unset) ⇒ a valid, present handle still misses', async (t) => {
   await freshCcrDir(t);
   const original = distinctBash(50);
-  const handle = stashChunk('sess-cli-kill', original); // stash BEFORE disabling
+  const handle = stashChunk('sess-cli-default', original); // stash WHILE on (module-top sets it)
   await settleCcr();
-  const saved = process.env['COMPRESSOR_NO_CCR'];
-  process.env['COMPRESSOR_NO_CCR'] = '1';
+  // go to the off DEFAULT by deleting the opt-in var (save/restore — module-top sets it)
+  const saved = process.env['COMPRESSOR_CCR'];
+  delete process.env['COMPRESSOR_CCR'];
   t.after(() => {
-    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
-    else process.env['COMPRESSOR_NO_CCR'] = saved;
+    if (saved === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = saved;
   });
 
   const got = await capture(handle, {});
-  assert.equal(got.stdout, '', 'the kill switch makes even a present chunk unreadable');
+  assert.equal(got.stdout, '', 'default-off makes even a present chunk unreadable');
   assert.match(got.stderr, /not found/, 'a disabled store reports the miss');
-  assert.equal(got.exitCode, 1, 'the kill-switch miss sets exit 1');
+  assert.equal(got.exitCode, 1, 'the default-off miss sets exit 1');
 });
 
 // ---------------------------------------------------------------------------
@@ -264,7 +268,8 @@ test('the command is registered: `compressor retrieve <handle>` reaches runRetri
   await settleCcr();
 
   const env: NodeJS.ProcessEnv = { ...process.env, COMPRESSOR_CCR_DIR: dir };
-  delete env['COMPRESSOR_NO_CCR'];
+  // the subprocess must have CCR ON to read the stashed chunk back (default-off)
+  env['COMPRESSOR_CCR'] = '1';
 
   const hit = await runCli(['retrieve', handle], env);
   assert.equal(hit.code, 0, 'a registered hit exits 0');
@@ -352,7 +357,8 @@ test(
       `${JSON.stringify(process.execPath)} ${JSON.stringify(CLI_ENTRY)} retrieve ${handle} ` +
       `2> ${JSON.stringify(stderrFile)} | head -c1`;
     const env: NodeJS.ProcessEnv = { ...process.env, COMPRESSOR_CCR_DIR: dir };
-    delete env['COMPRESSOR_NO_CCR'];
+    // the subprocess must have CCR ON to read the stashed chunk back (default-off)
+    env['COMPRESSOR_CCR'] = '1';
 
     const result = await new Promise<{ stdout: string; code: number | null }>((resolve, reject) => {
       const child = spawn('sh', ['-c', cmd], { env, stdio: ['ignore', 'pipe', 'inherit'] });

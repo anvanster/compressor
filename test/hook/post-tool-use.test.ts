@@ -15,10 +15,13 @@ import { settleRecovery } from '../../src/hook/recovery.ts';
 // test/hook/recovery.test.ts).
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_RECOVERY_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-ptu-recovery-'));
-// CCR stash is default-on for the hook path; point it at a temp dir so the
-// non-file (bash) retrieve markers below write hermetically, never touching the
-// real os.tmpdir()/compressor-ccr. (Handles are returned fail-open regardless,
-// so markers stay deterministic.)
+// CCR is default-OFF opt-in; SET COMPRESSOR_CCR=1 so the non-file (bash)
+// retrieve-marker tests below actually exercise the stash (otherwise they go
+// vacuous). Point the stash at a temp dir so it writes hermetically, never
+// touching the real os.tmpdir()/compressor-ccr. (Handles are returned fail-open
+// regardless, so markers stay deterministic.) The default-off test locally
+// deletes the enable var.
+process.env['COMPRESSOR_CCR'] = '1';
 process.env['COMPRESSOR_CCR_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-ptu-ccr-'));
 
 function repetitiveLog(lines: number): string {
@@ -280,7 +283,7 @@ function stdoutOf(output: string | null): string {
 // (`— retrieve: compressor retrieve <handle>`), the same across every style.
 // File-read markers keep their offset/limit style variants — exercised at the
 // engine level in test/engine/marker-styles.test.ts (CCR doesn't touch them).
-test('bash output gets a CCR retrieve marker by default (CCR on)', () => {
+test('bash output gets a CCR retrieve marker when CCR is on (COMPRESSOR_CCR=1)', () => {
   const stdout = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
   assert.match(stdout, /— retrieve: compressor retrieve [A-Za-z0-9_-]{16}\]/);
   // INVARIANT B: no raw placeholder token may reach the model
@@ -300,15 +303,17 @@ test('marker style no longer changes the bash recovery clause (CCR supersedes it
   assert.equal(deterrent, plain, 'CCR marker is style-invariant for non-file output');
 });
 
-test('COMPRESSOR_NO_CCR=1 falls back to the descriptive re-run hint, no placeholder', (t) => {
-  const saved = process.env['COMPRESSOR_NO_CCR'];
-  process.env['COMPRESSOR_NO_CCR'] = '1';
+test('CCR off by default falls back to the descriptive re-run hint, no placeholder', (t) => {
+  // the module-top SETS the opt-in var; locally delete it (save/restore) to
+  // assert the default-off fallback without tainting later tests
+  const saved = process.env['COMPRESSOR_CCR'];
+  delete process.env['COMPRESSOR_CCR'];
   t.after(() => {
-    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
-    else process.env['COMPRESSOR_NO_CCR'] = saved;
+    if (saved === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = saved;
   });
   const stdout = stdoutOf(handlePostToolUse(bashPayload(distinctLog(600)), 'slim').output);
   assert.match(stdout, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
-  assert.ok(!stdout.includes('⟦ccr:'), 'no raw placeholder leaked under the kill switch');
+  assert.ok(!stdout.includes('⟦ccr:'), 'no raw placeholder leaked when CCR is off');
   assert.ok(!stdout.includes('compressor retrieve'), 'no retrieve handle when CCR is off');
 });

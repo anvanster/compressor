@@ -25,7 +25,10 @@ import { readChunk, settleCcr } from '../../src/hook/ccr.ts';
 
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_NO_RECOVERY_BUDGET'] = '1';
-delete process.env['COMPRESSOR_NO_CCR'];
+// CCR is default-OFF opt-in: SET it so the wiring tests actually exercise the
+// stash/swap path (otherwise they go vacuous). The default-off test below
+// locally deletes it to assert the fallback.
+process.env['COMPRESSOR_CCR'] = '1';
 
 const estimate = (s: string): number => Math.ceil(s.length / 4);
 const PLACEHOLDER_RE = /⟦ccr:\d+⟧/;
@@ -191,36 +194,38 @@ test('compressCall on a FILE read writes NO stash and keeps the offset/limit mar
 });
 
 // ---------------------------------------------------------------------------
-// INVARIANT B fallback: kill switch / no stash → descriptive clause, no token
+// INVARIANT B fallback: CCR off (default) / no stash → descriptive clause, no token
 // ---------------------------------------------------------------------------
 
-test('COMPRESSOR_NO_CCR=1: no placeholder leaks, no retrieve handle, descriptive fallback appears', async (t) => {
+test('CCR off by default (COMPRESSOR_CCR unset): no placeholder leaks, no retrieve handle, descriptive fallback appears', async (t) => {
   await freshCcrDir(t);
-  const saved = process.env['COMPRESSOR_NO_CCR'];
-  process.env['COMPRESSOR_NO_CCR'] = '1';
+  // the module-top SETS the opt-in var, so locally delete it (save/restore) to
+  // assert the default-off fallback without tainting later tests
+  const saved = process.env['COMPRESSOR_CCR'];
+  delete process.env['COMPRESSOR_CCR'];
   t.after(() => {
-    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
-    else process.env['COMPRESSOR_NO_CCR'] = saved;
+    if (saved === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = saved;
   });
   const call: CompressibleCall = { toolKind: 'bash', targeted: false, text: distinctBash(600) };
-  const compressed = compressCall(call, 'slim', undefined, 'sess-kill');
-  assert.ok(compressed.worthwhile, 'compression still happens with the stash disabled');
-  assert.ok(!PLACEHOLDER_RE.test(compressed.text), 'no raw placeholder under the kill switch');
-  assert.ok(!compressed.text.includes('compressor retrieve'), 'no retrieve handle when disabled');
+  const compressed = compressCall(call, 'slim', undefined, 'sess-default');
+  assert.ok(compressed.worthwhile, 'compression still happens with the stash off');
+  assert.ok(!PLACEHOLDER_RE.test(compressed.text), 'no raw placeholder when CCR is off');
+  assert.ok(!compressed.text.includes('compressor retrieve'), 'no retrieve handle when off');
   assert.match(
     compressed.text,
     /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/,
     'falls back to today’s descriptive re-run hint',
   );
   await settleCcr();
-  // nothing written while disabled
+  // nothing written while off
   const dir = process.env['COMPRESSOR_CCR_DIR'];
   assert.ok(dir);
   const entries = await readdir(dir).catch(() => [] as string[]);
   assert.deepEqual(
     entries.filter((e) => !e.startsWith('.')),
     [],
-    'kill switch writes no chunk',
+    'default-off writes no chunk',
   );
 });
 
@@ -279,7 +284,7 @@ test('empty/undefined sessionId emits NO retrieve handle — degrades to the re-
   // sessionId undefined ⇒ compressCall passes '' to swapPlaceholders ⇒ a chunk
   // could never persist (sessionDir rejects ''), so emitting a `compressor
   // retrieve <handle>` would be a guaranteed miss. It must instead fall through
-  // to the descriptive re-run fallback (mirroring the kill switch).
+  // to the descriptive re-run fallback (mirroring CCR being off by default).
   const compressed = compressCall(call, 'slim', undefined, undefined);
   assert.ok(compressed.worthwhile, 'compression still happens without a session id');
   assert.ok(!PLACEHOLDER_RE.test(compressed.text), 'no raw placeholder with an empty session id');

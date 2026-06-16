@@ -7,7 +7,7 @@ import { join, parse } from 'node:path';
 import process from 'node:process';
 import {
   applyCcrArg,
-  ccrDisabled,
+  ccrEnabled,
   ccrTtlMs,
   handleFor,
   readChunk,
@@ -27,9 +27,11 @@ import {
 // (traversal handles, symlinked dirs/files, foreign dirs lacking the sentinel,
 // sensitive roots, realpath confinement, keepSession, concurrent dedup).
 //
-// Env hygiene: clear the kill switch and TTL override at module load so a dirty
-// ambient env can't taint the suite; each test that sets them restores after.
-delete process.env['COMPRESSOR_NO_CCR'];
+// Env hygiene: CCR is default-OFF opt-in, so the functional stash/read tests
+// must SET COMPRESSOR_CCR=1 or they would go vacuous (every write/read no-ops).
+// Set it (and clear the TTL override) at module load so a dirty ambient env
+// can't taint the suite; each test that varies the enable var restores after.
+process.env['COMPRESSOR_CCR'] = '1';
 delete process.env['COMPRESSOR_CCR_TTL'];
 
 const SENTINEL = '.compressor-ccr';
@@ -69,17 +71,17 @@ async function exists(p: string): Promise<boolean> {
 // Functional
 // ---------------------------------------------------------------------------
 
-test('resolveCcrDir / ccrTtlMs / ccrDisabled honor the env at call time', (t) => {
+test('resolveCcrDir / ccrTtlMs / ccrEnabled honor the env at call time', (t) => {
   const savedDir = process.env['COMPRESSOR_CCR_DIR'];
   const savedTtl = process.env['COMPRESSOR_CCR_TTL'];
-  const savedKill = process.env['COMPRESSOR_NO_CCR'];
+  const savedEnable = process.env['COMPRESSOR_CCR'];
   t.after(() => {
     if (savedDir === undefined) delete process.env['COMPRESSOR_CCR_DIR'];
     else process.env['COMPRESSOR_CCR_DIR'] = savedDir;
     if (savedTtl === undefined) delete process.env['COMPRESSOR_CCR_TTL'];
     else process.env['COMPRESSOR_CCR_TTL'] = savedTtl;
-    if (savedKill === undefined) delete process.env['COMPRESSOR_NO_CCR'];
-    else process.env['COMPRESSOR_NO_CCR'] = savedKill;
+    if (savedEnable === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = savedEnable;
   });
 
   delete process.env['COMPRESSOR_CCR_DIR'];
@@ -104,12 +106,15 @@ test('resolveCcrDir / ccrTtlMs / ccrDisabled honor the env at call time', (t) =>
     assert.equal(ccrTtlMs(), expected, `ttl parse ${JSON.stringify(raw)}`);
   }
 
-  delete process.env['COMPRESSOR_NO_CCR'];
-  assert.equal(ccrDisabled(), false);
-  process.env['COMPRESSOR_NO_CCR'] = '1';
-  assert.equal(ccrDisabled(), true);
-  process.env['COMPRESSOR_NO_CCR'] = '0';
-  assert.equal(ccrDisabled(), false, 'only "1" disables');
+  // default-OFF opt-in: ccrEnabled() is TRUE only for exactly '1'
+  delete process.env['COMPRESSOR_CCR'];
+  assert.equal(ccrEnabled(), false, 'unset → off (the default)');
+  process.env['COMPRESSOR_CCR'] = '1';
+  assert.equal(ccrEnabled(), true, 'only "1" enables');
+  process.env['COMPRESSOR_CCR'] = '0';
+  assert.equal(ccrEnabled(), false, '"0" is off');
+  process.env['COMPRESSOR_CCR'] = 'yes';
+  assert.equal(ccrEnabled(), false, 'any other value is off');
 });
 
 test('handleFor: sha256/base64url prefix, 16 chars in the handle alphabet, deterministic', () => {
@@ -326,25 +331,29 @@ test('cap still applies to the kept (live) session: TTL-excluded but oldest chun
   assert.ok(!remaining.includes(handles[0] as string), 'oldest chunk evicted on the live session');
 });
 
-test('kill switch COMPRESSOR_NO_CCR=1: no writes, reads return null', async (t) => {
+test('default (COMPRESSOR_CCR unset): no writes, reads return null', async (t) => {
   const dir = await freshDir(t);
-  // stash one chunk WITH the feature on, so a file exists on disk
-  const handle = stashChunk('sess-kill', 'present on disk\n');
+  // stash one chunk WITH the feature on (module-top sets it), so a file exists
+  const handle = stashChunk('sess-default', 'present on disk\n');
   await settleCcr();
-  assert.ok(await exists(join(dir, 'sess-kill', handle)), 'baseline write landed');
+  assert.ok(await exists(join(dir, 'sess-default', handle)), 'baseline write landed');
 
-  process.env['COMPRESSOR_NO_CCR'] = '1';
+  // now go to the off DEFAULT by deleting the opt-in var (save/restore — the
+  // module-top sets it, so a plain delete would taint later tests)
+  const savedEnable = process.env['COMPRESSOR_CCR'];
+  delete process.env['COMPRESSOR_CCR'];
   t.after(() => {
-    delete process.env['COMPRESSOR_NO_CCR'];
+    if (savedEnable === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = savedEnable;
   });
 
   // reads are blocked even though the file exists
-  assert.equal(await readChunk(handle), null, 'kill switch blocks reads');
+  assert.equal(await readChunk(handle), null, 'default-off blocks reads');
   // new writes are blocked (still returns the handle — fail-open contract)
-  const h2 = stashChunk('sess-kill2', 'should not be written\n');
+  const h2 = stashChunk('sess-default2', 'should not be written\n');
   assert.equal(h2, handleFor('should not be written\n'), 'handle still returned');
   await settleCcr();
-  assert.equal(await exists(join(dir, 'sess-kill2')), false, 'kill switch blocks writes');
+  assert.equal(await exists(join(dir, 'sess-default2')), false, 'default-off blocks writes');
 });
 
 test('hostile session ids: handle still returned, nothing escapes <root>/<sanitized>/', async (t) => {
@@ -707,42 +716,44 @@ test('readFileNoFollow reads a regular file but refuses a symlinked final compon
 // ---------------------------------------------------------------------------
 // --ccr <on|off> argv toggle — the per-arm CCR switch for the savings A/B.
 // Mirrors recovery.ts::applyRecoveryBudgetArg's argv-wins-over-env contract:
-// argv sets the env the kill switch (ccrDisabled) reads at call time, so
-// `--hook-arg-arms "ccr-on=,ccr-off=--ccr off"` toggles CCR per arm in one run.
+// argv sets the env the opt-in gate (ccrEnabled / COMPRESSOR_CCR) reads at call
+// time, so `--hook-arg-arms "ccr-on=--ccr on,ccr-off="` toggles CCR per arm in
+// one run. POLARITY: CCR is default-OFF opt-in, so `on` ENABLES and `off`
+// returns to the off default.
 // ---------------------------------------------------------------------------
 
-test('applyCcrArg: argv toggles COMPRESSOR_NO_CCR; missing/invalid is a no-op', () => {
-  const saved = process.env['COMPRESSOR_NO_CCR'];
+test('applyCcrArg: argv toggles COMPRESSOR_CCR; missing/invalid is a no-op', () => {
+  const saved = process.env['COMPRESSOR_CCR'];
   try {
-    delete process.env['COMPRESSOR_NO_CCR'];
+    delete process.env['COMPRESSOR_CCR'];
 
-    // off → kill switch on
-    applyCcrArg(['--mode', 'optimized', '--ccr', 'off']);
-    assert.equal(ccrDisabled(), true);
+    // on → CCR enabled
+    applyCcrArg(['--mode', 'optimized', '--ccr', 'on']);
+    assert.equal(ccrEnabled(), true);
 
-    // on → kill switch off (re-enables after off; argv wins, deterministic)
-    applyCcrArg(['--ccr', 'on']);
-    assert.equal(ccrDisabled(), false);
-
-    // off again, then a junk value must NOT change the established state
+    // off → CCR back to the off default (deletes the var; argv wins, deterministic)
     applyCcrArg(['--ccr', 'off']);
-    assert.equal(ccrDisabled(), true);
+    assert.equal(ccrEnabled(), false);
+
+    // on again, then a junk value must NOT change the established state
+    applyCcrArg(['--ccr', 'on']);
+    assert.equal(ccrEnabled(), true);
     applyCcrArg(['--ccr', 'bogus']);
-    assert.equal(ccrDisabled(), true, 'invalid value is a no-op (fail-open)');
+    assert.equal(ccrEnabled(), true, 'invalid value is a no-op (fail-open)');
 
     // missing value / missing flag / empty argv all change nothing
     applyCcrArg(['--ccr']);
-    assert.equal(ccrDisabled(), true);
+    assert.equal(ccrEnabled(), true);
     applyCcrArg(['--mode', 'slim']);
-    assert.equal(ccrDisabled(), true);
+    assert.equal(ccrEnabled(), true);
     applyCcrArg([]);
-    assert.equal(ccrDisabled(), true);
+    assert.equal(ccrEnabled(), true);
 
-    // on clears it again to confirm the no-ops above were genuine no-ops
-    applyCcrArg(['--ccr', 'on']);
-    assert.equal(ccrDisabled(), false);
+    // off clears it again to confirm the no-ops above were genuine no-ops
+    applyCcrArg(['--ccr', 'off']);
+    assert.equal(ccrEnabled(), false);
   } finally {
-    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
-    else process.env['COMPRESSOR_NO_CCR'] = saved;
+    if (saved === undefined) delete process.env['COMPRESSOR_CCR'];
+    else process.env['COMPRESSOR_CCR'] = saved;
   }
 });
