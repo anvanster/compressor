@@ -9,7 +9,7 @@ import {
   readSessionUsage,
   type UsageTotals,
 } from '../claude/transcripts.ts';
-import { packageRoot, resolveHookCommand } from '../paths.ts';
+import { resolveHookCommand } from '../paths.ts';
 import type { CellResult, CellSpec, TaskCheck, Variant } from './types.ts';
 
 const execAsync = promisify(exec);
@@ -117,25 +117,9 @@ async function writeVariantArtifacts(
 
 type CheckOutcome = { kind: 'ran'; passed: boolean } | { kind: 'infra'; message: string };
 
-/**
- * Run a command check in the agent workspace. The checker SCRIPT itself lives
- * OUTSIDE the workspace (in the fixture source dir) and is exposed only via the
- * COMPRESSOR_FIXTURE_DIR env var, so tasks invoke it as
- * `sh "$COMPRESSOR_FIXTURE_DIR/check.sh" "$PWD"` — the agent can read neither the
- * checker nor its answer values, but the check still runs against the files the
- * agent produced in `cwd`.
- */
-async function runCommandCheck(
-  command: string,
-  cwd: string,
-  fixtureDir: string,
-): Promise<CheckOutcome> {
+async function runCommandCheck(command: string, cwd: string): Promise<CheckOutcome> {
   try {
-    await execAsync(command, {
-      cwd,
-      timeout: CHECK_TIMEOUT_MS,
-      env: { ...process.env, COMPRESSOR_FIXTURE_DIR: fixtureDir },
-    });
+    await execAsync(command, { cwd, timeout: CHECK_TIMEOUT_MS });
     return { kind: 'ran', passed: true };
   } catch (error) {
     const code = (error as { code?: unknown }).code;
@@ -146,15 +130,11 @@ async function runCommandCheck(
   }
 }
 
-async function baselineCheck(
-  check: TaskCheck,
-  workspace: string,
-  fixtureDir: string,
-): Promise<boolean | null> {
+async function baselineCheck(check: TaskCheck, workspace: string): Promise<boolean | null> {
   if (check.kind !== 'command') {
     return null;
   }
-  const outcome = await runCommandCheck(check.command, workspace, fixtureDir);
+  const outcome = await runCommandCheck(check.command, workspace);
   return outcome.kind === 'ran' ? outcome.passed : null;
 }
 
@@ -166,11 +146,10 @@ async function baselineCheck(
 async function judgeSuccess(
   check: TaskCheck,
   workspace: string,
-  fixtureDir: string,
   resultTexts: string[],
 ): Promise<{ success: boolean | null; checkError: string | null }> {
   if (check.kind === 'command') {
-    const outcome = await runCommandCheck(check.command, workspace, fixtureDir);
+    const outcome = await runCommandCheck(check.command, workspace);
     if (outcome.kind === 'infra') {
       return { success: null, checkError: `success check failed to run: ${outcome.message}` };
     }
@@ -211,27 +190,7 @@ export function cellEnv(scratch: string, auth: BenchAuth = 'api'): NodeJS.Proces
     ...process.env,
     CLAUDE_CONFIG_DIR: scratch,
     COMPRESSOR_NO_LEDGER: '1',
-    // Per-cell CCR stash dir: every cell starts from an EMPTY stash, so a
-    // missing chunk surfaces as a real ON-arm retrieve miss instead of being
-    // silently covered by a leftover from a prior run (the shared 6h dir under
-    // os.tmpdir()/compressor-ccr persists across runs and would poison/confuse
-    // the measurement). It also means the OFF-arm's `compressor retrieve`
-    // subprocess — which inherits this env — looks in this cell's own (empty
-    // for the off-arm, since nothing was stashed) dir, never the operator's
-    // accumulated history. Lives under scratch so cleanup removes it with the
-    // config dir. Deterministic per cell; the hook and the model's retrieve
-    // subprocess both resolve the SAME dir (resolveCcrDir reads this var).
-    COMPRESSOR_CCR_DIR: path.join(scratch, 'ccr-stash'),
   };
-  // Deterministically put the FRESH build's `compressor` on the cell PATH so the
-  // model's `compressor retrieve <handle>` resolves to THIS repo's dist (which
-  // HAS the retrieve subcommand), never the operator's stale global on PATH
-  // (e.g. published 0.3.0, which lacks retrieve). bench/bin/compressor is a shim
-  // that execs dist/cli/index.js. Prepending here means every cell gets it
-  // regardless of how the operator launched the run — no manual PATH prefix, no
-  // silent resolution to a retrieve-less binary that would turn every ON-arm
-  // retrieve into a bogus empty-stdout "miss". (CCR-PATH-1.)
-  env.PATH = path.join(packageRoot(), 'bench', 'bin') + path.delimiter + (process.env.PATH ?? '');
   if (auth === 'api') {
     delete env['CLAUDE_CODE_OAUTH_TOKEN'];
   } else {
@@ -472,32 +431,16 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
     workspace = await realpath(await mkdtemp(path.join(tmpdir(), 'compressor-bench-ws-')));
     scratch = await realpath(await mkdtemp(path.join(tmpdir(), 'compressor-bench-cfg-')));
 
-    // The fixture SOURCE dir (never the workspace): the success checker runs from
-    // here by absolute path so check.sh is never an agent-readable file (it ships
-    // the answer values). Tasks invoke it as `sh "$COMPRESSOR_FIXTURE_DIR/check.sh"
-    // "$PWD"`, exported into the check env below.
-    const fixtureDir = path.join(ctx.fixturesDir, spec.task.fixture);
-
-    // Files the agent must NEVER read are filtered from the cp:
-    //  - fix.patch.json: the scripted-fix answer key (stubs/fixture tests);
-    //  - check.sh: the success checker, which lists every answer value verbatim —
-    //    copying it would let a cell pass by reading the checker, never recovering
-    //    the (compressed) content. It is executed from fixtureDir instead.
-    // run.sh STAYS: it is the entrypoint the task must `bash run.sh`; the prompt
-    // forbids reading it, and the answer is only honestly recoverable from the
-    // (truncated) command output, not by reading the script. (See remainingConcern
-    // CCR-CHECK-02: run.sh-read is prompt-forbidden but not hard-enforced.)
-    await cp(fixtureDir, workspace, {
+    // fix.patch.json is the answer key (scripted fix for stubs/fixture tests);
+    // copying it would hand the agent the literal solution
+    await cp(path.join(ctx.fixturesDir, spec.task.fixture), workspace, {
       recursive: true,
-      filter: (src) => {
-        const name = path.basename(src);
-        return name !== 'fix.patch.json' && name !== 'check.sh';
-      },
+      filter: (src) => path.basename(src) !== 'fix.patch.json',
     });
     await gitInitBestEffort(workspace);
 
     const settingsFile = await writeVariantArtifacts(spec.variant, workspace, scratch);
-    baselineCheckPassed = await baselineCheck(spec.task.check, workspace, fixtureDir);
+    baselineCheckPassed = await baselineCheck(spec.task.check, workspace);
 
     // scripted conversation: first the task prompt, then each turn resumed
     // from the previous turn's session id (sessions can fork ids on resume,
@@ -555,7 +498,6 @@ export async function runCell(spec: CellSpec, ctx: CellContext): Promise<CellRes
     const { success, checkError } = await judgeSuccess(
       spec.task.check,
       workspace,
-      fixtureDir,
       turns.map((turn) => turn.resultText),
     );
 

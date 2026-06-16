@@ -1,33 +1,17 @@
 import type { MarkerStyle } from '../types.ts';
 import { scanFailureLines, tierResult } from './structural.ts';
-import type { OmissionSink, TierResult } from './structural.ts';
+import type { TierResult } from './structural.ts';
 
 /**
  * Style-aware omission marker shared by the test/build log filters. Logs have
  * no file coordinates, so the informative variant reports match counts only.
- * Log-SHAPED content is usually a non-file output (Bash/test runner), but a
- * file Read of a log file (e.g. `Read build.log`) is also log-shaped — and for
- * that case CCR must NOT engage (the file owns freshness; #3=B / §7). The
- * caller (engine/index.ts) enforces the scope by withholding the sink for file
- * reads, so this function never has to know the tool kind:
- *   OFF path / file read (sink undefined): today's exact marker, byte-for-byte
- *     (INVARIANT A) — the descriptive re-run clause, no stash, no placeholder.
- *   ON path, non-file (sink present): the dropped lines are stashed and the
- *     recovery clause becomes a bare placeholder token compressCall swaps for a
- *     real retrieve handle / descriptive fallback (INVARIANT B). The plain
- *     style has no recovery clause today (just `${head}]`); CCR appends the
- *     placeholder so a handle can still be carried.
  */
 function logMarker(
   noun: 'passing-test' | 'build-log',
   omittedLines: readonly string[],
   style: MarkerStyle,
-  sink?: OmissionSink,
 ): string {
   const head = `[compressor: ${omittedLines.length} ${noun} lines omitted`;
-  if (sink !== undefined) {
-    return `${head} ${sink.add(omittedLines.join('\n'))}]`;
-  }
   if (style === 'deterrent') {
     return `${head} — likely irrelevant; re-run with a narrower filter ONLY if the problem you are chasing points into the omitted output]`;
   }
@@ -72,11 +56,7 @@ const TEST_SUMMARY_RES: readonly RegExp[] = [
   /^(?:ℹ|#) (?:tests|suites|pass|fail|cancelled|skipped|todo|duration_ms) \d+\s*$/,
 ];
 
-export function filterTestLog(
-  content: string,
-  style: MarkerStyle = 'plain',
-  sink?: OmissionSink,
-): TierResult {
+export function filterTestLog(content: string, style: MarkerStyle = 'plain'): TierResult {
   const lines = content.split('\n');
   const isFail = (l: string): boolean => TEST_FAIL_RES.some((re) => re.test(l));
   const isSummary = (l: string): boolean => TEST_SUMMARY_RES.some((re) => re.test(l));
@@ -97,7 +77,7 @@ export function filterTestLog(
     }
   }
   if (omittedLines.length === 0) return { content };
-  out.splice(markerIdx, 0, logMarker('passing-test', omittedLines, style, sink));
+  out.splice(markerIdx, 0, logMarker('passing-test', omittedLines, style));
   return tierResult(content, out.join('\n'), 'log-filter');
 }
 
@@ -122,11 +102,7 @@ const BUILD_STATUS_RES: readonly RegExp[] = [
   /exited with code \d+/,
 ];
 
-export function filterBuildLog(
-  content: string,
-  style: MarkerStyle = 'plain',
-  sink?: OmissionSink,
-): TierResult {
+export function filterBuildLog(content: string, style: MarkerStyle = 'plain'): TierResult {
   const lines = content.split('\n');
   const isError = (l: string): boolean => BUILD_ERROR_RES.some((re) => re.test(l));
   const isStatus = (l: string): boolean => BUILD_STATUS_RES.some((re) => re.test(l));
@@ -164,6 +140,6 @@ export function filterBuildLog(
     }
   }
   if (omittedLines.length === 0) return { content };
-  out.splice(markerIdx, 0, logMarker('build-log', omittedLines, style, sink));
+  out.splice(markerIdx, 0, logMarker('build-log', omittedLines, style));
   return tierResult(content, out.join('\n'), 'log-filter');
 }

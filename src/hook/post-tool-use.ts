@@ -3,7 +3,6 @@ import type { CompressibleCall } from './core.ts';
 import {
   applyRecoveryBudget,
   compressCall,
-  isCompressorRetrieve,
   isRecord,
   noteTruncationIfCut,
   pickLeaf,
@@ -86,15 +85,6 @@ export function handlePostToolUse(
       return { output: null };
     }
 
-    // CCR passthrough guard (§3): the output of `compressor retrieve <handle>`
-    // is an exact original slice being pulled back; never re-compress it (that
-    // would re-cut and re-stash what the model just deliberately retrieved).
-    // Best-effort per layer — Claude Code's Bash command lives in
-    // tool_input.command.
-    if (tool === 'bash' && isCompressorRetrieve(toolInput['command'])) {
-      return { output: null };
-    }
-
     const raw: CompressibleCall = {
       toolKind: tool,
       targeted:
@@ -108,7 +98,7 @@ export function handlePostToolUse(
     // previously-truncated file is demoted to untargeted (compressed).
     const call = applyRecoveryBudget(raw, sessionId);
 
-    const compressed = compressCall(call, mode, markerStyle, sessionId);
+    const compressed = compressCall(call, mode, markerStyle);
     if (!compressed.worthwhile) {
       return { output: null };
     }

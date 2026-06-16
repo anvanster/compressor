@@ -12,7 +12,7 @@ import { runBenchmark } from '../../bench/runner.ts';
 import { loadSuite, suiteCompetitorsDir, suiteFixturesDir } from '../../bench/tasks.ts';
 import type { SuiteSpec, Variant } from '../../bench/types.ts';
 import type { Mode } from '../../engine/types.ts';
-import { packageRoot, resolveHookCommand } from '../../paths.ts';
+import { resolveHookCommand } from '../../paths.ts';
 
 const execFileAsync = promisify(execFile);
 
@@ -174,25 +174,16 @@ function errorText(error: unknown): string {
 /** Synthetic over-budget PostToolUse payload: distinct rows so only the
  * truncation tier fires and its marker line carries the style. ~51k chars
  * (~14.6k est tokens) clears every mode's touch and truncate thresholds. */
-// A FILE READ, not bash: CCR (Phase 2) supersedes the marker-style recovery
-// clause for non-file (bash/search/MCP) output — plain and deterrent become
-// byte-identical there (both carry a content-addressed retrieve handle). File
-// reads are NOT CCR-eligible (staleness-proof re-read; CCR-PLAN §7/B), so their
-// offset/limit markers still vary by style — the property this preflight needs
-// to discriminate a flag-honoring bundle from a stale flag-blind one.
 function markerStylePreflightPayload(): string {
-  const filePath = '/preflight/marker-style-probe.txt';
   const rows = Array.from(
     { length: 900 },
-    (_, i) =>
-      `${String(i + 1).padStart(6)}→row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur`,
+    (_, i) => `row ${String(i).padStart(5, '0')} lorem ipsum dolor sit amet consectetur adipiscing`,
   ).join('\n');
   return JSON.stringify({
-    session_id: 'preflight-marker-style-session',
-    tool_name: 'Read',
-    tool_input: { file_path: filePath },
+    tool_name: 'Bash',
+    tool_input: { command: 'echo preflight' },
     tool_use_id: 'toolu_preflight',
-    tool_response: { type: 'text', file: { filePath, content: rows } },
+    tool_response: { stdout: rows, stderr: '', interrupted: false, isImage: false },
   });
 }
 
@@ -369,126 +360,9 @@ export async function assertHookHandlesRecoveryBudget(baseHookCommand: string): 
   }
 }
 
-/** A Bash (non-file) over-budget payload so the hook takes the CCR-eligible path
- * and its omission marker carries a `compressor retrieve <handle>` clause. */
-function ccrPreflightBashPayload(): string {
-  const rows = Array.from(
-    { length: 4000 },
-    (_, i) => `INFO line ${String(i).padStart(6, '0')} lorem ipsum dolor sit amet consectetur adipiscing elit`,
-  ).join('\n');
-  return JSON.stringify({
-    session_id: 'preflight-ccr-session',
-    tool_name: 'Bash',
-    tool_input: { command: 'bash run.sh' },
-    tool_use_id: 'toolu_preflight_ccr',
-    tool_response: { stdout: rows, stderr: '', interrupted: false, isImage: false },
-  });
-}
-
-/**
- * CCR delivery preflight (CCR-PATH-2 / CCR-2): the ON-arm only saves anything if
- * the model's `compressor retrieve <handle>` resolves to a build that HAS the
- * retrieve subcommand. A stale global on PATH (e.g. published 0.3.0) silently
- * emits empty stdout — indistinguishable from a real stash miss — and every
- * ON-arm cell produces a bogus savings figure. There is no way to tell after the
- * fact, so prove it before spending:
- *
- *   1. Pipe an over-budget Bash payload through the hook with `--ccr on` and a
- *      hermetic stash dir; require the marker to carry `compressor retrieve
- *      <handle>` (the engine stashed the cut bytes).
- *   2. Resolve `compressor` exactly as a cell will — on the cell PATH, which the
- *      runner has prepended bench/bin to — and run `compressor retrieve <handle>`
- *      against the SAME stash dir. Require it to print the stashed bytes. A
- *      retrieve-less binary fails here (commander 'unknown command', or empty).
- *   3. Run `compressor retrieve __preflight_missing__` and require the fresh-build
- *      MISS-NOTE shape ("not found ... re-run the original command"), proving the
- *      resolved binary is a positive `retrieve` implementation and not a stale one
- *      that merely exits nonzero.
- *
- * `cellPath` is the PATH the cells run with (runner prepends bench/bin); the
- * preflight uses it so a stale resolution fails fast with an actionable error.
- */
-export async function assertCcrRetrieveWorks(
-  baseHookCommand: string,
-  cellPath: string,
-): Promise<void> {
-  const ccrDir = await mkdtemp(path.join(tmpdir(), 'compressor-preflight-ccr-'));
-  // CCR is default-OFF opt-in: the retrieve subprocesses below read the stash and
-  // must run with CCR ENABLED (COMPRESSOR_CCR=1), exactly as a CCR-on cell's
-  // `compressor retrieve` does — otherwise readChunk no-ops and every round-trip
-  // is a guaranteed miss. (The hook invocation enables CCR via its `--ccr on`
-  // argv, which applyCcrArg maps to COMPRESSOR_CCR=1 in that subprocess; setting
-  // it here covers the retrieve subprocesses that take no such flag.)
-  const env = {
-    ...process.env,
-    PATH: cellPath,
-    COMPRESSOR_NO_LEDGER: '1',
-    COMPRESSOR_CCR: '1',
-    COMPRESSOR_CCR_DIR: ccrDir,
-  };
-  try {
-    const hookOut = await execWithInput(
-      `${baseHookCommand} --ccr on`,
-      ccrPreflightBashPayload(),
-      env,
-    );
-    const handle = /compressor retrieve ([A-Za-z0-9_-]{16})/.exec(hookOut)?.[1];
-    if (handle === undefined) {
-      throw new Error(
-        `CCR preflight: the hook did not stash a chunk / emit a 'compressor retrieve <handle>' marker for an over-budget Bash output (${baseHookCommand} --ccr on) — CCR is broken or the bundle is stale; run 'npm run build' and retry`,
-      );
-    }
-    // resolve `compressor` on the CELL PATH and round-trip the stashed chunk
-    let retrieved: string;
-    try {
-      const { stdout } = await execFileAsync('compressor', ['retrieve', handle], {
-        env,
-        timeout: 30_000,
-        maxBuffer: 8 * 1024 * 1024,
-      });
-      retrieved = stdout;
-    } catch (error) {
-      throw new Error(
-        `CCR preflight: 'compressor retrieve ${handle}' failed on the cell PATH — the resolved 'compressor' is stale or lacks the retrieve subcommand (published builds before CCR do). Prepend ${path.join('bench', 'bin')} to PATH or rebuild ('npm run build'). Detail: ${errorText(error)}`,
-      );
-    }
-    if (retrieved.trim() === '') {
-      throw new Error(
-        "CCR preflight: 'compressor retrieve <handle>' produced EMPTY stdout for a freshly-stashed chunk — the resolved binary is stale (a stale global silently returns nothing, indistinguishable from a real miss). Prepend bench/bin to PATH or rebuild.",
-      );
-    }
-    // positive-capability: a missing handle must yield the FRESH miss-note shape,
-    // not commander's "unknown command 'retrieve'" or a silent success.
-    let missErr = '';
-    try {
-      await execFileAsync('compressor', ['retrieve', '_______missing_____'], {
-        env,
-        timeout: 30_000,
-        maxBuffer: 8 * 1024 * 1024,
-      });
-    } catch (error) {
-      missErr = errorText(error);
-    }
-    if (/unknown command/i.test(missErr)) {
-      throw new Error(
-        "CCR preflight: 'compressor' on the cell PATH does not know the 'retrieve' subcommand (commander 'unknown command') — it is the stale published build. Prepend bench/bin to PATH or rebuild.",
-      );
-    }
-  } finally {
-    await rm(ccrDir, { recursive: true, force: true }).catch(() => {});
-  }
-}
-
 export async function assertHookHandlesMarkerStyle(baseHookCommand: string): Promise<void> {
   const payload = markerStylePreflightPayload();
-  // Disable the recovery budget for the probe: the payload is now a file Read,
-  // and recording a truncation would otherwise write recovery state to the real
-  // dir. (Bash payloads, which this used to be, never touched that state.)
-  const env = {
-    ...process.env,
-    COMPRESSOR_NO_LEDGER: '1',
-    COMPRESSOR_NO_RECOVERY_BUDGET: '1',
-  };
+  const env = { ...process.env, COMPRESSOR_NO_LEDGER: '1' };
   const outputs: string[] = [];
   for (const style of ['plain', 'deterrent'] as const) {
     let stdout: string;
@@ -568,38 +442,6 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     ...(competitors.length > 0 ? { competitors } : {}),
   });
 
-  // Treatment-delivery canary for the CCR A/B (CCR-2): CCR is now default-OFF
-  // opt-in (COMPRESSOR_CCR=1 enables; absent = off), so a malformed/absent arm
-  // fails toward CCR-OFF (the baseline). The new silent-failure risk INVERTS:
-  // an "on" arm that omits an explicit `--ccr on` measures off-vs-off and the
-  // run is pure noise. So when a `--ccr` experiment is configured, REQUIRE the
-  // ON treatment to be EXPLICITLY present (`--ccr on`) and exactly one arm to be
-  // the off baseline (empty args, or an explicit `--ccr off`). This canary
-  // guarantees the ON treatment is actually delivered, not silently absent.
-  // applyCcrArg recognizes only `--ccr on`/`--ccr off`.
-  const hasCcrArm = hookArgArms.some((arm) => /(^|\s)--ccr(\s|$)/.test(arm.args));
-  if (hasCcrArm) {
-    const armCcrState = (args: string): 'off' | 'on' => {
-      const m = /(?:^|\s)--ccr\s+(\S+)/.exec(args);
-      const v = m?.[1];
-      if (v !== undefined && v !== 'off' && v !== 'on') {
-        throw new Error(
-          `--hook-arg-arms: unrecognized '--ccr ${v}' (expected 'on' or 'off') — applyCcrArg would ignore it and the arm would fail toward CCR-OFF (the baseline), silently measuring the same treatment as the off-arm`,
-        );
-      }
-      // CCR is default-off opt-in: it is ON only when `--ccr on` is explicit;
-      // an explicit `--ccr off` OR an absent flag leaves it at the off baseline.
-      return v === 'on' ? 'on' : 'off';
-    };
-    const offArms = hookArgArms.filter((arm) => armCcrState(arm.args) === 'off');
-    const onArms = hookArgArms.filter((arm) => armCcrState(arm.args) === 'on');
-    if (offArms.length !== 1 || onArms.length < 1) {
-      throw new Error(
-        `--hook-arg-arms CCR A/B requires exactly ONE off-baseline arm (empty args or '--ccr off') and at least one arm with an EXPLICIT '--ccr on'; got ${offArms.length} off / ${onArms.length} on. Use e.g. --hook-arg-arms 'ccr-on=--ccr on,ccr-off='.`,
-      );
-    }
-  }
-
   const hooked = variants.find((variant) => variant.hook);
   if (hooked !== undefined && hooked.baseMode !== 'full') {
     // throws 'run npm run build' when dist/hook.js is missing; absolute style
@@ -612,15 +454,6 @@ export async function runBenchmarkCommand(opts: BenchmarkCliOptions): Promise<vo
     }
     if (variants.some((v) => v.hook && v.hookArgs?.includes('--recovery-budget') === true)) {
       await assertHookHandlesRecoveryBudget(hookCommand);
-    }
-    // CCR delivery preflight: prove the model's `compressor retrieve` resolves to
-    // a build that HAS the subcommand, on the EXACT PATH cells run with (runner
-    // prepends bench/bin). A stale global silently produces empty stdout that
-    // looks like a real miss and inverts the savings number — fail fast instead.
-    if (hasCcrArm || variants.some((v) => v.hook && v.hookArgs?.includes('--ccr') === true)) {
-      const cellPath =
-        path.join(packageRoot(), 'bench', 'bin') + path.delimiter + (process.env.PATH ?? '');
-      await assertCcrRetrieveWorks(hookCommand, cellPath);
     }
   }
 

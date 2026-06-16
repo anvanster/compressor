@@ -69,44 +69,9 @@ export interface CompressStats {
   transforms: AppliedTransform[];
 }
 
-/**
- * One omitted NON-FILE chunk collected when CCR omission-collection is enabled
- * (compress(..., { collectOmissions: true }) — the hook path only). The engine
- * emits `placeholder` (a unique CCR token) inside the marker's recovery clause
- * and carries the exact omitted `text` out as DATA; the impure hook layer
- * (compressCall) stashes the text and swaps the placeholder for a real retrieve
- * handle. The engine never hashes or writes — it only collects. File-read cuts
- * produce NO omission (they keep today's offset/limit re-read marker; §7/B).
- */
-export interface Omission {
-  /** Unique CCR placeholder token embedded in the marker (e.g. `⟦ccr:0⟧`). */
-  placeholder: string;
-  /** The exact omitted bytes the hook will stash, keyed by hash(text). */
-  text: string;
-}
-
-/**
- * Options that change WHAT the engine collects (never how it decides). The sole
- * option, `collectOmissions`, is OPT-IN and default OFF: every existing caller
- * (CLI `compress`, the engine tests) renders today's descriptive markers with
- * NO placeholders and NO omissions — byte-identical to pre-CCR behavior. Only
- * the hook (compressCall) turns it on, so a raw placeholder can never leak to a
- * non-hook caller.
- */
-export interface CompressOptions {
-  collectOmissions?: boolean;
-}
-
 export interface CompressResult {
   content: string;
   stats: CompressStats;
-  /**
-   * NON-FILE omitted chunks, present only when CCR omission-collection was
-   * enabled AND a non-file cutting transform fired. Absent (undefined) on every
-   * OFF-path call and whenever nothing was collected, so non-hook callers and
-   * existing tests see exactly today's shape.
-   */
-  omissions?: Omission[];
 }
 
 /**
@@ -114,18 +79,3 @@ export interface CompressResult {
  * Content already containing this marker is never re-compressed (idempotency).
  */
 export const OMISSION_MARKER = '[compressor:';
-
-/**
- * Builds the unique CCR placeholder token for the Nth omission within one
- * compress() result (e.g. `⟦ccr:0⟧`). Distinct from OMISSION_MARKER and from
- * any text the model could plausibly emit. INVARIANT B: this token is internal
- * — compressCall MUST replace every one (with a real retrieve handle on stash
- * success, or today's descriptive fallback clause otherwise) before returning a
- * worthwhile result; a raw `⟦ccr:N⟧` reaching the model is a P0 bug.
- */
-export function ccrPlaceholder(index: number): string {
-  return `⟦ccr:${index}⟧`;
-}
-
-/** Matches any CCR placeholder token; used for the defensive leftover swap. */
-export const CCR_PLACEHOLDER_RE = /⟦ccr:\d+⟧/g;

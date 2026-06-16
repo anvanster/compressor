@@ -14,12 +14,6 @@ import { settleLedger } from '../../src/ledger/write.ts';
 // test/hook/recovery.test.ts).
 process.env['COMPRESSOR_NO_LEDGER'] = '1';
 process.env['COMPRESSOR_RECOVERY_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-cp-recovery-'));
-// CCR is default-OFF opt-in; SET COMPRESSOR_CCR=1 so the non-file (bash)
-// retrieve-marker tests below actually exercise the stash (otherwise they go
-// vacuous), and point it at a temp dir so it writes hermetically, never touching
-// the real stash.
-process.env['COMPRESSOR_CCR'] = '1';
-process.env['COMPRESSOR_CCR_DIR'] = mkdtempSync(join(tmpdir(), 'compressor-cp-ccr-'));
 
 function repetitiveLog(lines: number): string {
   return Array.from(
@@ -321,23 +315,18 @@ function distinctLog(lines: number): string {
   ).join('\n');
 }
 
-// CCR (Phase 2) supersedes the marker-STYLE recovery clause for NON-FILE
-// (bash) output on the hook path: the marker carries a content-addressed
-// retrieve handle instead, identical across styles. File-read style variants
-// are covered at the engine level (test/engine/marker-styles.test.ts).
-test('bash output gets a CCR retrieve marker when CCR is on (COMPRESSOR_CCR=1)', () => {
+test('marker style defaults to the policy value (plain)', () => {
   const out = handleCopilotPostToolUse(
     copilotPayload('bash', { command: 'cargo build 2>&1' }, distinctLog(600)),
     'slim',
   ).output;
   assert.ok(out !== null, 'expected non-null output');
   const replaced = (JSON.parse(out) as CopilotResponse).modifiedResult.textResultForLlm;
-  assert.match(replaced, /— retrieve: compressor retrieve [A-Za-z0-9_-]{16}\]/);
-  assert.ok(!replaced.includes('⟦ccr:'), 'no raw placeholder leaked');
+  assert.match(replaced, /— re-run with a narrower filter \(grep, --quiet, head\) to retrieve\]/);
   assert.ok(!replaced.includes('likely irrelevant'));
 });
 
-test('marker style no longer changes the bash recovery clause (CCR supersedes it)', () => {
+test('--marker-style deterrent override flows through to the marker', () => {
   const out = handleCopilotPostToolUse(
     copilotPayload('bash', { command: 'cargo build 2>&1' }, distinctLog(600)),
     'slim',
@@ -345,41 +334,6 @@ test('marker style no longer changes the bash recovery clause (CCR supersedes it
   ).output;
   assert.ok(out !== null, 'expected non-null output');
   const replaced = (JSON.parse(out) as CopilotResponse).modifiedResult.textResultForLlm;
-  assert.ok(!replaced.includes('likely irrelevant'), 'no style prose on the CCR path');
-  assert.match(replaced, /— retrieve: compressor retrieve [A-Za-z0-9_-]{16}\]/);
-});
-
-// CCR passthrough guard (§3): the output of a `compressor retrieve` command is
-// an exact original slice the model deliberately pulled back; re-compressing it
-// would re-cut and re-stash what was just retrieved. Copilot sniffs the command
-// out of toolArgs, which the CLI docs send as a JSON-ENCODED STRING — a code
-// path distinct from post-tool-use/opencode, hence its own guard test. Mirrors
-// those guards: null for a retrieve command, non-null for a control command
-// over the same large output, in BOTH the object and the wire (string) form.
-test('copilot guard: a `compressor retrieve` bash output passes through uncompressed', () => {
-  const big = distinctLog(600);
-  // object-form toolArgs
-  assert.equal(
-    handleCopilotPostToolUse(
-      copilotPayload('bash', { command: 'compressor retrieve AbCdEf0123456789' }, big),
-      'slim',
-    ).output,
-    null,
-    'retrieved output (object toolArgs) is passed through, not compressed',
-  );
-  // JSON-encoded-string toolArgs (the documented wire format)
-  assert.equal(
-    handleCopilotPostToolUse(
-      copilotPayload('bash', JSON.stringify({ command: 'compressor retrieve AbCdEf0123456789' }), big),
-      'slim',
-    ).output,
-    null,
-    'retrieved output (string toolArgs) is passed through too',
-  );
-  // control: the SAME large output under a non-retrieve command DOES compress
-  const control = handleCopilotPostToolUse(
-    copilotPayload('bash', { command: 'cat huge.log' }, big),
-    'slim',
-  ).output;
-  assert.ok(control !== null, 'control output compresses (guard is command-specific)');
+  assert.ok(replaced.includes('likely irrelevant'), 'deterrent phrasing present');
+  assert.ok(replaced.includes('ONLY if the problem you are chasing'));
 });

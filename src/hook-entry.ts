@@ -1,6 +1,5 @@
 import process from 'node:process';
 import type { MarkerStyle } from './engine/types.ts';
-import { applyCcrArg } from './hook/ccr.ts';
 import { settleThenExit } from './hook/exit.ts';
 import { handlePostToolUse } from './hook/post-tool-use.ts';
 import { applyRecoveryBudgetArg } from './hook/recovery.ts';
@@ -30,7 +29,6 @@ async function main(): Promise<string | null> {
   }
   const payload = Buffer.concat(chunks).toString('utf8');
   applyRecoveryBudgetArg(process.argv);
-  applyCcrArg(process.argv);
   return handlePostToolUse(payload, parseMode(process.argv), parseMarkerStyle(process.argv))
     .output;
 }

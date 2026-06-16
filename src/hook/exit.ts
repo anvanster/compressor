@@ -1,6 +1,5 @@
 import process from 'node:process';
 import { settleLedger } from '../ledger/write.ts';
-import { settleCcr } from './ccr.ts';
 import { settleRecovery } from './recovery.ts';
 
 /** Hard cap on how long pending state writes may delay hook exit. */
@@ -38,7 +37,7 @@ export async function writeHookOutput(
 
 /**
  * Deliver hook output, give in-flight state writes (ledger appends +
- * recovery-budget records + CCR stash chunks) up to SETTLE_CAP_MS to flush, then guarantee
+ * recovery-budget records) up to SETTLE_CAP_MS to flush, then guarantee
  * process termination. Shared by both bundled hook entries and the CLI
  * `hook` subcommands — every protocol surface gets the same hot-path bound.
  * Never throws (fail-open).
@@ -66,7 +65,7 @@ export async function settleThenExit(output: string | null): Promise<void> {
   try {
     let timer: NodeJS.Timeout | undefined;
     timedOut = await Promise.race([
-      Promise.all([settleLedger(), settleRecovery(), settleCcr()]).then(() => false),
+      Promise.all([settleLedger(), settleRecovery()]).then(() => false),
       new Promise<boolean>((resolve) => {
         timer = setTimeout(() => resolve(true), SETTLE_CAP_MS);
       }),
