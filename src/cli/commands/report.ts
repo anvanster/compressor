@@ -3,6 +3,7 @@ import path from 'node:path';
 import { aggregate, readRun } from '../../bench/results.ts';
 import type { VariantAggregate } from '../../bench/results.ts';
 import type { CellResult, RunMeta } from '../../bench/types.ts';
+import { WEIGHT_LEGEND, costWeightedContext } from '../../tokens/weight.ts';
 
 export type ReportFormat = 'table' | 'md' | 'json';
 
@@ -60,7 +61,11 @@ export interface TaskVariantCell {
   successFraction: number | null;
   /** median output tokens over valid rows */
   medianOutput: number;
-  /** median input + cacheCreation + cacheRead (context volume) over valid rows */
+  /**
+   * median cost-weighted input-side context over valid rows: input*1 +
+   * cacheCreation*1.25 + cacheRead*0.1 (dollar-proportional input-equiv tokens,
+   * NOT a face-value sum — cache-read costs ~0.1x so the raw sum overstated $).
+   */
   medianContext: number;
 }
 
@@ -214,9 +219,10 @@ export function computeByTask(results: CellResult[]): ByTaskBreakdown {
         successes,
         successFraction: judged.length === 0 ? null : successes / judged.length,
         medianOutput: medianOf(valid.map((r) => r.usage.output)),
-        medianContext: medianOf(
-          valid.map((r) => r.usage.input + r.usage.cacheCreation + r.usage.cacheRead),
-        ),
+        // cost-weighted (dollar-proportional) input-side context, NOT a
+        // face-value (input + cacheCreation + cacheRead) sum: cache-read costs
+        // ~0.1x of base input, so the raw sum overstated dollars up to ~10x.
+        medianContext: medianOf(valid.map((r) => costWeightedContext(r.usage))),
       };
     }),
   );
@@ -522,8 +528,8 @@ export function formatReport(report: RunReport, format: ReportFormat): string {
         ? `## per-task median output tokens (success)\n\n${table(out.headers, out.rows)}`
         : `per-task median output tokens (success):\n${table(out.headers, out.rows)}`,
       format === 'md'
-        ? `## per-task median context volume\n\n${table(ctx.headers, ctx.rows)}`
-        : `per-task median context volume:\n${table(ctx.headers, ctx.rows)}`,
+        ? `## per-task median context (cost-weighted)\n\n${table(ctx.headers, ctx.rows)}\n\n${WEIGHT_LEGEND}`
+        : `per-task median context (cost-weighted):\n${table(ctx.headers, ctx.rows)}\n${WEIGHT_LEGEND}`,
     );
   }
   const toolCalls = toolCallLines(report.aggregates);

@@ -7,6 +7,7 @@ import {
   readSessionUsage,
 } from '../../claude/transcripts.ts';
 import type { SessionUsage, UsageTotals } from '../../claude/transcripts.ts';
+import { EFFECTIVE_UNIT, WEIGHT_LEGEND, weightedTokens } from '../../tokens/weight.ts';
 
 export interface StatsOptions {
   project?: string;
@@ -53,11 +54,16 @@ export async function runStats(opts: StatsOptions): Promise<void> {
     ['output', fmt(totals.output)],
     ['cacheCreation', fmt(totals.cacheCreation)],
     ['cacheRead', fmt(totals.cacheRead)],
+    // Cost-weighted summary: raw tiers above overstate dollars because
+    // cache-read costs ~0.1x of base input. weightedTokens collapses every
+    // tier to input-equivalent (dollar-proportional) tokens. Raw rows stay.
+    ['effective', `${fmt(weightedTokens(totals))} ${EFFECTIVE_UNIT}  (cost-weighted)`],
   ];
   const width = Math.max(...rows.map(([label]) => label.length));
   for (const [label, value] of rows) {
     console.log(`${label.padEnd(width)}  ${value}`);
   }
+  console.log(WEIGHT_LEGEND);
 
   const models = Object.entries(byModel);
   if (models.length > 0) {

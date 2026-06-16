@@ -230,7 +230,9 @@ function taskRow(
 
 function byTaskResults(): CellResult[] {
   return [
-    // t1 × full: outputs 1500/1531/1600 → median 1,531; context 6000/7000/8000 → 7,000
+    // t1 × full: outputs 1500/1531/1600 → median 1,531.
+    // cost-weighted context = input*1 + 2000*1.25 + 3000*0.1 = input + 2800:
+    // 3800/4800/5800 → median 4,800.
     taskRow('t1', 'full', 1, 1000, 1500),
     taskRow('t1', 'full', 2, 2000, 1531),
     taskRow('t1', 'full', 3, 3000, 1600),
@@ -262,7 +264,8 @@ test('byTask matrix math: medians, success fractions, missing/errored pairs', ()
   assert.equal(t1Full.successes, 3);
   assert.equal(t1Full.successFraction, 1);
   assert.equal(t1Full.medianOutput, 1531);
-  assert.equal(t1Full.medianContext, 7000);
+  // cost-weighted: input + 2000*1.25 + 3000*0.1 = input + 2800 → 3800/4800/5800
+  assert.equal(t1Full.medianContext, 4800);
 
   const t1Opt = cell(0, 2);
   assert.ok(t1Opt);
@@ -270,7 +273,8 @@ test('byTask matrix math: medians, success fractions, missing/errored pairs', ()
   assert.equal(t1Opt.judged, 3);
   assert.equal(t1Opt.successFraction, 2 / 3);
   assert.equal(t1Opt.medianOutput, 1000);
-  assert.equal(t1Opt.medianContext, 6000);
+  // all three rows have input 1000 → cost-weighted 1000 + 2800 = 3800
+  assert.equal(t1Opt.medianContext, 3800);
 
   // task missing one variant → null cell
   assert.equal(cell(0, 1), null);
@@ -289,10 +293,12 @@ test('byTask matrices render in table and md with — for missing cells', () => 
 
   const table = formatReport(report, 'table');
   assert.match(table, /per-task median output tokens \(success\):/);
-  assert.match(table, /per-task median context volume:/);
+  assert.match(table, /per-task median context \(cost-weighted\):/);
+  // legend explains the per-tier weighting near the table
+  assert.match(table, /cache-read 0\.1x/);
   assert.match(table, /1,531 \(3\/3\)/);
   assert.match(table, /1,000 \(2\/3\)/);
-  assert.match(table, /7,000/);
+  assert.match(table, /4,800/);
   // t1 row: missing alpha column renders an em dash
   const t1OutLine = table
     .split('\n')
@@ -308,10 +314,12 @@ test('byTask matrices render in table and md with — for missing cells', () => 
 
   const md = formatReport(report, 'md');
   assert.match(md, /## per-task median output tokens \(success\)/);
-  assert.match(md, /## per-task median context volume/);
+  assert.match(md, /## per-task median context \(cost-weighted\)/);
+  assert.match(md, /cache-read 0\.1x/);
   assert.ok(md.includes('| task | full | alpha | optimized |'));
   assert.ok(md.includes('| t1 | 1,531 (3/3) | — | 1,000 (2/3) |'));
-  assert.ok(md.includes('| t1 | 7,000 | — | 6,000 |'));
+  // cost-weighted context: t1 full=4,800, optimized=3,800
+  assert.ok(md.includes('| t1 | 4,800 | — | 3,800 |'));
   assert.ok(md.includes('| t2 | 700 (1/1) | 650 (1/1) | — |'));
 });
 

@@ -20,6 +20,14 @@ export type { CodeLang } from './engine/tiers/code.ts';
 // tokens
 export { cheapEstimator, estimateTokens, tiktokenEstimator } from './tokens/estimate.ts';
 export { countTokensExact } from './tokens/exact.ts';
+export {
+  TIER_WEIGHTS,
+  WEIGHT_LEGEND,
+  EFFECTIVE_UNIT,
+  weightedTokens,
+  costWeightedContext,
+} from './tokens/weight.ts';
+export type { UsageLike } from './tokens/weight.ts';
 
 // transcripts
 export {

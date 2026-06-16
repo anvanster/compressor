@@ -93,6 +93,12 @@ export function aggregateSavings(
     : rows.sort((a, b) => b.savedTokens - a.savedTokens);
 }
 
+// NO cache-tier weighting here: this is the CROSS-AGENT surface (claude-code,
+// copilot, opencode, vscode) and the ledger records only the agent, not the
+// model — so the per-token $ value is unknowable (Anthropic caching is
+// 1.25x write / 0.1x read, OpenAI ~0.5x read, a no-cache model 1x). Reporting
+// raw estimated tokens with the "not billable" caveat is the honest floor;
+// cache-tier weighting lives only on the Claude-only stats/report surfaces.
 /** Whole-window totals: exact chars, estimated tokens, event count. */
 export function savingsTotals(events: readonly LedgerEvent[]): SavingsTotals {
   return {
