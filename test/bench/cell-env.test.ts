@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cellEnv } from '../../src/bench/cell.ts';
 import { runBenchmark } from '../../src/bench/runner.ts';
@@ -21,6 +21,27 @@ test('cellEnv isolates the config dir AND disables the savings ledger', () => {
   const env = cellEnv('/tmp/scratch-xyz');
   assert.equal(env['CLAUDE_CONFIG_DIR'], '/tmp/scratch-xyz');
   assert.equal(env['COMPRESSOR_NO_LEDGER'], '1');
+});
+
+test('cellEnv gives each cell its OWN CCR stash dir under scratch (no cross-run poisoning)', () => {
+  const a = cellEnv('/tmp/scratch-a');
+  const b = cellEnv('/tmp/scratch-b');
+  assert.equal(a['COMPRESSOR_CCR_DIR'], join('/tmp/scratch-a', 'ccr-stash'));
+  assert.equal(b['COMPRESSOR_CCR_DIR'], join('/tmp/scratch-b', 'ccr-stash'));
+  // distinct per cell, so a leftover chunk from one run can never cover another's miss
+  assert.notEqual(a['COMPRESSOR_CCR_DIR'], b['COMPRESSOR_CCR_DIR']);
+  // NOT the shared os.tmpdir()/compressor-ccr default that persists across runs
+  assert.notEqual(a['COMPRESSOR_CCR_DIR'], join(tmpdir(), 'compressor-ccr'));
+});
+
+test('cellEnv prepends the bench/bin shim to PATH so `compressor retrieve` resolves to the fresh build', () => {
+  const env = cellEnv('/tmp/scratch-xyz');
+  const first = (env['PATH'] ?? '').split(delimiter)[0] ?? '';
+  // the shim dir is <packageRoot>/bench/bin — assert the first PATH entry ends there
+  assert.ok(
+    first.endsWith(join('bench', 'bin')),
+    `expected PATH to start with the bench/bin shim, got ${first}`,
+  );
 });
 
 test('the claude child process actually receives COMPRESSOR_NO_LEDGER=1', async (t) => {

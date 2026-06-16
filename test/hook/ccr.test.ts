@@ -6,6 +6,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join, parse } from 'node:path';
 import process from 'node:process';
 import {
+  applyCcrArg,
   ccrDisabled,
   ccrTtlMs,
   handleFor,
@@ -701,4 +702,47 @@ test('readFileNoFollow reads a regular file but refuses a symlinked final compon
   const got = await _readFileNoFollowForTest(swapped);
   assert.equal(got, null, 'O_NOFOLLOW refuses the symlinked final component');
   assert.notEqual(got, 'TOP-SECRET', 'the symlink target is never leaked');
+});
+
+// ---------------------------------------------------------------------------
+// --ccr <on|off> argv toggle — the per-arm CCR switch for the savings A/B.
+// Mirrors recovery.ts::applyRecoveryBudgetArg's argv-wins-over-env contract:
+// argv sets the env the kill switch (ccrDisabled) reads at call time, so
+// `--hook-arg-arms "ccr-on=,ccr-off=--ccr off"` toggles CCR per arm in one run.
+// ---------------------------------------------------------------------------
+
+test('applyCcrArg: argv toggles COMPRESSOR_NO_CCR; missing/invalid is a no-op', () => {
+  const saved = process.env['COMPRESSOR_NO_CCR'];
+  try {
+    delete process.env['COMPRESSOR_NO_CCR'];
+
+    // off → kill switch on
+    applyCcrArg(['--mode', 'optimized', '--ccr', 'off']);
+    assert.equal(ccrDisabled(), true);
+
+    // on → kill switch off (re-enables after off; argv wins, deterministic)
+    applyCcrArg(['--ccr', 'on']);
+    assert.equal(ccrDisabled(), false);
+
+    // off again, then a junk value must NOT change the established state
+    applyCcrArg(['--ccr', 'off']);
+    assert.equal(ccrDisabled(), true);
+    applyCcrArg(['--ccr', 'bogus']);
+    assert.equal(ccrDisabled(), true, 'invalid value is a no-op (fail-open)');
+
+    // missing value / missing flag / empty argv all change nothing
+    applyCcrArg(['--ccr']);
+    assert.equal(ccrDisabled(), true);
+    applyCcrArg(['--mode', 'slim']);
+    assert.equal(ccrDisabled(), true);
+    applyCcrArg([]);
+    assert.equal(ccrDisabled(), true);
+
+    // on clears it again to confirm the no-ops above were genuine no-ops
+    applyCcrArg(['--ccr', 'on']);
+    assert.equal(ccrDisabled(), false);
+  } finally {
+    if (saved === undefined) delete process.env['COMPRESSOR_NO_CCR'];
+    else process.env['COMPRESSOR_NO_CCR'] = saved;
+  }
 });
