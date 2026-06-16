@@ -64,6 +64,32 @@ export function ccrDisabled(): boolean {
   return process.env['COMPRESSOR_NO_CCR'] === '1';
 }
 
+/**
+ * Apply a `--ccr <on|off>` argv override by setting the env var the kill switch
+ * (ccrDisabled) reads at call time — argv wins over env with zero signature
+ * churn through the protocol layers, exactly like recovery.ts's
+ * applyRecoveryBudgetArg. Benchmarks use this to vary CCR PER ARM in ONE run
+ * (`--hook-arg-arms "ccr-on=,ccr-off=--ccr off"`): the env is global to a run,
+ * but hook commands are per-variant, so the flag toggles the kill switch for
+ * just that arm's hook invocations.
+ *
+ * Fail-open: a missing or unrecognized value changes nothing (the env-level
+ * kill switch keeps whatever it already was). `off` sets COMPRESSOR_NO_CCR=1;
+ * `on` deletes it (so a later `on` arm re-enables after an `off` arm in the
+ * same process, argv-wins-deterministic, mirroring the recovery toggle).
+ */
+export function applyCcrArg(argv: readonly string[]): void {
+  const idx = argv.indexOf('--ccr');
+  const value = idx === -1 ? undefined : argv[idx + 1]?.trim();
+  if (value === 'off') {
+    process.env['COMPRESSOR_NO_CCR'] = '1';
+    return;
+  }
+  if (value === 'on') {
+    delete process.env['COMPRESSOR_NO_CCR'];
+  }
+}
+
 /** Resolved at call time (not module load) so tests can swap the env var. */
 export function resolveCcrDir(): string {
   return process.env['COMPRESSOR_CCR_DIR'] ?? path.join(os.tmpdir(), 'compressor-ccr');

@@ -1,5 +1,6 @@
 import process from 'node:process';
 import type { MarkerStyle } from './engine/types.ts';
+import { applyCcrArg } from './hook/ccr.ts';
 import { handleCopilotPostToolUse } from './hook/copilot.ts';
 import { settleThenExit } from './hook/exit.ts';
 import { applyRecoveryBudgetArg } from './hook/recovery.ts';
@@ -31,6 +32,7 @@ async function main(): Promise<string | null> {
   }
   const payload = Buffer.concat(chunks).toString('utf8');
   applyRecoveryBudgetArg(process.argv);
+  applyCcrArg(process.argv);
   return handleCopilotPostToolUse(
     payload,
     parseMode(process.argv),
