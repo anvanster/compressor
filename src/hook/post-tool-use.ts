@@ -21,7 +21,7 @@ export interface HookResult {
 
 /**
  * In-process enforcement of the matcher the claude-code adapter installs
- * ('Read|Bash|Grep|Glob' — src/adapters/claude-code.ts). Per
+ * ('Read|Bash|Grep|Glob|mcp__.*' — src/adapters/claude-code.ts). Per
  * internal/VSCODE-HOOKS-VERIFICATION.md V3, VS Code agent mode executes hooks
  * from the SAME config files our adapters write (.claude/settings.local.json,
  * .claude/settings.json) and "Currently, VS Code ignores matcher values" — so
@@ -34,14 +34,20 @@ export interface HookResult {
  * never applied. Enforcing the matcher's promise in-process makes phantom
  * ledger events impossible regardless of which host runs the config file.
  *
- * Design consequence: MCP/unknown tools no longer hit the generic leaf path
- * in THIS layer. That path remains available via the copilot layer (whose
- * toolName filtering differs), and can be revisited deliberately if unknown
- * claude-code tool outputs should compress again.
+ * Design consequence: MCP tools (mcp__*) ARE admitted to the leaf path in THIS
+ * layer via the OR clause in the guard below (the regex matcher 'mcp__.*' makes
+ * PostToolUse fire for them, and the JSON minify tier reaches their JSON
+ * output). VS Code tool names and unknown/future built-ins still no-op
+ * immediately — no compression, no ledger — keeping the cross-host guard
+ * intact. This aligns with the inline guard comment further down.
  */
 const MATCHER_TOOLS: ReadonlySet<string> = new Set(['Read', 'Bash', 'Grep', 'Glob']);
 
 function toolKindFor(toolName: string): ToolKind {
+  // MCP tool names are namespaced 'mcp__<server>__<tool>'; all map to 'mcp'.
+  if (toolName.startsWith('mcp__')) {
+    return 'mcp';
+  }
   switch (toolName) {
     case 'Read':
       return 'read';
@@ -69,10 +75,13 @@ export function handlePostToolUse(
       return { output: null };
     }
     const toolName = typeof payload['tool_name'] === 'string' ? payload['tool_name'] : '';
-    // Cross-host matcher guard (see MATCHER_TOOLS above): anything outside the
-    // installed matcher — VS Code tool names, MCP tools, future built-ins —
-    // no-ops immediately: no compression, no ledger, no recovery notes.
-    if (!MATCHER_TOOLS.has(toolName)) {
+    // Cross-host matcher guard (see MATCHER_TOOLS above): allow the installed
+    // matcher's built-ins AND MCP tools ('mcp__*', installed via the regex
+    // matcher 'mcp__.*'). The PostToolUse hook fires for MCP tools, and the JSON
+    // minify tier finally reaches their JSON output. Anything else — VS Code
+    // tool names, future built-ins — no-ops immediately: no compression, no
+    // ledger, no recovery notes (cross-host guard intact).
+    if (!MATCHER_TOOLS.has(toolName) && !toolName.startsWith('mcp__')) {
       return { output: null };
     }
     const toolInput = isRecord(payload['tool_input']) ? payload['tool_input'] : {};
@@ -105,6 +114,13 @@ export function handlePostToolUse(
     noteTruncationIfCut(sessionId, call, compressed);
     recordCompression('claude-code', call, compressed, mode);
 
+    // For MCP, pickLeaf('mcp') finds the JSON text in the content-block array
+    // ([{type:'text',text:'<json>'}]) via the longest-string-leaf and
+    // rebuildWithLeaf replaces it shape-preservingly. updatedToolOutput is the
+    // UNIFIED, current replacement field (works for all tools incl. MCP as of
+    // v2.1.121+); updatedMCPToolOutput is the deprecated MCP-only fallback we do
+    // NOT emit. If the MCP shape is unrecognized, pickLeaf returned null above
+    // and we already no-opped = FAIL OPEN.
     const updatedToolOutput = rebuildWithLeaf(payload['tool_response'], leaf.path, compressed.text);
     return {
       output: JSON.stringify({

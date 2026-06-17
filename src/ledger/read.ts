@@ -14,7 +14,7 @@ export interface ReadLedgerOptions {
 }
 
 const AGENTS = new Set(['claude-code', 'copilot', 'opencode', 'vscode']);
-const TOOLS = new Set(['read', 'bash', 'search', 'other']);
+const TOOLS = new Set(['read', 'bash', 'search', 'other', 'mcp']);
 const MODES = new Set(['full', 'optimized', 'slim']);
 
 function isFiniteNumber(value: unknown): value is number {

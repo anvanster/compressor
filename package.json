@@ -1,6 +1,6 @@
 {
   "name": "@astudioplus/compressor",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Reduce token usage in AI coding agents (Claude Code, Copilot, Cursor) with instruction packs and tool-output compression hooks — savings you can measure.",
   "type": "module",
   "author": "Andrey Vasilevsky <anvanster@gmail.com>",

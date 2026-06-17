@@ -37,6 +37,11 @@ export function detectKind(content: string, filePath?: string): ContentKind {
     if (ext !== undefined && CODE_EXTENSIONS.has(ext)) return 'code';
   }
   if (content.startsWith('#!')) return 'code';
+  // JSON before the log regexes: a JSON payload containing the word "error"
+  // must not be misread as a build-log. The cheap startsWith gate means
+  // non-JSON pays nothing (no parse attempt); the parse is wrapped so prose or
+  // JSONL-with-trailing-garbage that merely starts with {/[ falls through.
+  if (isJson(content)) return 'json';
   if (TEST_LOG_RES.some((re) => re.test(content))) return 'test-log';
   if (BUILD_LOG_RES.some((re) => re.test(content))) return 'build-log';
   if (STACK_FRAME_RE.test(content) && /\berror\b/i.test(content)) return 'build-log';
@@ -46,4 +51,23 @@ export function detectKind(content: string, filePath?: string): ContentKind {
 function extensionOf(filePath: string): string | undefined {
   const match = /\.([A-Za-z0-9]+)$/.exec(filePath);
   return match?.[1]?.toLowerCase();
+}
+
+/**
+ * A whole-payload JSON document. Gate the (relatively costly) JSON.parse behind
+ * a cheap structural check — the trimmed content must start with `{` or `[` —
+ * so non-JSON output pays nothing. JSON.parse over the WHOLE trimmed text
+ * rejects JSONL / trailing-garbage / json-shaped prose (parse throws → false).
+ */
+function isJson(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    return false;
+  }
+  try {
+    JSON.parse(trimmed);
+    return true;
+  } catch {
+    return false;
+  }
 }

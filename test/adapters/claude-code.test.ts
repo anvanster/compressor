@@ -52,7 +52,7 @@ const seedSettings = {
 };
 
 const ourEntry = {
-  matcher: 'Read|Bash|Grep|Glob',
+  matcher: 'Read|Bash|Grep|Glob|mcp__.*',
   hooks: [{ type: 'command', command: HOOK_COMMAND }],
 };
 
@@ -278,7 +278,7 @@ test('mode switch replaces our hook entry matched across --mode values', async (
     hooks: {
       PostToolUse: [
         {
-          matcher: 'Read|Bash|Grep|Glob',
+          matcher: 'Read|Bash|Grep|Glob|mcp__.*',
           hooks: [{ type: 'command', command: `${base} --mode optimized` }],
         },
       ],
@@ -311,7 +311,7 @@ test('quoted hook command claims legacy unquoted entries (upgrade path)', async 
     hooks: {
       PostToolUse: [
         {
-          matcher: 'Read|Bash|Grep|Glob',
+          matcher: 'Read|Bash|Grep|Glob|mcp__.*',
           hooks: [{ type: 'command', command: quoted }],
         },
       ],
@@ -351,7 +351,7 @@ test('relocatable command form: claimed at the word boundary, near-miss names ne
         nearMissPrefix,
         nearMissSuffix,
         {
-          matcher: 'Read|Bash|Grep|Glob',
+          matcher: 'Read|Bash|Grep|Glob|mcp__.*',
           hooks: [{ type: 'command', command: 'compressor-hook --mode optimized' }],
         },
       ],
@@ -392,7 +392,7 @@ test('upgrade path: old absolute entry replaced by a relocatable install — no 
     hooks: {
       PostToolUse: [
         {
-          matcher: 'Read|Bash|Grep|Glob',
+          matcher: 'Read|Bash|Grep|Glob|mcp__.*',
           hooks: [{ type: 'command', command: 'compressor-hook --mode slim' }],
         },
       ],
@@ -429,7 +429,7 @@ test('downgrade path: relocatable entry replaced by an absolute install — no d
     hooks: {
       PostToolUse: [
         {
-          matcher: 'Read|Bash|Grep|Glob',
+          matcher: 'Read|Bash|Grep|Glob|mcp__.*',
           hooks: [{ type: 'command', command: absolute }],
         },
       ],

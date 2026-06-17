@@ -7,8 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-06-16
+
 ### Added
 
+- **Lossless JSON-minify tier + MCP tool reach.** Tool output that is JSON is
+  now losslessly minified — a string-aware whitespace strip that preserves every
+  number/string byte-exact (never `JSON.parse`→`stringify`, so big ints, `1e10`,
+  and trailing zeros survive intact), routed so JSON never reaches the line-based
+  tiers that would corrupt it, and failing open on any doubt. Enabled in
+  `optimized` and `slim` (`full` untouched). The Claude Code PostToolUse hook
+  matcher now also covers MCP tools (`Read|Bash|Grep|Glob|mcp__.*`), so the tier
+  reaches MCP JSON output — measured ~12% of tool-output tokens, previously
+  unreachable. Verified lossless on 890 real tool outputs (0 corrupted). Existing
+  installs need to re-run `compressor init` to pick up the new matcher.
 - **`compressor benchmark --competitor <name>`** — add a third-party
   instruction pack as an output-only arm for a head-to-head. The real upstream
   pack loads from `<suiteDir>/../competitors` and is delivered via the same

@@ -2,10 +2,10 @@
 export type Mode = 'full' | 'optimized' | 'slim';
 
 /** What produced the content being compressed. */
-export type ToolKind = 'read' | 'bash' | 'search' | 'other';
+export type ToolKind = 'read' | 'bash' | 'search' | 'other' | 'mcp';
 
 /** Detected content kind, used to pick transforms. */
-export type ContentKind = 'code' | 'test-log' | 'build-log' | 'generic';
+export type ContentKind = 'code' | 'test-log' | 'build-log' | 'generic' | 'json';
 
 export interface CompressMeta {
   tool: ToolKind;
@@ -41,6 +41,12 @@ export interface Policy {
   structural: boolean;
   codeAware: boolean;
   logAware: boolean;
+  /**
+   * Lossless JSON minify (string-aware whitespace strip). On for optimized AND
+   * slim: the transform omits nothing — same JSON, denser — so it is safe even
+   * in optimized. Off for full.
+   */
+  jsonMinify: boolean;
   markerStyle: MarkerStyle;
   /** below this, return input unchanged */
   touch: number;

@@ -7,6 +7,7 @@ export function policyFor(mode: Mode): Policy {
         structural: false,
         codeAware: false,
         logAware: false,
+        jsonMinify: false,
         // 'plain' everywhere for now: the marker-style experiment (bench
         // hookArgs --marker-style) varies this per arm and picks the winner.
         markerStyle: 'plain',
@@ -23,6 +24,8 @@ export function policyFor(mode: Mode): Policy {
         structural: true,
         codeAware: true,
         logAware: false,
+        // lossless ⇒ safe in optimized (omits nothing; same JSON, denser)
+        jsonMinify: true,
         markerStyle: 'plain',
         touch: 600,
         truncateBudget: 5000,
@@ -35,6 +38,7 @@ export function policyFor(mode: Mode): Policy {
         structural: true,
         codeAware: true,
         logAware: true,
+        jsonMinify: true,
         markerStyle: 'plain',
         touch: 300,
         // measured (bench-20260610-114234/-123102): a 2,500 budget pushed the

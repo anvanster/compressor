@@ -19,7 +19,10 @@ function invalidSettingsError(fileName: string): string {
   return `${fileName} is not valid JSON — not touching it (fix or remove it, then re-run)`;
 }
 
-const HOOK_MATCHER = 'Read|Bash|Grep|Glob';
+// Regex matcher (Claude Code treats matcher as a regex): the built-ins plus
+// 'mcp__.*' so the hook reaches MCP tool output. Ownership/uninstall key on the
+// hook COMMAND, not this string, so widening the matcher is round-trip safe.
+const HOOK_MATCHER = 'Read|Bash|Grep|Glob|mcp__.*';
 
 function isPackMode(value: string): value is PackMode {
   return value === 'optimized' || value === 'slim';

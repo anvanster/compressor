@@ -18,7 +18,9 @@ const execFileAsync = promisify(execFile);
 const CLAUDE_TIMEOUT_MS = 600_000;
 const CHECK_TIMEOUT_MS = 600_000;
 const MAX_BUFFER = 32 * 1024 * 1024;
-const HOOK_MATCHER = 'Read|Bash|Grep|Glob';
+// Mirror the production install matcher (src/adapters/claude-code.ts) so cells
+// measure THIS build's reach, incl. MCP tools ('mcp__.*').
+const HOOK_MATCHER = 'Read|Bash|Grep|Glob|mcp__.*';
 
 export interface CellContext {
   runId: string;

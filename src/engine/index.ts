@@ -5,6 +5,7 @@ import { collapseBlankRuns, dedupeLines, stripAnsi, truncateHeadTail } from './t
 import type { TierResult } from './tiers/structural.ts';
 import { langFromPath, skeleton, stripComments } from './tiers/code.ts';
 import { filterBuildLog, filterTestLog } from './tiers/logs.ts';
+import { minifyJson } from './tiers/json.ts';
 
 export * from './types.ts';
 export { policyFor } from './policy.ts';
@@ -34,6 +35,32 @@ export function compress(
         estTokensOut: estTokensIn,
         kind: detectKind(content, meta.filePath),
         transforms: [],
+      },
+    };
+  }
+
+  // JSON EXCLUSIVE branch — detect on the ORIGINAL content (not post-structural).
+  // dedupeLines collapses repeated identical lines and truncateHeadTail cuts the
+  // middle; BOTH corrupt JSON, so a JSON payload must NEVER reach the structural
+  // flow. The lossless minify omits nothing (same JSON, denser), so it needs no
+  // marker and no recovery story. On any failure (unsafe / no gain) the content
+  // is returned UNCHANGED — still never falling through to structural/dedupe/
+  // truncate.
+  if (policy.jsonMinify && detectKind(content, meta.filePath) === 'json') {
+    const r = minifyJson(content);
+    const out = r === null ? content : r.content;
+    // minifyJson always carries a transform on the non-null path; the filter
+    // satisfies the AppliedTransform[] type without a non-null assertion.
+    const jsonTransforms = r?.transform === undefined ? [] : [r.transform];
+    return {
+      content: out,
+      stats: {
+        bytesIn,
+        bytesOut: utf8Bytes(out),
+        estTokensIn,
+        estTokensOut: estimate(out),
+        kind: 'json',
+        transforms: jsonTransforms,
       },
     };
   }
