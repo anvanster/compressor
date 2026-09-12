@@ -2,7 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { LedgerEvent } from '../../src/ledger/write.ts';
 import {
+  PROJECT_ROW_LIMIT,
+  UNATTRIBUTED,
   aggregateSavings,
+  foldTail,
   renderSavingsHtml,
   savingsTotals,
   windowLabel,
@@ -126,4 +129,67 @@ test('renderSavingsHtml: two-tone bars (total track + saved overlay), no truncat
       assert.ok(x < vbWidth, `value text x=${x} must start inside viewBox width ${vbWidth}`);
     }
   }
+});
+
+test('by project groups unlabelled events under one shared sentinel', () => {
+  const rows = aggregateSavings(
+    [
+      event({ project: '#aaa', estTokensIn: 300, estTokensOut: 100 }),
+      event({ project: '#aaa', estTokensIn: 200, estTokensOut: 150 }),
+      event({ project: '#bbb', estTokensIn: 500, estTokensOut: 100 }),
+      event(), // no label
+    ],
+    'project',
+  );
+  assert.deepEqual(rows.map((r) => r.label), ['#bbb', '#aaa', UNATTRIBUTED]);
+  assert.equal(rows.find((r) => r.label === '#aaa')?.events, 2);
+  assert.equal(rows.find((r) => r.label === '#aaa')?.savedTokens, 250);
+});
+
+test('the project section appears only once something carries a label', () => {
+  const plain = renderSavingsHtml([event(), event()], '/tmp/l', 'last 30 days');
+  assert.ok(!plain.includes('by project'), 'no pointless single-bar chart');
+
+  const labelled = renderSavingsHtml([event({ project: '#aaa' }), event()], '/tmp/l', 'last 30 days');
+  assert.ok(labelled.includes('<h2>by project</h2>'));
+  assert.ok(labelled.includes('#aaa'));
+  assert.ok(labelled.includes(UNATTRIBUTED), 'the unlabelled event is still counted');
+});
+
+test('a project label is escaped: clear-text mode puts folder names in the report', () => {
+  const html = renderSavingsHtml([event({ project: '<img src=x onerror=1>' })], '/tmp/l', 'all time');
+  assert.ok(!html.includes('<img src=x'), 'never rendered as markup');
+  assert.ok(html.includes('&lt;img src=x onerror=1&gt;'));
+});
+
+test('foldTail caps the chart without losing totals', () => {
+  const rows = aggregateSavings(
+    Array.from({ length: 20 }, (_, i) =>
+      event({ project: `#p${i}`, estTokensIn: 1000, estTokensOut: 1000 - (20 - i) })),
+    'project',
+  );
+  const folded = foldTail(rows, PROJECT_ROW_LIMIT, 'projects');
+  assert.equal(folded.length, PROJECT_ROW_LIMIT);
+  assert.match(folded.at(-1)!.label, /^other \(9 projects\)$/);
+
+  const sum = (list: readonly { savedTokens: number; events: number }[]) => ({
+    savedTokens: list.reduce((a, r) => a + r.savedTokens, 0),
+    events: list.reduce((a, r) => a + r.events, 0),
+  });
+  assert.deepEqual(sum(folded), sum(rows), 'the chart still adds up to the headline');
+});
+
+test('foldTail is a no-op at or below the limit', () => {
+  const rows = aggregateSavings([event({ project: '#a' }), event({ project: '#b' })], 'project');
+  assert.deepEqual(foldTail(rows, PROJECT_ROW_LIMIT, 'projects'), rows);
+});
+
+test('project symbols are exported from the PACKAGE ROOT barrel (two-barrel rule)', async () => {
+  // Same trap as the 0.3.2 weight bug: the VS Code extension imports from
+  // '@astudioplus/compressor', so a local-barrel-only export is unreachable.
+  const root = (await import('../../src/index.ts')) as Record<string, unknown>;
+  assert.equal(root['UNATTRIBUTED'], 'unattributed', 'one spelling for both consumers');
+  assert.equal(typeof root['PROJECT_LABEL_MAX'], 'number');
+  assert.equal(typeof root['PROJECT_ROW_LIMIT'], 'number');
+  assert.equal(typeof root['foldTail'], 'function');
 });

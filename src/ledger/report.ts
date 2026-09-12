@@ -7,7 +7,21 @@ import type { LedgerEvent } from './write.ts';
 // chars (exact) and tokens (cheap estimator, NOT billable counts); the
 // measured ground truth lives in `compressor benchmark`.
 
-export type SavingsDimension = 'day' | 'tool' | 'mode' | 'agent';
+export type SavingsDimension = 'day' | 'tool' | 'mode' | 'agent' | 'project';
+
+/**
+ * Label for events with no project: other writers, and everything recorded
+ * before the field existed. Exported so every consumer groups them the same
+ * way — a second spelling would silently split the same bucket in two.
+ */
+export const UNATTRIBUTED = 'unattributed';
+
+/**
+ * Most projects to chart before the rest are folded into one row. The bar
+ * chart is a fixed-height-per-row SVG, so an unbounded project count would
+ * produce an unbounded image.
+ */
+export const PROJECT_ROW_LIMIT = 12;
 
 // Friendly agent labels for the 'by agent' view: the raw ledger values are
 // terse and 'vscode' vs 'copilot' is non-obvious (both are Copilot surfaces —
@@ -66,7 +80,33 @@ function labelFor(event: LedgerEvent, by: SavingsDimension): string {
       return event.mode;
     case 'agent':
       return AGENT_LABELS[event.agent] ?? event.agent;
+    case 'project':
+      return event.project ?? UNATTRIBUTED;
   }
+}
+
+/**
+ * Keep the largest rows and fold the tail into one, preserving the totals so
+ * the chart still adds up to the headline figure.
+ */
+export function foldTail(rows: readonly SavingsRow[], limit: number, noun: string): SavingsRow[] {
+  if (rows.length <= limit) {
+    return [...rows];
+  }
+  const kept = rows.slice(0, limit - 1);
+  const tail = rows.slice(limit - 1);
+  const folded = tail.reduce(
+    (acc, row) => ({
+      label: acc.label,
+      savedChars: acc.savedChars + row.savedChars,
+      savedTokens: acc.savedTokens + row.savedTokens,
+      totalChars: acc.totalChars + row.totalChars,
+      totalTokens: acc.totalTokens + row.totalTokens,
+      events: acc.events + row.events,
+    }),
+    { label: `other (${tail.length} ${noun})`, savedChars: 0, savedTokens: 0, totalChars: 0, totalTokens: 0, events: 0 },
+  );
+  return [...kept, folded];
 }
 
 /** Group savings by dimension. Days sort ascending; tool/mode by size. */
@@ -181,8 +221,18 @@ export function renderSavingsHtml(
   window: string,
 ): string {
   const { savedChars, savedTokens } = savingsTotals(events);
-  const sections = (['day', 'agent', 'tool', 'mode'] as const)
-    .map((by) => `<h2>by ${by}</h2>\n${svgBarChart(aggregateSavings(events, by))}`)
+  // 'by project' only once something carries a label: otherwise every existing
+  // ledger gains a chart with a single "unattributed" bar, which says nothing.
+  const dimensions: SavingsDimension[] = ['day', 'agent', 'tool', 'mode'];
+  if (events.some((event) => event.project !== undefined)) {
+    dimensions.push('project');
+  }
+  const sections = dimensions
+    .map((by) => {
+      const rows = aggregateSavings(events, by);
+      const charted = by === 'project' ? foldTail(rows, PROJECT_ROW_LIMIT, 'projects') : rows;
+      return `<h2>by ${by}</h2>\n${svgBarChart(charted)}`;
+    })
     .join('\n');
   // Self-contained on purpose: inline CSS, static SVG, no JS, no requests.
   // The window label is mandatory: this artifact is shared standalone and an

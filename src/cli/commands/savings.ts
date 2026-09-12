@@ -4,7 +4,9 @@ import { resolveLedgerDir } from '../../ledger/write.ts';
 import { readLedger } from '../../ledger/read.ts';
 import type { SavingsDimension, SavingsRow } from '../../ledger/report.ts';
 import {
+  PROJECT_ROW_LIMIT,
   aggregateSavings,
+  foldTail,
   fmt,
   renderSavingsHtml,
   savingsTotals,
@@ -108,7 +110,12 @@ export function renderSavings(
     `events: ${fmt(events.length)} (${window})`,
     '',
     `by ${by}:`,
-    ...chartLines(aggregateSavings(events, by)),
+    // same cap the HTML report uses, so both surfaces agree on one machine
+    ...chartLines(
+      by === 'project'
+        ? foldTail(aggregateSavings(events, by), PROJECT_ROW_LIMIT, 'projects')
+        : aggregateSavings(events, by),
+    ),
     '',
     'measured savings come from `compressor benchmark` — this view is the live estimated ledger',
     `ledger: ${dir} (disable recording with COMPRESSOR_NO_LEDGER=1)`,
@@ -116,11 +123,13 @@ export function renderSavings(
   return lines.join('\n');
 }
 
+const DIMENSIONS: readonly SavingsDimension[] = ['day', 'tool', 'mode', 'agent', 'project'];
+
 function parseBy(value: string): SavingsDimension {
-  if (value === 'day' || value === 'tool' || value === 'mode' || value === 'agent') {
-    return value;
+  if ((DIMENSIONS as readonly string[]).includes(value)) {
+    return value as SavingsDimension;
   }
-  throw new Error(`invalid --by '${value}' (expected day|tool|mode|agent)`);
+  throw new Error(`invalid --by '${value}' (expected ${DIMENSIONS.join('|')})`);
 }
 
 export async function runSavings(opts: SavingsOptions): Promise<void> {

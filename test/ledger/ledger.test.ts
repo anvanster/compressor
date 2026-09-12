@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import type { LedgerEvent } from '../../src/ledger/write.ts';
-import { appendLedger, settleLedger } from '../../src/ledger/write.ts';
+import { PROJECT_LABEL_MAX, appendLedger, settleLedger } from '../../src/ledger/write.ts';
 import { readLedger } from '../../src/ledger/read.ts';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
 
@@ -174,5 +174,52 @@ test('worthwhile hook compression records a ledger event (claude-code)', async (
     const line = JSON.stringify(recorded);
     assert.ok(!line.includes('cargo'), 'no command content in the event');
     assert.ok(!line.includes('lib.rs'), 'no file content in the event');
+  });
+});
+
+test('project label round-trips, and a bad one drops the label but keeps the event', async () => {
+  await withLedgerDir(async (dir) => {
+    await appendLedger(event({ ts: '2026-06-10T12:00:00.000Z', project: '#a3f9c2e10b44' }));
+    // an unusable label must never cost us the savings data on that line
+    await appendLedger({ ...event({ ts: '2026-06-10T13:00:00.000Z' }), project: 'x'.repeat(PROJECT_LABEL_MAX + 1) });
+    await appendLedger({ ...event({ ts: '2026-06-10T14:00:00.000Z' }), project: 'has\nnewline' });
+    await appendLedger({ ...event({ ts: '2026-06-10T15:00:00.000Z' }), project: '' });
+    await appendLedger({ ...event({ ts: '2026-06-10T16:00:00.000Z' }), project: 42 as unknown as string });
+    await settleLedger();
+
+    const events = await readLedger({ dir });
+    assert.equal(events.length, 5, 'every event survives');
+    assert.equal(events[0]?.project, '#a3f9c2e10b44');
+    for (const bad of events.slice(1)) {
+      assert.equal(bad.project, undefined);
+      assert.equal(bad.charsIn, 1000, 'savings data is intact');
+    }
+  });
+});
+
+test('a label exactly at the limit is kept; events without one stay undefined', async () => {
+  await withLedgerDir(async (dir) => {
+    const exact = 'p'.repeat(PROJECT_LABEL_MAX);
+    await appendLedger(event({ ts: '2026-06-10T12:00:00.000Z', project: exact }));
+    await appendLedger(event({ ts: '2026-06-10T13:00:00.000Z' }));
+    await settleLedger();
+
+    const events = await readLedger({ dir });
+    assert.equal(events[0]?.project, exact);
+    assert.equal(events[1]?.project, undefined);
+    assert.ok(!('project' in events[1]!), 'absent, not an undefined key');
+  });
+});
+
+test('unknown fields are still discarded: the rebuild is a whitelist', async () => {
+  await withLedgerDir(async (dir) => {
+    const line = JSON.stringify({ ...event(), project: '#ok', injected: '<script>', nested: { a: 1 } });
+    await writeFile(path.join(dir, '2026-06.jsonl'), `${line}\n`, 'utf8');
+
+    const events = await readLedger({ dir });
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.project, '#ok');
+    assert.ok(!('injected' in events[0]!), 'unknown keys never reach consumers');
+    assert.ok(!('nested' in events[0]!));
   });
 });
