@@ -41,7 +41,7 @@ export function resolveProjectSaltPath(): string {
   // working directory, i.e. inside the user's repo. Requiring an absolute path
   // removes the footgun without renaming a variable that is already published.
   const override = process.env['COMPRESSOR_PROJECT_SALT'];
-  if (override !== undefined && override !== '' && path.isAbsolute(override)) {
+  if (override !== undefined && path.isAbsolute(override)) {
     return override;
   }
   return path.join(os.homedir(), '.compressor', 'project-salt');
