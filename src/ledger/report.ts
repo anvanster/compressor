@@ -133,6 +133,20 @@ export function aggregateSavings(
     : rows.sort((a, b) => b.savedTokens - a.savedTokens);
 }
 
+/**
+ * The rows a chart shows for a dimension: aggregation plus the one folding
+ * policy. Both surfaces (the terminal chart and the HTML report) call this
+ * instead of folding themselves, so the cap cannot drift between them — the
+ * agreement is structural rather than a convention two files keep in step.
+ */
+export function chartRows(
+  events: readonly LedgerEvent[],
+  by: SavingsDimension,
+): SavingsRow[] {
+  const rows = aggregateSavings(events, by);
+  return by === 'project' ? foldTail(rows, PROJECT_ROW_LIMIT, 'projects') : rows;
+}
+
 // NO cache-tier weighting here: this is the CROSS-AGENT surface (claude-code,
 // copilot, opencode, vscode) and the ledger records only the agent, not the
 // model — so the per-token $ value is unknowable (Anthropic caching is
@@ -229,9 +243,7 @@ export function renderSavingsHtml(
   }
   const sections = dimensions
     .map((by) => {
-      const rows = aggregateSavings(events, by);
-      const charted = by === 'project' ? foldTail(rows, PROJECT_ROW_LIMIT, 'projects') : rows;
-      return `<h2>by ${by}</h2>\n${svgBarChart(charted)}`;
+      return `<h2>by ${by}</h2>\n${svgBarChart(chartRows(events, by))}`;
     })
     .join('\n');
   // Self-contained on purpose: inline CSS, static SVG, no JS, no requests.

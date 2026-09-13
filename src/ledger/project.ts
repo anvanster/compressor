@@ -2,8 +2,8 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { createHash, randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { PROJECT_LABEL_MAX } from './write.ts';
 
 // Shared project labelling for every writer into the ledger: the VS Code
@@ -59,35 +59,14 @@ export async function readProjectSalt(): Promise<string | undefined> {
  * Returns undefined when the key can neither be read nor created (a read-only
  * home, for instance). Callers must then record NO label: an unsalted digest
  * would be brute-forceable, which is the one thing this is here to prevent.
+ *
+ * Delegates to the synchronous form so the race policy exists exactly once:
+ * two copies of "wx, then re-read the winner, then replace a corrupt file"
+ * would be two chances to converge on different keys. The work is one 65-byte
+ * write, once per machine.
  */
 export async function ensureProjectSalt(): Promise<string | undefined> {
-  const existing = await readProjectSalt();
-  if (existing !== undefined) {
-    return existing;
-  }
-  const file = resolveProjectSaltPath();
-  const salt = randomBytes(SALT_BYTES).toString('hex');
-  try {
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-    return salt;
-  } catch {
-    // Either another process won the race, or a file is sitting there that
-    // readProjectSalt rejected.
-  }
-  const winner = await readProjectSalt();
-  if (winner !== undefined) {
-    return winner; // lost the race: use the key that is already in use
-  }
-  // A corrupt key file would otherwise mean no labels ever again, so replace
-  // it. Labels written under the previous key remain in the ledger as their own
-  // group; that is a cosmetic split, and preferable to recording nothing.
-  try {
-    await writeFile(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'w' });
-    return salt;
-  } catch {
-    return undefined; // unwritable home: the caller records no label
-  }
+  return ensureProjectSaltSync();
 }
 
 /**
@@ -105,10 +84,50 @@ export function readProjectSaltSync(): string | undefined {
 }
 
 /**
+ * Read the key, creating it on first use, without ever yielding. This is the
+ * real implementation of the creation policy; see {@link ensureProjectSalt}.
+ *
+ * Synchronous because the only caller that creates the key is a hook process,
+ * which is terminated (SIGKILL on a slow settle) as soon as its output is
+ * delivered: a background creation can be cut between mkdir and write, so the
+ * key is never made and every run stays unlabelled. Doing it inline costs one
+ * mkdir plus one 65-byte write, once per machine, and labels THIS run.
+ */
+export function ensureProjectSaltSync(): string | undefined {
+  const existing = readProjectSaltSync();
+  if (existing !== undefined) {
+    return existing;
+  }
+  const file = resolveProjectSaltPath();
+  const salt = randomBytes(SALT_BYTES).toString('hex');
+  try {
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    return salt;
+  } catch {
+    // Either another process won the race, or a file is sitting there that
+    // readProjectSaltSync rejected.
+  }
+  const winner = readProjectSaltSync();
+  if (winner !== undefined) {
+    return winner; // lost the race: use the key that is already in use
+  }
+  // A corrupt (or truncated: a hook killed mid-write leaves a zero-byte file)
+  // key would otherwise mean no labels ever again, so replace it. Labels
+  // written under the previous key remain in the ledger as their own group;
+  // that is a cosmetic split, and preferable to recording nothing.
+  try {
+    writeFileSync(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'w' });
+    return salt;
+  } catch {
+    return undefined; // unwritable home: the caller records no label
+  }
+}
+
+/**
  * Label for the working directory, for writers with no project of their own —
- * the CLI hooks, where the agent's cwd is the project. Never blocks and never
- * throws: a missing key is created in the background so the next run is
- * labelled, and this run simply records none.
+ * the CLI hooks, where the agent's cwd is the project. Never throws: labelling
+ * must never break a hook, so anything unexpected records no label at all.
  *
  * `COMPRESSOR_PROJECT_LABEL=name` opts into clear-text folder names, matching
  * the extension's `compressor.projectLabel` setting. Hashed by default, because
@@ -116,14 +135,19 @@ export function readProjectSaltSync(): string | undefined {
  */
 export function currentProjectLabel(cwd: string = process.cwd()): string | undefined {
   try {
+    // Mode first: name mode needs no key, so a home directory that cannot be
+    // read or written (container, CI, sandboxed agent) must not disable the
+    // one labelling mode that never touches it.
+    const mode = normalizeProjectLabelMode(process.env['COMPRESSOR_PROJECT_LABEL']);
+    if (mode === 'name') {
+      return projectLabel(cwd, mode, '');
+    }
     // Deliberately uncached: the read is 65 bytes, and a cached key would keep
     // labelling with a stale value after the user rotates it.
-    const salt = readProjectSaltSync();
+    const salt = ensureProjectSaltSync();
     if (salt === undefined) {
-      void ensureProjectSalt().catch(() => {}); // ready for the next run
-      return undefined;
+      return undefined; // unreadable, unwritable home: an unsalted digest is worse
     }
-    const mode = normalizeProjectLabelMode(process.env['COMPRESSOR_PROJECT_LABEL']);
     return projectLabel(cwd, mode, salt);
   } catch {
     return undefined; // labelling must never break a hook
@@ -131,22 +155,37 @@ export function currentProjectLabel(cwd: string = process.cwd()): string | undef
 }
 
 /**
+ * One folder, one spelling. Purely textual on purpose: the digest has to come
+ * out identical on every platform (see the pinned shared vector in the tests),
+ * so this may not reach for `path` (separator- and cwd-dependent) or the
+ * filesystem. It closes the two deterministic ways one folder arrives spelled
+ * two ways — a trailing separator, and a Windows drive letter in either case —
+ * which would otherwise show up as two undistinguishable digest rows.
+ */
+function canonicalPath(workspacePath: string): string {
+  const trimmed = workspacePath.replace(/(?!^)[/\\]+$/, '');
+  return /^[a-z]:/.test(trimmed) ? trimmed[0]!.toUpperCase() + trimmed.slice(1) : trimmed;
+}
+
+/**
  * The label recorded on a ledger event. Hashed mode keys the digest so it
  * cannot be reproduced without the key; name mode records the folder name only,
- * never the absolute path, and is capped so the reader cannot drop it.
+ * never the absolute path, and is capped so the reader cannot drop it. Name
+ * mode ignores `salt` — it has no key to hide behind.
  */
 export function projectLabel(
   workspacePath: string,
   mode: ProjectLabelMode,
   salt: string,
 ): string {
+  const canonical = canonicalPath(workspacePath);
   if (mode === 'name') {
-    return path.basename(workspacePath).slice(0, PROJECT_LABEL_MAX);
+    return path.basename(canonical).slice(0, PROJECT_LABEL_MAX);
   }
   const digest = createHash('sha256')
     .update(salt)
     .update('\0') // domain separator: key and path can never run together
-    .update(workspacePath)
+    .update(canonical)
     .digest('hex')
     .slice(0, 12);
   return `${HASHED_PREFIX}${digest}`;

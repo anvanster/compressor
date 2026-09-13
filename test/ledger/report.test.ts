@@ -5,6 +5,7 @@ import {
   PROJECT_ROW_LIMIT,
   UNATTRIBUTED,
   aggregateSavings,
+  chartRows,
   foldTail,
   renderSavingsHtml,
   savingsTotals,
@@ -179,6 +180,19 @@ test('foldTail caps the chart without losing totals', () => {
   assert.deepEqual(sum(folded), sum(rows), 'the chart still adds up to the headline');
 });
 
+test('chartRows is the single fold policy both surfaces chart', () => {
+  const many = Array.from({ length: 20 }, (_, i) =>
+    event({ project: `#p${i}`, estTokensIn: 1000, estTokensOut: 1000 - (20 - i) }));
+  assert.deepEqual(
+    chartRows(many, 'project'),
+    foldTail(aggregateSavings(many, 'project'), PROJECT_ROW_LIMIT, 'projects'),
+  );
+  // only the project dimension folds: days must not collapse into 'other'
+  const days = Array.from({ length: 20 }, (_, i) =>
+    event({ ts: `2026-09-${String(i + 1).padStart(2, '0')}T00:00:00.000Z` }));
+  assert.deepEqual(chartRows(days, 'day'), aggregateSavings(days, 'day'));
+});
+
 test('foldTail is a no-op at or below the limit', () => {
   const rows = aggregateSavings([event({ project: '#a' }), event({ project: '#b' })], 'project');
   assert.deepEqual(foldTail(rows, PROJECT_ROW_LIMIT, 'projects'), rows);
@@ -192,4 +206,5 @@ test('project symbols are exported from the PACKAGE ROOT barrel (two-barrel rule
   assert.equal(typeof root['PROJECT_LABEL_MAX'], 'number');
   assert.equal(typeof root['PROJECT_ROW_LIMIT'], 'number');
   assert.equal(typeof root['foldTail'], 'function');
+  assert.equal(typeof root['chartRows'], 'function');
 });

@@ -3,12 +3,14 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { PROJECT_LABEL_MAX } from '../../src/ledger/write.ts';
 import {
   HASHED_PREFIX,
   currentProjectLabel,
   ensureProjectSalt,
+  ensureProjectSaltSync,
   normalizeProjectLabelMode,
   projectLabel,
   readProjectSalt,
@@ -151,13 +153,77 @@ test('the CLI honours COMPRESSOR_PROJECT_LABEL=name, and nothing else', async ()
   });
 });
 
-test('a missing key costs this run its label, not the event', async () => {
-  await withSaltFile(async (file) => {
-    // nothing created yet: the label is skipped and the key is made in the
-    // background so the next hook run is labelled
+test('a missing key is created inline, so THIS run is already labelled', () => {
+  // the hook process is killed the moment its output is delivered, so a
+  // background creation can be cut between mkdir and write and the key never
+  // appears — the first run has to make it itself
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'compressor-salt-'));
+  const file = path.join(dir, 'nested', 'project-salt');
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  process.env['COMPRESSOR_PROJECT_SALT'] = file;
+  try {
     assert.equal(readProjectSaltSync(), undefined);
-    assert.doesNotThrow(() => currentProjectLabel('/w/widget'));
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    assert.ok(readProjectSaltSync() !== undefined, `key created at ${file}`);
-  });
+    const label = currentProjectLabel('/w/widget');
+    const salt = readProjectSaltSync();
+    assert.ok(salt !== undefined, `key created at ${file}`);
+    assert.equal(label, projectLabel('/w/widget', 'hashed', salt));
+    assert.equal(currentProjectLabel('/w/widget'), label, 'stable on the next run');
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
+  }
+});
+
+test('a truncated key file is replaced rather than disabling labels forever', () => {
+  // SIGKILL between open(wx) and write leaves a zero-byte file behind
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'compressor-salt-'));
+  const file = path.join(dir, 'project-salt');
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  process.env['COMPRESSOR_PROJECT_SALT'] = file;
+  try {
+    writeFileSync(file, '', 'utf8');
+    const salt = ensureProjectSaltSync();
+    assert.ok(salt !== undefined, 'recovers instead of labelling nothing forever');
+    assert.match(salt, /^[0-9a-f]{64}$/);
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
+  }
+});
+
+test('name mode needs no key: an unwritable home must not disable it', () => {
+  // container / CI / sandboxed agent: ~/.compressor can be neither read nor
+  // created, and name mode never touches it — labels must keep flowing
+  const prevSalt = process.env['COMPRESSOR_PROJECT_SALT'];
+  const prevMode = process.env['COMPRESSOR_PROJECT_LABEL'];
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'compressor-salt-'));
+  const blocker = path.join(dir, 'not-a-directory');
+  writeFileSync(blocker, 'x', 'utf8'); // mkdir under a FILE fails with ENOTDIR
+  process.env['COMPRESSOR_PROJECT_SALT'] = path.join(blocker, 'project-salt');
+  process.env['COMPRESSOR_PROJECT_LABEL'] = 'name';
+  try {
+    assert.equal(ensureProjectSaltSync(), undefined, 'the key really is unavailable');
+    assert.equal(currentProjectLabel('/w/widget'), 'widget');
+    process.env['COMPRESSOR_PROJECT_LABEL'] = 'hashed';
+    assert.equal(currentProjectLabel('/w/widget'), undefined, 'hashed still needs the key');
+  } finally {
+    if (prevSalt === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prevSalt;
+    if (prevMode === undefined) delete process.env['COMPRESSOR_PROJECT_LABEL'];
+    else process.env['COMPRESSOR_PROJECT_LABEL'] = prevMode;
+  }
+});
+
+test('one folder spelled two ways is one row, not two', () => {
+  const salt = 'e'.repeat(64);
+  const label = projectLabel('/w/app', 'hashed', salt);
+  assert.equal(projectLabel('/w/app/', 'hashed', salt), label, 'trailing separator');
+  assert.equal(projectLabel('/w/app///', 'hashed', salt), label, 'repeated separator');
+  assert.equal(projectLabel('c:\\w\\app', 'hashed', salt), projectLabel('C:\\w\\app', 'hashed', salt),
+    'windows drive letter case');
+  assert.equal(projectLabel('C:\\w\\app\\', 'hashed', salt), projectLabel('C:\\w\\app', 'hashed', salt));
+  assert.notEqual(projectLabel('/w/app', 'hashed', salt), projectLabel('/w/apps', 'hashed', salt));
+  // a bare root must survive the trim rather than hashing the empty string
+  assert.notEqual(projectLabel('/', 'hashed', salt), projectLabel('', 'hashed', salt));
+  assert.equal(projectLabel('/w/app/', 'name', salt), 'app');
 });
