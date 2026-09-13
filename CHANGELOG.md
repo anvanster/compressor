@@ -7,6 +7,128 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-12
+
+### Changed
+
+- **Project labelling is now resilient where 0.5.0 was optimistic.** The key is
+  created inline and synchronously, so the run that finds it missing is itself
+  labelled: 0.5.0 created it in the background, and a hook's hard exit
+  (`settleThenExit` awaits only the ledger) could abort that write mid-chain,
+  leaving the next run to start over. A failed creation is memoized per key
+  location, so a permanently unavailable key (read-only HOME, EACCES) costs one
+  attempt rather than five blocking syscalls on every compression event in
+  long-lived processes.
+- `COMPRESSOR_PROJECT_LABEL=name` no longer requires a key it never uses. Name
+  mode reads the folder name and needs nothing from the filesystem, but 0.5.0
+  bailed out before it checked the mode, so a read-only home meant no label at
+  all.
+- Labels canonicalize their input path, so one folder spelled two ways no longer
+  produces two labels for one project. The CLI passes `process.cwd()` and the
+  extension passes a workspace path, and the two can differ by a trailing
+  separator or by the case of a Windows drive letter; without normalization the
+  shared labeller could not keep the two writers in agreement, which is the one
+  thing it exists to do. Canonicalization is purely textual and never touches
+  the filesystem, so one path hashes identically on every platform; paths that
+  differ only by a symlink are therefore not reconciled.
+- `ensureProjectSalt` keeps its async signature but now delegates to the
+  synchronous implementation, so a single copy of the race policy governs both.
+  It performs one 65-byte write on the calling thread, once per machine.
+
+### Added
+
+- `ensureProjectSaltSync`, `ledgerDisabled` and `chartRows` are exported from the
+  package root. `chartRows` returns already-folded rows so the terminal and HTML
+  reports agree on the project row cap structurally, rather than by two files
+  keeping a convention in step. `ledgerDisabled` is the kill switch as one
+  predicate, so every writer into the shared ledger can honour it at the same
+  point.
+
+### Fixed
+
+- `COMPRESSOR_NO_LEDGER=1` stops recording again, in full. Labelling runs before
+  the append and reads (and on a fresh machine creates) the labelling key, so
+  0.5.0 could plant `~/.compressor/project-salt` in the home directory of a user
+  who had explicitly opted out, and made every benchmark cell pay a read inside
+  the measured window. The switch is now checked at the top of the recording
+  path, before a label is computed.
+- Replacing a corrupt key narrows the file to 0600 explicitly. `mode` is applied
+  by `open(2)` only when it creates the file, so a world-readable leftover (an
+  older build, a restored backup, a permissive umask) kept its permissions while
+  holding a live key, and a readable key defeats the point of hashing.
+
+## [0.5.0] - 2026-09-12
+
+### Added
+
+- **The CLI hooks now attribute their savings to a project.** `compressor
+  savings --by project` and the HTML report were added in 0.4.0 but only the VS
+  Code extension populated the field, so everything a hook recorded grouped
+  under `unattributed`. Hook events now carry a label for the agent's working
+  directory, using the same key and algorithm as the extension
+  (`~/.compressor/project-salt`), so one folder gets one label whichever tool
+  recorded the event.
+  The key is read synchronously: a hook process often lives for a single tool
+  call, and an asynchronous load would miss the only event it will ever record.
+  A missing key costs that run its label and is created in the background for
+  the next one; labelling never blocks or breaks a hook.
+  `COMPRESSOR_PROJECT_LABEL=name` opts into clear-text folder names, matching
+  the extension's `compressor.projectLabel`; hashed remains the default because
+  a savings report gets shared. New exports: `currentProjectLabel` and
+  `readProjectSaltSync`.
+
+## [0.4.0] - 2026-09-11
+
+### Added
+
+- **Per-project savings attribution.** `LedgerEvent` gained an optional
+  `project` label, `readLedger` now carries it through, and `aggregateSavings`
+  accepts a `'project'` dimension (with `UNATTRIBUTED` for events that have no
+  label — exported so every consumer groups them under one spelling rather than
+  splitting the bucket). `renderSavingsHtml` adds a **by project** chart, but
+  only once some event carries a label, so existing ledgers do not gain a chart
+  with a single meaningless bar; `foldTail` and `PROJECT_ROW_LIMIT` cap it so a
+  machine with many repos does not produce an unbounded SVG. The field is
+  optional in both directions: older ledgers read unchanged, and older library
+  versions reading a newer ledger simply ignore it, so no migration is needed.
+  Nothing in the CLI populates the field yet — the VS Code extension is the
+  first writer — so `compressor savings` gains the section only once a writer
+  starts recording labels.
+- **Shared project labelling, with a machine-local key.** New
+  `src/ledger/project.ts`: `projectLabel`, `ensureProjectSalt`,
+  `readProjectSalt`, `resolveProjectSaltPath`, `normalizeProjectLabelMode`,
+  `HASHED_PREFIX` and `ProjectLabelMode`. Labels default to a keyed SHA-256
+  digest of the workspace path, because a savings report gets shared and plain
+  digests of guessable project names could be brute-forced. The key is created
+  on first use at `~/.compressor/project-salt` (owner-only, `COMPRESSOR_PROJECT_SALT`
+  to override) and is deliberately **not** derived from `COMPRESSOR_LEDGER_DIR`:
+  the ledger directory is the shareable unit, so the key must never sit inside
+  it. Creation is exclusive and a loser adopts the winner's key, so a hook
+  process and the editor racing at first use cannot end up with two keys and
+  split one project into two rows. A key that cannot be read or created yields
+  no label at all rather than an unsalted digest. The labeller lives here, not
+  in a consumer, so every writer into one ledger produces the same label for the
+  same folder. All of it is exported from the package root, with a regression
+  test pinning that surface (see 0.3.3). `compressor savings --by project` selects
+  the new dimension in the terminal too, folded to the same row cap as the HTML
+  report so both surfaces agree.
+
+### Changed
+
+- **The ledger's privacy contract now names its one identifying field.** The
+  header on `ledger/write.ts` still promises sizes and transform ids only, and
+  now states that `project` is the sole exception, that it is never a path, and
+  that a writer recording a readable name must make it an explicit opt-in —
+  because every writer shares one ledger and the weakest one sets the privacy of
+  the whole file.
+- **`parseEvent` drops a bad project label instead of rejecting the line.**
+  Every other malformed field still discards the whole event; throwing away real
+  savings data over a cosmetic label would contradict the ledger's fail-open
+  posture. Labels are validated as non-empty, within `PROJECT_LABEL_MAX` (64,
+  the width the bar chart is sized for) and free of control characters. Unknown
+  fields are still discarded: the rebuild remains a whitelist, since the ledger
+  is a file users share and re-import and the report renders it.
+
 ## [0.3.4] - 2026-06-16
 
 ### Added

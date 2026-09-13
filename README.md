@@ -149,7 +149,8 @@ Error: exit 1
    356→  let mask = 0;
 ```
 
-**Your accumulated savings, from the live ledger.** Every worthwhile compression in a real session (at least 200 chars and 10% saved) appends one privacy-safe event — sizes and transform ids only, never paths or content:
+**Your accumulated savings, from the live ledger.** Every worthwhile compression in a real session (at least 200 chars and 10% saved) appends one privacy-safe event — sizes and transform ids, never content and never a path.
+Hook events are attributed to the agent's working directory, so `compressor savings --by project` breaks totals down per repo. The one identifying field is an optional project label, and it defaults to a keyed digest whose key is kept at `~/.compressor/project-salt`, outside the ledger, so a report you share cannot be tested against guessed project names:
 
 ```text
 $ compressor savings --by tool
@@ -162,6 +163,7 @@ by tool:
 ```
 
 `compressor savings --html report.html` writes a self-contained report (inline SVG, no JS, no network). Kill switch: `COMPRESSOR_NO_LEDGER=1`.
+Opt into plain folder names with `COMPRESSOR_PROJECT_LABEL=name`, or relocate the digest key with `COMPRESSOR_PROJECT_SALT` ([architecture](docs/ARCHITECTURE.md#7-ledger-and-savings)).
 
 Benchmarked effect sizes (real agent sessions, success-checked): the hook cut context volume **−16%** on log-heavy work, and the instruction packs cut conversational output **−10% to −79%** depending on conversation type, with zero measured quality loss. Effects are domain-specific — full numbers, distributions, run ids, and caveats in [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
 
@@ -176,7 +178,7 @@ Benchmarked effect sizes (real agent sessions, success-checked): the hook cut co
 | `compress` | compress stdin to stdout via the engine; stats on stderr | `--mode` (`optimized`), `--kind read\|bash\|search\|other` (`other`), `--file-path <path>`, `--marker-style plain\|deterrent\|informative` |
 | `count <file...>` | token counts per file — estimated by default | `--exact` (Anthropic `count_tokens`, needs `ANTHROPIC_API_KEY`), `--model` (`claude-sonnet-4-6`) |
 | `stats` | aggregate actual token usage from Claude Code transcripts | `--project <path>` (cwd), `--since` (`30d`) |
-| `savings` | show what the compression hook saved (live ledger, estimated tokens) | `--since` (`30d`, or `all`), `--by day\|tool\|mode` (`day`), `--html <path>`, `--ledger-dir <dir>` |
+| `savings` | show what the compression hook saved (live ledger, estimated tokens) | `--since` (`30d`, or `all`), `--by day\|tool\|mode\|agent\|project` (`day`), `--html <path>`, `--ledger-dir <dir>` |
 | `hook post-tool-use` | Claude Code PostToolUse protocol entry: payload on stdin, updated output on stdout | `--mode` (`optimized`), `--marker-style`, `--recovery-budget <n\|off>` (overrides `COMPRESSOR_RECOVERY_BUDGET`/`COMPRESSOR_NO_RECOVERY_BUDGET`) |
 | `hook copilot-post-tool-use` | Copilot postToolUse protocol entry: payload on stdin, `modifiedResult` JSON on stdout | `--mode` (`optimized`), `--marker-style`, `--recovery-budget <n\|off>` |
 

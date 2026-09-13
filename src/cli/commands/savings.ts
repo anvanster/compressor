@@ -5,6 +5,7 @@ import { readLedger } from '../../ledger/read.ts';
 import type { SavingsDimension, SavingsRow } from '../../ledger/report.ts';
 import {
   aggregateSavings,
+  chartRows,
   fmt,
   renderSavingsHtml,
   savingsTotals,
@@ -25,7 +26,7 @@ export { aggregateSavings, renderSavingsHtml, savingsTotals, windowLabel };
 export interface SavingsOptions {
   /** lookback window: '7d', '30d', ... or 'all' */
   since?: string;
-  /** aggregation dimension: day|tool|mode */
+  /** aggregation dimension: day|tool|mode|agent|project */
   by?: string;
   /** write a self-contained HTML report to this path */
   html?: string;
@@ -108,7 +109,7 @@ export function renderSavings(
     `events: ${fmt(events.length)} (${window})`,
     '',
     `by ${by}:`,
-    ...chartLines(aggregateSavings(events, by)),
+    ...chartLines(chartRows(events, by)),
     '',
     'measured savings come from `compressor benchmark` — this view is the live estimated ledger',
     `ledger: ${dir} (disable recording with COMPRESSOR_NO_LEDGER=1)`,
@@ -116,11 +117,13 @@ export function renderSavings(
   return lines.join('\n');
 }
 
+const DIMENSIONS: readonly SavingsDimension[] = ['day', 'tool', 'mode', 'agent', 'project'];
+
 function parseBy(value: string): SavingsDimension {
-  if (value === 'day' || value === 'tool' || value === 'mode' || value === 'agent') {
-    return value;
+  if ((DIMENSIONS as readonly string[]).includes(value)) {
+    return value as SavingsDimension;
   }
-  throw new Error(`invalid --by '${value}' (expected day|tool|mode|agent)`);
+  throw new Error(`invalid --by '${value}' (expected ${DIMENSIONS.join('|')})`);
 }
 
 export async function runSavings(opts: SavingsOptions): Promise<void> {

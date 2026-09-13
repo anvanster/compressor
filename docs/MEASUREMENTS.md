@@ -189,7 +189,7 @@ The ranking matches the token-destination economics of §3.1: atoms that change 
 
 ### Prerequisites
 
-- Node ≥ 20; build from source (the package is not yet published to npm):
+- Node ≥ 20; build from source:
 
   ```sh
   npm install

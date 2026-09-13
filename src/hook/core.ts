@@ -3,7 +3,8 @@ import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
 import type { LedgerEvent } from '../ledger/write.ts';
-import { appendLedger } from '../ledger/write.ts';
+import { appendLedger, ledgerDisabled } from '../ledger/write.ts';
+import { currentProjectLabel } from '../ledger/project.ts';
 import {
   noteRecoveryRead,
   noteTruncation,
@@ -153,7 +154,8 @@ export function noteTruncationIfCut(
  * Fire-and-forget ledger entry for a worthwhile compression. Called by the
  * protocol layers (they know which agent they serve). Never awaited on the
  * hot path; the hook entries settle pending writes (capped at 250ms) before
- * exiting. Privacy: sizes and transform ids only — no paths, no content.
+ * exiting. Privacy: sizes and transform ids only — no content, and the project
+ * label is a keyed digest of the working directory rather than a path.
  */
 export function recordCompression(
   agent: LedgerEvent['agent'],
@@ -162,9 +164,10 @@ export function recordCompression(
   mode: Mode,
 ): void {
   try {
-    if (!compressed.worthwhile) {
+    if (!compressed.worthwhile || ledgerDisabled()) {
       return;
     }
+    const project = currentProjectLabel();
     void appendLedger({
       ts: new Date().toISOString(),
       agent,
@@ -175,6 +178,7 @@ export function recordCompression(
       estTokensIn: compressed.stats?.estTokensIn ?? cheapEstimator(call.text),
       estTokensOut: compressed.stats?.estTokensOut ?? cheapEstimator(compressed.text),
       transforms: compressed.stats?.transforms.map((t) => t.id) ?? [],
+      ...(project === undefined ? {} : { project }),
     }).catch(() => {});
   } catch {
     // FAIL-OPEN: the ledger must never break the hook.

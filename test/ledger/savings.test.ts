@@ -230,3 +230,22 @@ test('runSavings output and html carry the window label', async (t) => {
   const html = await readFile(htmlPath, 'utf8');
   assert.ok(html.includes('all time'), 'html window label');
 });
+
+test('terminal --by project is selectable and folds the tail like the HTML does', () => {
+  const labelled = [
+    event({ project: '#aaa', estTokensIn: 400, estTokensOut: 100 }),
+    event({ project: '#bbb', estTokensIn: 300, estTokensOut: 100 }),
+    event(),
+  ];
+  const out = renderSavings(labelled, 'project', '/tmp/ledger-dir', 'last 30 days');
+  assert.match(out, /by project:/);
+  assert.match(out, /#aaa/);
+  assert.match(out, /unattributed/, 'events with no label are still counted');
+
+  // the dimension was rejected by parseBy before it was wired up; the HTML
+  // report rendering it while `--by project` errored would be a split surface
+  const many = Array.from({ length: 20 }, (_, i) =>
+    event({ project: `#p${i}`, estTokensIn: 1000, estTokensOut: 1000 - (20 - i) }));
+  const capped = renderSavings(many, 'project', '/tmp/ledger-dir', 'all time');
+  assert.match(capped, /other \(9 projects\)/);
+});

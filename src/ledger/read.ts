@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { readdir, readFile } from 'node:fs/promises';
 import type { LedgerEvent } from './write.ts';
-import { resolveLedgerDir } from './write.ts';
+import { PROJECT_LABEL_MAX, resolveLedgerDir } from './write.ts';
 
 // Tolerant reader for the monthly JSONL ledger files: unparseable lines and
 // wrong-shaped records are skipped, a missing directory is an empty ledger.
@@ -19,6 +19,19 @@ const MODES = new Set(['full', 'optimized', 'slim']);
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+// Control characters would corrupt both renderers (SVG text and the terminal
+// report), and an over-long label would stretch the chart without bound.
+const PROJECT_CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
+
+function usableProject(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= PROJECT_LABEL_MAX &&
+    !PROJECT_CONTROL_CHARS.test(value)
+  );
 }
 
 function parseEvent(line: string): LedgerEvent | null {
@@ -54,7 +67,7 @@ function parseEvent(line: string): LedgerEvent | null {
   ) {
     return null;
   }
-  return {
+  const event: LedgerEvent = {
     ts,
     agent: agent as LedgerEvent['agent'],
     tool: tool as LedgerEvent['tool'],
@@ -65,6 +78,17 @@ function parseEvent(line: string): LedgerEvent | null {
     estTokensOut: record['estTokensOut'],
     transforms,
   };
+  // Deliberate asymmetry: every field above rejects the whole line when it is
+  // wrong, but an unusable project label only drops the label. Discarding real
+  // savings data over a cosmetic field would contradict the fail-open posture
+  // the rest of the ledger keeps. Unknown fields are still dropped: this
+  // rebuild is a whitelist on purpose, since the ledger is a file users share
+  // and re-import, and the report renders it.
+  const project = record['project'];
+  if (usableProject(project)) {
+    event.project = project;
+  }
+  return event;
 }
 
 /** Read every monthly file, tolerant of garbage lines; sorted by timestamp. */

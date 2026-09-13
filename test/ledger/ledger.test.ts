@@ -5,8 +5,14 @@ import path from 'node:path';
 import process from 'node:process';
 import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import type { LedgerEvent } from '../../src/ledger/write.ts';
-import { appendLedger, settleLedger } from '../../src/ledger/write.ts';
+import { PROJECT_LABEL_MAX, appendLedger, settleLedger } from '../../src/ledger/write.ts';
 import { readLedger } from '../../src/ledger/read.ts';
+import { existsSync } from 'node:fs';
+import {
+  projectLabel,
+  readProjectSaltSync,
+  resolveProjectSaltPath,
+} from '../../src/ledger/project.ts';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
 
 function event(overrides: Partial<LedgerEvent> = {}): LedgerEvent {
@@ -174,5 +180,146 @@ test('worthwhile hook compression records a ledger event (claude-code)', async (
     const line = JSON.stringify(recorded);
     assert.ok(!line.includes('cargo'), 'no command content in the event');
     assert.ok(!line.includes('lib.rs'), 'no file content in the event');
+  });
+});
+
+/** A tool output big and repetitive enough that compression is worthwhile. */
+function compressiblePayload(toolUseId: string): string {
+  const stdout = Array.from(
+    { length: 400 },
+    () => 'warning: unused variable `x` found while linting src/lib.rs:42',
+  ).join('\n');
+  return JSON.stringify({
+    tool_name: 'Bash',
+    tool_input: { command: 'cargo build 2>&1' },
+    tool_use_id: toolUseId,
+    tool_response: { stdout, stderr: '', interrupted: false, isImage: false },
+  });
+}
+
+/** Point the key at a fresh temp location: never the developer's real one. */
+async function withSaltPath<T>(file: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'compressor-hook-salt-'));
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  process.env['COMPRESSOR_PROJECT_SALT'] = file ?? path.join(dir, 'nested', 'project-salt');
+  try {
+    return await fn();
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
+  }
+}
+
+test('the hook attributes its event to the working directory, so `--by project` has a writer', async () => {
+  await withLedgerDir(async (dir) => {
+    await withSaltPath(undefined, async () => {
+      assert.ok(handlePostToolUse(compressiblePayload('toolu_project'), 'slim').output !== null);
+      await settleLedger();
+
+      const events = await readLedger({ dir });
+      const recorded = events[0];
+      assert.ok(recorded !== undefined);
+      // the label the extension would compute for the same folder, from the
+      // key the hook had to create inline for its single tool call
+      const salt = readProjectSaltSync();
+      assert.ok(salt !== undefined, 'the key was created by the hook run itself');
+      assert.equal(recorded.project, projectLabel(process.cwd(), 'hashed', salt));
+      assert.match(recorded.project!, /^#[0-9a-f]{12}$/, 'a keyed digest, not a path');
+      assert.ok(
+        !JSON.stringify(recorded).includes(process.cwd()),
+        'the working directory never reaches the ledger',
+      );
+    });
+  });
+});
+
+test('a key location that cannot be created costs the label, never the event', async () => {
+  await withLedgerDir(async (dir) => {
+    // a file where a directory would have to go: the same shape as the
+    // read-only home this has to survive (container, CI, sandboxed agent)
+    const blocker = path.join(dir, 'blocker');
+    await writeFile(blocker, 'occupied', 'utf8');
+    await withSaltPath(path.join(blocker, 'project-salt'), async () => {
+      assert.ok(handlePostToolUse(compressiblePayload('toolu_nokey'), 'slim').output !== null);
+      await settleLedger();
+
+      const events = await readLedger({ dir });
+      const recorded = events[0];
+      assert.ok(recorded !== undefined, 'the compression is still recorded');
+      // an unsalted digest is the one thing worse than no label at all
+      assert.equal(recorded.project, undefined);
+      assert.ok(recorded.charsOut < recorded.charsIn, 'the savings data is intact');
+    });
+  });
+});
+
+test('COMPRESSOR_NO_LEDGER=1 stops the key too, not just the append', async () => {
+  await withLedgerDir(async (dir) => {
+    await withSaltPath(undefined, async () => {
+      const prev = process.env['COMPRESSOR_NO_LEDGER'];
+      process.env['COMPRESSOR_NO_LEDGER'] = '1';
+      try {
+        assert.ok(
+          handlePostToolUse(compressiblePayload('toolu_killswitch'), 'slim').output !== null,
+          'compression itself is unaffected by the kill switch',
+        );
+        await settleLedger();
+
+        assert.deepEqual(await readdir(dir), [], 'nothing appended');
+        // labelling is the first step of recording, and it writes: an opt-out
+        // that still plants a key in the user's home is not an opt-out
+        assert.ok(!existsSync(resolveProjectSaltPath()), 'no key created');
+      } finally {
+        if (prev === undefined) delete process.env['COMPRESSOR_NO_LEDGER'];
+        else process.env['COMPRESSOR_NO_LEDGER'] = prev;
+      }
+    });
+  });
+});
+
+test('project label round-trips, and a bad one drops the label but keeps the event', async () => {
+  await withLedgerDir(async (dir) => {
+    await appendLedger(event({ ts: '2026-06-10T12:00:00.000Z', project: '#a3f9c2e10b44' }));
+    // an unusable label must never cost us the savings data on that line
+    await appendLedger({ ...event({ ts: '2026-06-10T13:00:00.000Z' }), project: 'x'.repeat(PROJECT_LABEL_MAX + 1) });
+    await appendLedger({ ...event({ ts: '2026-06-10T14:00:00.000Z' }), project: 'has\nnewline' });
+    await appendLedger({ ...event({ ts: '2026-06-10T15:00:00.000Z' }), project: '' });
+    await appendLedger({ ...event({ ts: '2026-06-10T16:00:00.000Z' }), project: 42 as unknown as string });
+    await settleLedger();
+
+    const events = await readLedger({ dir });
+    assert.equal(events.length, 5, 'every event survives');
+    assert.equal(events[0]?.project, '#a3f9c2e10b44');
+    for (const bad of events.slice(1)) {
+      assert.equal(bad.project, undefined);
+      assert.equal(bad.charsIn, 1000, 'savings data is intact');
+    }
+  });
+});
+
+test('a label exactly at the limit is kept; events without one stay undefined', async () => {
+  await withLedgerDir(async (dir) => {
+    const exact = 'p'.repeat(PROJECT_LABEL_MAX);
+    await appendLedger(event({ ts: '2026-06-10T12:00:00.000Z', project: exact }));
+    await appendLedger(event({ ts: '2026-06-10T13:00:00.000Z' }));
+    await settleLedger();
+
+    const events = await readLedger({ dir });
+    assert.equal(events[0]?.project, exact);
+    assert.equal(events[1]?.project, undefined);
+    assert.ok(!('project' in events[1]!), 'absent, not an undefined key');
+  });
+});
+
+test('unknown fields are still discarded: the rebuild is a whitelist', async () => {
+  await withLedgerDir(async (dir) => {
+    const line = JSON.stringify({ ...event(), project: '#ok', injected: '<script>', nested: { a: 1 } });
+    await writeFile(path.join(dir, '2026-06.jsonl'), `${line}\n`, 'utf8');
+
+    const events = await readLedger({ dir });
+    assert.equal(events.length, 1);
+    assert.equal(events[0]?.project, '#ok');
+    assert.ok(!('injected' in events[0]!), 'unknown keys never reach consumers');
+    assert.ok(!('nested' in events[0]!));
   });
 });

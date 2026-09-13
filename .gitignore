@@ -1,3 +1,11 @@
+# Local, not shared: the Copilot steering artifacts compressor installs into
+# whatever repo it is enabled in, including this one (dogfooding). Named
+# exactly, not `.github/*` — a blanket ignore would silently swallow workflows,
+# dependabot.yml, ISSUE_TEMPLATE/ and friends with no error to notice.
+.github/copilot-instructions.md
+.github/agents/compressor.agent.md
+.github/prompts/compressor.prompt.md
+.github/hooks/
 node_modules/
 dist/
 .smelt/

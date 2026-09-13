@@ -5,10 +5,15 @@ import { appendFile, mkdir } from 'node:fs/promises';
 import type { Mode, ToolKind } from '../engine/types.ts';
 
 // Append-only savings ledger written by the hook protocol layers. Privacy:
-// events carry sizes/transform ids only — NO file paths, NO content. The
-// writer is fire-and-forget and FAIL-OPEN: a broken ledger must never break
-// the user's agent. Kill switch: COMPRESSOR_NO_LEDGER=1 disables everything
-// before any IO is attempted.
+// events carry sizes/transform ids only — NO file paths, NO content. The one
+// identifying field is the OPTIONAL `project` label, and it is deliberately not
+// a path: writers are expected to record a keyed digest by default, so a report
+// shared with someone else cannot be tested against guessed project names. A
+// writer that records a readable name instead must make that an explicit
+// opt-in, because every writer shares one ledger and the weakest one sets the
+// privacy of the whole file. The writer is fire-and-forget and FAIL-OPEN: a
+// broken ledger must never break the user's agent. Kill switch:
+// COMPRESSOR_NO_LEDGER=1 disables everything before any IO is attempted.
 
 export interface LedgerEvent {
   /** ISO timestamp of the compression event */
@@ -22,6 +27,32 @@ export interface LedgerEvent {
   estTokensOut: number;
   /** AppliedTransform ids, e.g. ['dedupe-lines', 'truncate'] */
   transforms: string[];
+  /**
+   * Which workspace the reduction came from, for the 'by project' view.
+   * Optional: absent on every event written before this field existed, and on
+   * writers that have nothing meaningful to attribute. Never a path — see the
+   * privacy note above. Longer than PROJECT_LABEL_MAX is dropped on read.
+   */
+  project?: string;
+}
+
+/**
+ * Label length the reader accepts and the renderer is sized for. The bar chart
+ * derives its width from the longest label, so an unbounded one would produce
+ * an unbounded SVG; this fits any real folder name and any short digest.
+ */
+export const PROJECT_LABEL_MAX = 64;
+
+/**
+ * The kill switch, as one predicate every step of the recording path consults.
+ * It lives here rather than inline in {@link appendLedger} because recording an
+ * event is no longer a single call: a writer resolves a project label first,
+ * and that reads (and on a fresh machine creates) the labelling key. A switch
+ * checked only at the append would let that preparatory IO run after the user
+ * has opted out. Read at call time, not module load, so tests can swap it.
+ */
+export function ledgerDisabled(): boolean {
+  return process.env['COMPRESSOR_NO_LEDGER'] === '1';
 }
 
 /** Resolved at call time (not module load) so tests can swap the env var. */
@@ -49,7 +80,7 @@ const pending = new Set<Promise<void>>();
  * filesystem work.
  */
 export async function appendLedger(event: LedgerEvent): Promise<void> {
-  if (process.env['COMPRESSOR_NO_LEDGER'] === '1') {
+  if (ledgerDisabled()) {
     return;
   }
   const task = (async (): Promise<void> => {
