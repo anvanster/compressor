@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-13
+
+### Fixed
+
+- **`COMPRESSOR_NO_LEDGER=1` stops recording again, in full.** 0.5.1 labelled
+  before it appended, and labelling reads (and on a fresh machine creates) the
+  key, so a user who had explicitly opted out still got `~/.compressor` and a
+  `project-salt` written into their home directory, and every benchmark cell paid
+  a read inside the measured window. The switch is now checked at the top of the
+  recording path, before a label is computed. Anyone on 0.5.1 should upgrade:
+  that release honours the switch for the ledger file but not for the key.
+- **Replacing a corrupt key narrows the file to 0600 explicitly.** `mode` is
+  applied by `open(2)` only when it creates a file, so overwriting a
+  world-readable leftover (an older build, a restored backup, a permissive
+  umask) kept those permissions while holding a live key — and a readable key
+  defeats the point of hashing.
+- `COMPRESSOR_PROJECT_SALT` rejects a value that is not an absolute path. It
+  names the key *file*, not the key, so a plausible-looking
+  `COMPRESSOR_PROJECT_SALT=<64 hex chars>` was used verbatim as a filename and
+  created that file in the current working directory — inside the user's repo.
+  An unusable value now falls back to the default location rather than scattering
+  keys.
+
+### Added
+
+- `ledgerDisabled` is exported from the package root: the kill switch as one
+  predicate, so every writer into the shared ledger honours it at the same point
+  rather than each re-reading the environment variable.
+
 ## [0.5.1] - 2026-09-12
 
 ### Changed
@@ -37,25 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ensureProjectSaltSync`, `ledgerDisabled` and `chartRows` are exported from the
-  package root. `chartRows` returns already-folded rows so the terminal and HTML
-  reports agree on the project row cap structurally, rather than by two files
-  keeping a convention in step. `ledgerDisabled` is the kill switch as one
-  predicate, so every writer into the shared ledger can honour it at the same
-  point.
-
-### Fixed
-
-- `COMPRESSOR_NO_LEDGER=1` stops recording again, in full. Labelling runs before
-  the append and reads (and on a fresh machine creates) the labelling key, so
-  0.5.0 could plant `~/.compressor/project-salt` in the home directory of a user
-  who had explicitly opted out, and made every benchmark cell pay a read inside
-  the measured window. The switch is now checked at the top of the recording
-  path, before a label is computed.
-- Replacing a corrupt key narrows the file to 0600 explicitly. `mode` is applied
-  by `open(2)` only when it creates the file, so a world-readable leftover (an
-  older build, a restored backup, a permissive umask) kept its permissions while
-  holding a live key, and a readable key defeats the point of hashing.
+- `ensureProjectSaltSync` and `chartRows` are exported from the package root.
+  `chartRows` returns already-folded rows so the terminal and HTML reports agree
+  on the project row cap structurally, rather than by two files keeping a
+  convention in step.
 
 ## [0.5.0] - 2026-09-12
 
