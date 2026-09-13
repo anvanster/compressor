@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-12
+
+### Changed
+
+- **Project labelling is now resilient where 0.5.0 was optimistic.** The key is
+  created inline and synchronously, so the run that finds it missing is itself
+  labelled: 0.5.0 created it in the background, and a hook's hard exit
+  (`settleThenExit` awaits only the ledger) could abort that write mid-chain,
+  leaving the next run to start over. A failed creation is memoized per key
+  location, so a permanently unavailable key (read-only HOME, EACCES) costs one
+  attempt rather than five blocking syscalls on every compression event in
+  long-lived processes.
+- `COMPRESSOR_PROJECT_LABEL=name` no longer requires a key it never uses. Name
+  mode reads the folder name and needs nothing from the filesystem, but 0.5.0
+  bailed out before it checked the mode, so a read-only home meant no label at
+  all.
+- Hashed labels canonicalize their input path, so a symlinked path and its real
+  path no longer produce two labels for one project. The CLI passes
+  `process.cwd()` and the extension passes a workspace path that is not
+  symlink-resolved; without normalization the shared labeller could not keep the
+  two writers in agreement, which is the one thing it exists to do.
+- `ensureProjectSalt` keeps its async signature but now delegates to the
+  synchronous implementation, so a single copy of the race policy governs both.
+  It performs one 65-byte write on the calling thread, once per machine.
+
+### Added
+
+- `ensureProjectSaltSync` and `chartRows` are exported from the package root.
+  `chartRows` returns already-folded rows so the terminal and HTML reports agree
+  on the project row cap structurally, rather than by two files keeping a
+  convention in step.
+
 ## [0.5.0] - 2026-09-12
 
 ### Added
