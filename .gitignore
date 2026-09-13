@@ -1,3 +1,8 @@
+# Local settings, not shared: steering artifacts the extension writes into
+# whatever repo it is enabled in, including this one. CI workflows stay
+# trackable so they can be added without loosening this.
+.github/*
+!.github/workflows/
 node_modules/
 dist/
 .smelt/
