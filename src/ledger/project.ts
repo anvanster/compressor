@@ -84,6 +84,20 @@ export function readProjectSaltSync(): string | undefined {
 }
 
 /**
+ * Key locations whose CREATION has already failed in this process. Creating is
+ * the expensive half of the path below (mkdir + exclusive write + a recovery
+ * write), and it fails for reasons that do not change while a process runs: a
+ * read-only or missing home. Long-lived writers — the opencode plugin, the
+ * extension — come back here for every single event, so the attempt is made
+ * once per location rather than once per event.
+ *
+ * Keyed by path, not a bare flag, because the location is env-configurable.
+ * Only creation is remembered; the 65-byte READ still happens every time, so
+ * a key another process (or the user) puts there is picked up immediately.
+ */
+const creationFailedFor = new Set<string>();
+
+/**
  * Read the key, creating it on first use, without ever yielding. This is the
  * real implementation of the creation policy; see {@link ensureProjectSalt}.
  *
@@ -99,6 +113,9 @@ export function ensureProjectSaltSync(): string | undefined {
     return existing;
   }
   const file = resolveProjectSaltPath();
+  if (creationFailedFor.has(file)) {
+    return undefined;
+  }
   const salt = randomBytes(SALT_BYTES).toString('hex');
   try {
     mkdirSync(path.dirname(file), { recursive: true });
@@ -120,6 +137,7 @@ export function ensureProjectSaltSync(): string | undefined {
     writeFileSync(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'w' });
     return salt;
   } catch {
+    creationFailedFor.add(file);
     return undefined; // unwritable home: the caller records no label
   }
 }

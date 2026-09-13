@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { PROJECT_LABEL_MAX } from '../../src/ledger/write.ts';
 import {
@@ -211,6 +211,37 @@ test('name mode needs no key: an unwritable home must not disable it', () => {
     else process.env['COMPRESSOR_PROJECT_SALT'] = prevSalt;
     if (prevMode === undefined) delete process.env['COMPRESSOR_PROJECT_LABEL'];
     else process.env['COMPRESSOR_PROJECT_LABEL'] = prevMode;
+  }
+});
+
+test('an unavailable key is not re-created per event, but a key that appears is used', () => {
+  // long-lived writers (the opencode plugin, the extension) label every tool
+  // call in one process: a permanently unwritable home must not cost five
+  // blocking syscalls per event forever
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'compressor-salt-'));
+  const blocker = path.join(dir, 'not-a-directory');
+  const file = path.join(blocker, 'project-salt');
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  process.env['COMPRESSOR_PROJECT_SALT'] = file;
+  try {
+    writeFileSync(blocker, 'x', 'utf8'); // mkdir under a FILE fails with ENOTDIR
+    assert.equal(ensureProjectSaltSync(), undefined);
+
+    // the location is now perfectly writable, and creation is still NOT
+    // retried — that attempt is remembered per location, deliberately
+    rmSync(blocker);
+    mkdirSync(blocker);
+    assert.equal(ensureProjectSaltSync(), undefined, 'creation is attempted once');
+
+    // ...but the read is never cached, so a key put there by another process
+    // (or by the user) labels the very next event
+    const planted = 'f'.repeat(64);
+    writeFileSync(file, `${planted}\n`, 'utf8');
+    assert.equal(ensureProjectSaltSync(), planted);
+    assert.equal(currentProjectLabel('/w/widget'), projectLabel('/w/widget', 'hashed', planted));
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
   }
 });
 
