@@ -7,6 +7,7 @@ import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import type { LedgerEvent } from '../../src/ledger/write.ts';
 import { PROJECT_LABEL_MAX, appendLedger, settleLedger } from '../../src/ledger/write.ts';
 import { readLedger } from '../../src/ledger/read.ts';
+import { projectLabel, readProjectSaltSync } from '../../src/ledger/project.ts';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
 
 function event(overrides: Partial<LedgerEvent> = {}): LedgerEvent {
@@ -174,6 +175,76 @@ test('worthwhile hook compression records a ledger event (claude-code)', async (
     const line = JSON.stringify(recorded);
     assert.ok(!line.includes('cargo'), 'no command content in the event');
     assert.ok(!line.includes('lib.rs'), 'no file content in the event');
+  });
+});
+
+/** A tool output big and repetitive enough that compression is worthwhile. */
+function compressiblePayload(toolUseId: string): string {
+  const stdout = Array.from(
+    { length: 400 },
+    () => 'warning: unused variable `x` found while linting src/lib.rs:42',
+  ).join('\n');
+  return JSON.stringify({
+    tool_name: 'Bash',
+    tool_input: { command: 'cargo build 2>&1' },
+    tool_use_id: toolUseId,
+    tool_response: { stdout, stderr: '', interrupted: false, isImage: false },
+  });
+}
+
+/** Point the key at a fresh temp location: never the developer's real one. */
+async function withSaltPath<T>(file: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'compressor-hook-salt-'));
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  process.env['COMPRESSOR_PROJECT_SALT'] = file ?? path.join(dir, 'nested', 'project-salt');
+  try {
+    return await fn();
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
+  }
+}
+
+test('the hook attributes its event to the working directory, so `--by project` has a writer', async () => {
+  await withLedgerDir(async (dir) => {
+    await withSaltPath(undefined, async () => {
+      assert.ok(handlePostToolUse(compressiblePayload('toolu_project'), 'slim').output !== null);
+      await settleLedger();
+
+      const events = await readLedger({ dir });
+      const recorded = events[0];
+      assert.ok(recorded !== undefined);
+      // the label the extension would compute for the same folder, from the
+      // key the hook had to create inline for its single tool call
+      const salt = readProjectSaltSync();
+      assert.ok(salt !== undefined, 'the key was created by the hook run itself');
+      assert.equal(recorded.project, projectLabel(process.cwd(), 'hashed', salt));
+      assert.match(recorded.project!, /^#[0-9a-f]{12}$/, 'a keyed digest, not a path');
+      assert.ok(
+        !JSON.stringify(recorded).includes(process.cwd()),
+        'the working directory never reaches the ledger',
+      );
+    });
+  });
+});
+
+test('a key location that cannot be created costs the label, never the event', async () => {
+  await withLedgerDir(async (dir) => {
+    // a file where a directory would have to go: the same shape as the
+    // read-only home this has to survive (container, CI, sandboxed agent)
+    const blocker = path.join(dir, 'blocker');
+    await writeFile(blocker, 'occupied', 'utf8');
+    await withSaltPath(path.join(blocker, 'project-salt'), async () => {
+      assert.ok(handlePostToolUse(compressiblePayload('toolu_nokey'), 'slim').output !== null);
+      await settleLedger();
+
+      const events = await readLedger({ dir });
+      const recorded = events[0];
+      assert.ok(recorded !== undefined, 'the compression is still recorded');
+      // an unsalted digest is the one thing worse than no label at all
+      assert.equal(recorded.project, undefined);
+      assert.ok(recorded.charsOut < recorded.charsIn, 'the savings data is intact');
+    });
   });
 });
 
