@@ -26,7 +26,7 @@ export { aggregateSavings, renderSavingsHtml, savingsTotals, windowLabel };
 export interface SavingsOptions {
   /** lookback window: '7d', '30d', ... or 'all' */
   since?: string;
-  /** aggregation dimension: day|tool|mode */
+  /** aggregation dimension: day|tool|mode|agent|project */
   by?: string;
   /** write a self-contained HTML report to this path */
   html?: string;
