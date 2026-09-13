@@ -43,6 +43,18 @@ export interface LedgerEvent {
  */
 export const PROJECT_LABEL_MAX = 64;
 
+/**
+ * The kill switch, as one predicate every step of the recording path consults.
+ * It lives here rather than inline in {@link appendLedger} because recording an
+ * event is no longer a single call: a writer resolves a project label first,
+ * and that reads (and on a fresh machine creates) the labelling key. A switch
+ * checked only at the append would let that preparatory IO run after the user
+ * has opted out. Read at call time, not module load, so tests can swap it.
+ */
+export function ledgerDisabled(): boolean {
+  return process.env['COMPRESSOR_NO_LEDGER'] === '1';
+}
+
 /** Resolved at call time (not module load) so tests can swap the env var. */
 export function resolveLedgerDir(): string {
   return (
@@ -68,7 +80,7 @@ const pending = new Set<Promise<void>>();
  * filesystem work.
  */
 export async function appendLedger(event: LedgerEvent): Promise<void> {
-  if (process.env['COMPRESSOR_NO_LEDGER'] === '1') {
+  if (ledgerDisabled()) {
     return;
   }
   const task = (async (): Promise<void> => {

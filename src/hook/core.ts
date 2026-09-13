@@ -3,7 +3,7 @@ import { OMISSION_MARKER } from '../engine/types.ts';
 import { compress, policyFor } from '../engine/index.ts';
 import { cheapEstimator } from '../tokens/estimate.ts';
 import type { LedgerEvent } from '../ledger/write.ts';
-import { appendLedger } from '../ledger/write.ts';
+import { appendLedger, ledgerDisabled } from '../ledger/write.ts';
 import { currentProjectLabel } from '../ledger/project.ts';
 import {
   noteRecoveryRead,
@@ -164,7 +164,7 @@ export function recordCompression(
   mode: Mode,
 ): void {
   try {
-    if (!compressed.worthwhile) {
+    if (!compressed.worthwhile || ledgerDisabled()) {
       return;
     }
     const project = currentProjectLabel();

@@ -2,7 +2,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { createHash, randomBytes } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { PROJECT_LABEL_MAX } from './write.ts';
 
@@ -133,8 +133,16 @@ export function ensureProjectSaltSync(): string | undefined {
   // key would otherwise mean no labels ever again, so replace it. Labels
   // written under the previous key remain in the ledger as their own group;
   // that is a cosmetic split, and preferable to recording nothing.
+  //
+  // `mode` is applied by open(2) only when it CREATES the file, so overwriting
+  // whatever is already there would inherit its permissions — a world-readable
+  // leftover (older build, restored backup, permissive umask) would then hold a
+  // live key, and a readable key is exactly what the digest exists to prevent.
+  // The chmod is the write's second half, so a failure to narrow it is a failed
+  // creation: the key is unusable and the caller records no label.
   try {
     writeFileSync(file, `${salt}\n`, { encoding: 'utf8', mode: 0o600, flag: 'w' });
+    chmodSync(file, 0o600);
     return salt;
   } catch {
     creationFailedFor.add(file);

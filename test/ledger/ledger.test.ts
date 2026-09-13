@@ -7,7 +7,12 @@ import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import type { LedgerEvent } from '../../src/ledger/write.ts';
 import { PROJECT_LABEL_MAX, appendLedger, settleLedger } from '../../src/ledger/write.ts';
 import { readLedger } from '../../src/ledger/read.ts';
-import { projectLabel, readProjectSaltSync } from '../../src/ledger/project.ts';
+import { existsSync } from 'node:fs';
+import {
+  projectLabel,
+  readProjectSaltSync,
+  resolveProjectSaltPath,
+} from '../../src/ledger/project.ts';
 import { handlePostToolUse } from '../../src/hook/post-tool-use.ts';
 
 function event(overrides: Partial<LedgerEvent> = {}): LedgerEvent {
@@ -244,6 +249,30 @@ test('a key location that cannot be created costs the label, never the event', a
       // an unsalted digest is the one thing worse than no label at all
       assert.equal(recorded.project, undefined);
       assert.ok(recorded.charsOut < recorded.charsIn, 'the savings data is intact');
+    });
+  });
+});
+
+test('COMPRESSOR_NO_LEDGER=1 stops the key too, not just the append', async () => {
+  await withLedgerDir(async (dir) => {
+    await withSaltPath(undefined, async () => {
+      const prev = process.env['COMPRESSOR_NO_LEDGER'];
+      process.env['COMPRESSOR_NO_LEDGER'] = '1';
+      try {
+        assert.ok(
+          handlePostToolUse(compressiblePayload('toolu_killswitch'), 'slim').output !== null,
+          'compression itself is unaffected by the kill switch',
+        );
+        await settleLedger();
+
+        assert.deepEqual(await readdir(dir), [], 'nothing appended');
+        // labelling is the first step of recording, and it writes: an opt-out
+        // that still plants a key in the user's home is not an opt-out
+        assert.ok(!existsSync(resolveProjectSaltPath()), 'no key created');
+      } finally {
+        if (prev === undefined) delete process.env['COMPRESSOR_NO_LEDGER'];
+        else process.env['COMPRESSOR_NO_LEDGER'] = prev;
+      }
     });
   });
 });

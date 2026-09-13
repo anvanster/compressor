@@ -83,6 +83,22 @@ test('a corrupt key file is replaced rather than disabling labels forever', asyn
   });
 });
 
+test('a replaced key is owner-only even when the file it replaces was not', async () => {
+  await withSaltFile(async (file) => {
+    // an older build, a restored backup or a permissive umask can leave a
+    // world-readable file here; the recovery write must not inherit its mode,
+    // because a key anyone can read defeats the point of hashing at all
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, 'not-a-key\n', { encoding: 'utf8', mode: 0o644 });
+    assert.equal((await stat(file)).mode & 0o777, 0o644, 'precondition');
+
+    const recovered = await ensureProjectSalt();
+    assert.ok(recovered !== undefined, 'recovers instead of returning undefined');
+    assert.equal((await stat(file)).mode & 0o777, 0o600);
+    assert.equal((await readFile(file, 'utf8')).trim(), recovered);
+  });
+});
+
 test('hashed labels hide the project and cannot be reproduced without the key', async () => {
   const secret = '/Users/someone/clients/acme-secret-merger';
   const a = projectLabel(secret, 'hashed', 'a'.repeat(64));

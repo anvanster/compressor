@@ -95,6 +95,7 @@ export type {
 export {
   PROJECT_LABEL_MAX,
   appendLedger,
+  ledgerDisabled,
   resolveLedgerDir,
   settleLedger,
 } from './ledger/write.ts';

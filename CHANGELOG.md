@@ -23,21 +23,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mode reads the folder name and needs nothing from the filesystem, but 0.5.0
   bailed out before it checked the mode, so a read-only home meant no label at
   all.
-- Hashed labels canonicalize their input path, so a symlinked path and its real
-  path no longer produce two labels for one project. The CLI passes
-  `process.cwd()` and the extension passes a workspace path that is not
-  symlink-resolved; without normalization the shared labeller could not keep the
-  two writers in agreement, which is the one thing it exists to do.
+- Labels canonicalize their input path, so one folder spelled two ways no longer
+  produces two labels for one project. The CLI passes `process.cwd()` and the
+  extension passes a workspace path, and the two can differ by a trailing
+  separator or by the case of a Windows drive letter; without normalization the
+  shared labeller could not keep the two writers in agreement, which is the one
+  thing it exists to do. Canonicalization is purely textual and never touches
+  the filesystem, so one path hashes identically on every platform; paths that
+  differ only by a symlink are therefore not reconciled.
 - `ensureProjectSalt` keeps its async signature but now delegates to the
   synchronous implementation, so a single copy of the race policy governs both.
   It performs one 65-byte write on the calling thread, once per machine.
 
 ### Added
 
-- `ensureProjectSaltSync` and `chartRows` are exported from the package root.
-  `chartRows` returns already-folded rows so the terminal and HTML reports agree
-  on the project row cap structurally, rather than by two files keeping a
-  convention in step.
+- `ensureProjectSaltSync`, `ledgerDisabled` and `chartRows` are exported from the
+  package root. `chartRows` returns already-folded rows so the terminal and HTML
+  reports agree on the project row cap structurally, rather than by two files
+  keeping a convention in step. `ledgerDisabled` is the kill switch as one
+  predicate, so every writer into the shared ledger can honour it at the same
+  point.
+
+### Fixed
+
+- `COMPRESSOR_NO_LEDGER=1` stops recording again, in full. Labelling runs before
+  the append and reads (and on a fresh machine creates) the labelling key, so
+  0.5.0 could plant `~/.compressor/project-salt` in the home directory of a user
+  who had explicitly opted out, and made every benchmark cell pay a read inside
+  the measured window. The switch is now checked at the top of the recording
+  path, before a label is computed.
+- Replacing a corrupt key narrows the file to 0600 explicitly. `mode` is applied
+  by `open(2)` only when it creates the file, so a world-readable leftover (an
+  older build, a restored backup, a permissive umask) kept its permissions while
+  holding a live key, and a readable key defeats the point of hashing.
 
 ## [0.5.0] - 2026-09-12
 
