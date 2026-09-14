@@ -35,10 +35,16 @@ const SALT_PATTERN = /^[0-9a-f]{64}$/;
  * directory is the shareable unit, so the key must not sit inside it.
  */
 export function resolveProjectSaltPath(): string {
-  return (
-    process.env['COMPRESSOR_PROJECT_SALT'] ??
-    path.join(os.homedir(), '.compressor', 'project-salt')
-  );
+  // The variable names the key FILE, not the key. A plausible-looking
+  // `COMPRESSOR_PROJECT_SALT=<64 hex chars>` would otherwise be used verbatim as
+  // a filename: `path.dirname` gives `.`, so the key lands in the current
+  // working directory, i.e. inside the user's repo. Requiring an absolute path
+  // removes the footgun without renaming a variable that is already published.
+  const override = process.env['COMPRESSOR_PROJECT_SALT'];
+  if (override !== undefined && path.isAbsolute(override)) {
+    return override;
+  }
+  return path.join(os.homedir(), '.compressor', 'project-salt');
 }
 
 /** The key if one exists and is well-formed; undefined otherwise. */

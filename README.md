@@ -163,7 +163,7 @@ by tool:
 ```
 
 `compressor savings --html report.html` writes a self-contained report (inline SVG, no JS, no network). Kill switch: `COMPRESSOR_NO_LEDGER=1`.
-Opt into plain folder names with `COMPRESSOR_PROJECT_LABEL=name`, or relocate the digest key with `COMPRESSOR_PROJECT_SALT` ([architecture](docs/ARCHITECTURE.md#7-ledger-and-savings)).
+Opt into plain folder names with `COMPRESSOR_PROJECT_LABEL=name`, or relocate the digest key with `COMPRESSOR_PROJECT_SALT`, which must be an **absolute path to the key file** - any other value (a relative path, or a key pasted in place of a path) is ignored and the default `~/.compressor/project-salt` is used ([architecture](docs/ARCHITECTURE.md#7-ledger-and-savings)).
 
 Benchmarked effect sizes (real agent sessions, success-checked): the hook cut context volume **−16%** on log-heavy work, and the instruction packs cut conversational output **−10% to −79%** depending on conversation type, with zero measured quality loss. Effects are domain-specific — full numbers, distributions, run ids, and caveats in [docs/BENCHMARKING.md](docs/BENCHMARKING.md).
 

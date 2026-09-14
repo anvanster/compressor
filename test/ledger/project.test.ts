@@ -274,3 +274,24 @@ test('one folder spelled two ways is one row, not two', () => {
   assert.notEqual(projectLabel('/', 'hashed', salt), projectLabel('', 'hashed', salt));
   assert.equal(projectLabel('/w/app/', 'name', salt), 'app');
 });
+
+test('the key path override must be absolute, or the key lands in the repo', () => {
+  const prev = process.env['COMPRESSOR_PROJECT_SALT'];
+  const fallback = path.join(os.homedir(), '.compressor', 'project-salt');
+  try {
+    // the footgun: the variable names a file, but reads like it names a key
+    process.env['COMPRESSOR_PROJECT_SALT'] = 'a'.repeat(64);
+    assert.equal(resolveProjectSaltPath(), fallback, 'a bare key is not a path');
+    process.env['COMPRESSOR_PROJECT_SALT'] = 'relative/project-salt';
+    assert.equal(resolveProjectSaltPath(), fallback, 'a relative path is not honoured');
+    process.env['COMPRESSOR_PROJECT_SALT'] = '';
+    assert.equal(resolveProjectSaltPath(), fallback);
+
+    const absolute = path.join(os.tmpdir(), 'explicit-project-salt');
+    process.env['COMPRESSOR_PROJECT_SALT'] = absolute;
+    assert.equal(resolveProjectSaltPath(), absolute, 'an absolute path still relocates the key');
+  } finally {
+    if (prev === undefined) delete process.env['COMPRESSOR_PROJECT_SALT'];
+    else process.env['COMPRESSOR_PROJECT_SALT'] = prev;
+  }
+});
