@@ -126,10 +126,11 @@ test('empty-window message distinguishes window from truly empty ledger', () => 
 test('html report is self-contained with one SVG chart per dimension', () => {
   const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
   assert.ok(html.includes('<svg'), 'inline SVG charts');
-  assert.equal(html.match(/<svg/g)?.length, 4, 'by day + by agent + by tool + by mode');
-  assert.ok(html.includes('by day') && html.includes('by tool') && html.includes('by mode'));
+  assert.equal(html.match(/<svg/g)?.length, 4, 'over time + tool donut + agent donut + mode bars');
+  assert.ok(html.includes('savings over time') && html.includes('by tool') && html.includes('by mode'));
   assert.ok(html.includes('by agent'), 'agent breakdown section');
-  assert.ok(html.includes('2026-06-09') && html.includes('read') && html.includes('slim'));
+  // the column chart drops the constant year from its x labels
+  assert.ok(html.includes('06-09') && html.includes('read') && html.includes('slim'));
   assert.ok(html.includes('estimated — cheap estimator, not billable counts'));
   assert.ok(!html.includes('http://') || !html.includes('src='), 'no external requests');
   assert.ok(!html.includes('<script'), 'no JS required');

@@ -122,9 +122,59 @@ export {
   foldTail,
   renderSavingsHtml,
   savingsTotals,
+  cardHtml,
+  kpiHtml,
+  svgColumnChart,
+  svgDonut,
+  valuationHtml,
   windowLabel,
 } from './ledger/report.ts';
-export type { SavingsDimension, SavingsRow, SavingsTotals } from './ledger/report.ts';
+export type { Kpi, SavingsDimension, SavingsRow, SavingsTotals } from './ledger/report.ts';
+export { COPILOT_AGENTS, formatUsd, valueSavings } from './ledger/valuation.ts';
+export type {
+  UnvaluedAgent,
+  Valuation,
+  ValuationRate,
+  ValuedDay,
+  ValuedTotals,
+} from './ledger/valuation.ts';
+
+// pricing (Copilot credit rates, read from the user's own model catalog)
+export {
+  AI_CREDIT_USD,
+  blendInputRate,
+  creditsForTokens,
+  creditsToUsd,
+  normalizeModelId,
+  parseCopilotCatalog,
+} from './pricing/rates.ts';
+export type { BlendedRate, CatalogRates, CreditRate, ModelWeight, RateTable } from './pricing/rates.ts';
+
+// copilot chat debug logs (usage records VS Code writes under workspaceStorage)
+export {
+  KNOWN_ENTRY_TYPES,
+  KNOWN_SCHEMA_VERSION,
+  emptyProbe,
+  probeDebugLog,
+  readLlmRequests,
+} from './copilot/debug-log.ts';
+export type { DebugLogEntryType, DebugLogProbe, LlmRequest } from './copilot/debug-log.ts';
+export {
+  aggregateCopilotUsage,
+  cacheHitRate,
+  effectivePromptCreditsPerMillion,
+  savingsShare,
+  usageAiu,
+  usageModelWeights,
+} from './copilot/usage.ts';
+export { savingsShareHtml, usageEmptyStateHtml, usageHtml } from './copilot/usage-report.ts';
+export type {
+  DailyUsage,
+  ModelUsage,
+  SavingsShare,
+  UsageCounters,
+  UsageSummary,
+} from './copilot/usage.ts';
 
 // hook
 export { handlePostToolUse } from './hook/post-tool-use.ts';

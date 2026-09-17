@@ -9,8 +9,13 @@ import {
   foldTail,
   renderSavingsHtml,
   savingsTotals,
+  svgColumnChart,
+  svgDonut,
+  valuationHtml,
   windowLabel,
 } from '../../src/ledger/report.ts';
+import type { ValuationRate } from '../../src/ledger/valuation.ts';
+import { valueSavings } from '../../src/ledger/valuation.ts';
 
 // Pure-module contract for the extension surface (src/ledger/report.ts):
 // aggregation math, totals, window labels, and the self-contained HTML
@@ -36,6 +41,13 @@ const handBuilt: LedgerEvent[] = [
   event({ ts: '2026-06-09T11:00:00.000Z', tool: 'bash', mode: 'slim', charsIn: 1000, charsOut: 300, estTokensIn: 286, estTokensOut: 86 }),
   event({ ts: '2026-06-10T09:00:00.000Z', agent: 'vscode', tool: 'bash', mode: 'slim', charsIn: 700, charsOut: 200, estTokensIn: 200, estTokensOut: 58 }),
 ];
+
+/** 1000 credits per 1M prompt tokens → $10.00 per million saved tokens. */
+const rate: ValuationRate = {
+  creditsPerMillionInput: 1000,
+  models: ['gpt-5.2'],
+  source: 'test catalog',
+};
 
 test('aggregateSavings by day: per-day sums, ascending date order', () => {
   assert.deepEqual(aggregateSavings(handBuilt, 'day'), [
@@ -91,18 +103,71 @@ test('renderSavingsHtml: SVG charts per dimension, estimated label, window label
 });
 
 test('renderSavingsHtml: label column widens for long labels (no left clip)', () => {
-  const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
+  // Horizontal bar charts right-align labels at labelW-10, so a fixed width
+  // clipped long ones off the left edge. Only the bar-chart dimensions can
+  // regress this way — 'day' is a column chart and 'agent'/'tool' are donuts.
+  const longLabel = '#a-very-long-project-label-indeed';
+  const html = renderSavingsHtml(
+    [event({ project: longLabel }), event({ project: '#b' })],
+    '/tmp/ledger-dir',
+    'last 30 days',
+  );
   const widthFor = (dim: string): number => {
     const m = new RegExp(`<h2>by ${dim}</h2>\\s*<svg[^>]*viewBox="0 0 (\\d+)`).exec(html);
     return m === null ? 0 : Number(m[1]);
   };
-  // "Copilot (VS Code)" is far longer than a date label, so the agent chart
-  // must reserve a wider label column than the day chart (a fixed labelW
-  // clipped the right-aligned agent labels off the left edge).
   assert.ok(
-    widthFor('agent') > widthFor('day'),
-    `agent width ${widthFor('agent')} must exceed day width ${widthFor('day')}`,
+    widthFor('project') > widthFor('mode'),
+    `project width ${widthFor('project')} must exceed mode width ${widthFor('mode')}`,
   );
+});
+
+test('renderSavingsHtml: dashboard shell — KPI row and cards, still no JS', () => {
+  const html = renderSavingsHtml(handBuilt, '/tmp/ledger-dir', 'last 30 days');
+  assert.match(html, /class="kpis"/, 'headline numbers');
+  assert.match(html, /class="kpi-value">4,200<\/div>/, 'chars removed KPI');
+  assert.match(html, /class="card/, 'charts live in cards');
+  assert.match(html, /<h2>savings over time<\/h2>/);
+  assert.match(html, /class="donut-row"/, 'composition charts');
+  assert.ok(!html.includes('<script'), 'no JS — self-contained artifact');
+  // the only http: string may be the SVG namespace, which is an identifier and
+  // never fetched — anything else would be a request from a shared artifact
+  assert.equal(
+    html.replace(/xmlns="http:\/\/www\.w3\.org\/2000\/svg"/g, '').match(/https?:\/\//g),
+    null,
+    'no network requests',
+  );
+});
+
+test('svgColumnChart: two-tone columns, thinned x labels, tooltips', () => {
+  const days = Array.from({ length: 30 }, (_, i) =>
+    event({ ts: `2026-06-${String(i + 1).padStart(2, '0')}T00:00:00.000Z` }));
+  const svg = svgColumnChart(chartRows(days, 'day'));
+  assert.match(svg, /class="bar-total"/);
+  assert.match(svg, /class="bar-saved"/);
+  assert.match(svg, /<title>/);
+  // 30 columns must not print 30 x labels on top of each other
+  const labels = svg.match(/class="axis"/g)?.length ?? 0;
+  assert.ok(labels < 30 && labels > 3, `${labels} axis labels for 30 days`);
+  assert.equal(svgColumnChart([]), '<p class="empty">no events in this window</p>');
+});
+
+test('svgDonut: slices sum to the circumference and carry a legend', () => {
+  const rows = chartRows(handBuilt, 'agent');
+  const svg = svgDonut(rows, 'agents');
+  assert.match(svg, /class="legend"/);
+  assert.match(svg, /Claude Code/);
+  assert.match(svg, /stroke-dashoffset="-?\d/);
+  // percentages are shown and must add to 100
+  const percents = [...svg.matchAll(/>(\d+\.\d)%</g)].map((m) => Number(m[1]));
+  assert.ok(Math.abs(percents.reduce((a, b) => a + b, 0) - 100) < 0.2, `${percents}`);
+  assert.equal(svgDonut([], 'x'), '<p class="empty">no events in this window</p>');
+});
+
+test('svgDonut: a hostile label cannot break out of the legend or a tooltip', () => {
+  const svg = svgDonut(chartRows([event({ project: '<img src=x onerror=1>' })], 'project'), 'p');
+  assert.ok(!svg.includes('<img'), 'escaped in both legend and title');
+  assert.match(svg, /&lt;img/);
 });
 
 test('aggregateSavings by agent: friendly labels, sorted by saved tokens', () => {
@@ -196,6 +261,54 @@ test('chartRows is the single fold policy both surfaces chart', () => {
 test('foldTail is a no-op at or below the limit', () => {
   const rows = aggregateSavings([event({ project: '#a' }), event({ project: '#b' })], 'project');
   assert.deepEqual(foldTail(rows, PROJECT_ROW_LIMIT, 'projects'), rows);
+});
+
+test('valuationHtml: absent or unpriced valuation renders nothing', () => {
+  assert.equal(valuationHtml(undefined), '');
+  assert.equal(
+    valuationHtml(valueSavings([event({ agent: 'claude-code' })], rate)),
+    '',
+    'a window with nothing the rate covers must not print a $0.00 headline',
+  );
+});
+
+test('valuationHtml: every figure carries its rate, its source and the caveats', () => {
+  const html = valuationHtml(valueSavings([event({ agent: 'vscode', estTokensIn: 1_000_000, estTokensOut: 0 })], rate));
+  assert.match(html, /\$10\.00/);
+  assert.match(html, /test catalog/, 'provenance is stated');
+  assert.match(html, /1M prompt tokens/, 'the rate itself is stated');
+  assert.match(html, /estimated, not billable counts/);
+  assert.match(html, /Premium-request quotas are unaffected/);
+  assert.match(html, /<h2>value by day<\/h2>/);
+});
+
+test('valuationHtml: a cache-read rate is shown as a range, not a bare ceiling', () => {
+  const html = valuationHtml(
+    valueSavings([event({ agent: 'vscode', estTokensIn: 1_000_000, estTokensOut: 0 })], {
+      ...rate,
+      cachedCreditsPerMillionInput: 100,
+    }),
+  );
+  assert.match(html, /\$1\.00 – \$10\.00/);
+  assert.match(html, /cache-read rate/);
+});
+
+test('valuationHtml: the unpriced remainder is named, not silently dropped', () => {
+  const html = valuationHtml(
+    valueSavings([event({ agent: 'vscode' }), event({ agent: 'claude-code', estTokensIn: 900_000 })], rate),
+  );
+  assert.match(html, /not priced/);
+  assert.match(html, /Claude Code/, 'the friendly agent label, as elsewhere in the report');
+});
+
+test('renderSavingsHtml: the valued section is opt-in and escaped', () => {
+  assert.doesNotMatch(renderSavingsHtml(handBuilt, '/tmp/l', '30d'), /estimated value/);
+  const valued = renderSavingsHtml(handBuilt, '/tmp/l', '30d', valueSavings(handBuilt, {
+    ...rate,
+    source: '<script>alert(1)</script>',
+  }));
+  assert.match(valued, /<h2>estimated value<\/h2>/);
+  assert.doesNotMatch(valued, /<script>/, 'the source string is untrusted display text');
 });
 
 test('project symbols are exported from the PACKAGE ROOT barrel (two-barrel rule)', async () => {

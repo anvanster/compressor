@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-17
+
+### Added
+
+- **Savings can be priced.** `valueSavings` converts ledger savings into GitHub
+  AI credits and USD, and `renderSavingsHtml` gains an optional valued section
+  with a per-day value chart. Rates are not a table this project maintains: they
+  are read from the user's own Copilot model catalog (`parseCopilotCatalog`),
+  which states real per-model prices in credits per million tokens, so nothing
+  goes stale and a missing catalog reports no value rather than a guess.
+  Valuation is partitioned by agent — Claude Code and OpenCode savings are
+  reported as an explicitly unvalued remainder instead of being converted at a
+  rate that does not apply to them.
+- **Actual Copilot usage.** `readLlmRequests` and `aggregateCopilotUsage` read
+  the chat debug logs VS Code writes under `workspaceStorage`, giving
+  provider-reported requests, models, prompt/output tokens, cache reads and
+  billed AI Units. `savingsShare` joins the two sources into the figure neither
+  can produce alone: what fraction of the prompt Copilot would have sent was
+  removed before sending.
+- **A schema probe rather than a silent parser.** `probeDebugLog` reports which
+  entry types and attributes a log actually contained, so an empty usage section
+  can distinguish "logging is off" from "the upstream schema moved" — and the
+  known schema version and entry-type union are pinned by a test, so an upstream
+  change fails loudly instead of reporting zeros.
+- **The HTML report is a dashboard.** A KPI row and a card grid replace the flat
+  list of charts: savings over time is a two-tone column chart with thinned date
+  labels, composition is shown as donuts with legends, and the remaining
+  breakdowns keep their bar charts. Still one self-contained file — inline CSS,
+  static SVG, no JavaScript and no network requests — so it renders in a
+  scripts-disabled webview and survives being emailed.
+
+### Fixed
+
+- **Prompt savings are no longer priced an order of magnitude too high.** The
+  first cut valued every saved token at the rate card's `input_price` and called
+  that a conservative upper bound. Measured against a real 292k-token request,
+  99.3% of that prompt was served from cache at a tenth of the rate and the
+  rate-card model overstated the bill 8.6x. Billing is now understood as
+  uncached input at the cache-write price, cached input at the cache-read price
+  and output at the output price — a formula that reproduces the provider's own
+  billed figure to within rounding, and is pinned by a regression test.
+- Unreported token counters are never summed as zero. The debug log omits a
+  counter when the provider reported nothing, so totals state how many requests
+  went unreported and label themselves a floor rather than quietly understating
+  usage.
+
 ## [0.5.2] - 2026-09-13
 
 ### Fixed

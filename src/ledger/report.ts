@@ -1,4 +1,6 @@
 import type { LedgerEvent } from './write.ts';
+import type { Valuation } from './valuation.ts';
+import { formatUsd } from './valuation.ts';
 
 // Pure aggregation + rendering over ledger events, shared by the CLI
 // (`compressor savings`, src/cli/commands/savings.ts) and library consumers
@@ -153,6 +155,8 @@ export function chartRows(
 // 1.25x write / 0.1x read, OpenAI ~0.5x read, a no-cache model 1x). Reporting
 // raw estimated tokens with the "not billable" caveat is the honest floor;
 // cache-tier weighting lives only on the Claude-only stats/report surfaces.
+// A money figure appears only when a caller supplies the missing half from
+// outside the ledger — see src/ledger/valuation.ts.
 /** Whole-window totals: exact chars, estimated tokens, event count. */
 export function savingsTotals(events: readonly LedgerEvent[]): SavingsTotals {
   return {
@@ -229,23 +233,286 @@ function svgBarChart(rows: readonly SavingsRow[]): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img">${parts.join('')}</svg>`;
 }
 
+// ── dashboard primitives ───────────────────────────────────────────────────
+// Static SVG and CSS only: the webview runs with scripts disabled and the
+// standalone artifact is meant to survive being emailed, so no library, no
+// runtime, no requests. Colors come from VS Code chart variables with browser
+// fallbacks, so one document reads correctly in both places.
+
+const PALETTE = [
+  'var(--vscode-charts-blue, #4c9aff)',
+  'var(--vscode-charts-green, #3fb950)',
+  'var(--vscode-charts-purple, #a371f7)',
+  'var(--vscode-charts-orange, #db6d28)',
+  'var(--vscode-charts-yellow, #d29922)',
+  'var(--vscode-charts-red, #f85149)',
+];
+
+export interface Kpi {
+  value: string;
+  label: string;
+  /** small print under the label, e.g. a caveat the number needs */
+  hint?: string;
+}
+
+/** The headline row: a few big numbers, each with its unit and any caveat. */
+export function kpiHtml(items: readonly Kpi[]): string {
+  if (items.length === 0) {
+    return '';
+  }
+  const cards = items
+    .map(
+      (kpi) =>
+        '<div class="kpi">' +
+        `<div class="kpi-value">${escapeHtml(kpi.value)}</div>` +
+        `<div class="kpi-label">${escapeHtml(kpi.label)}</div>` +
+        (kpi.hint === undefined ? '' : `<div class="kpi-hint">${escapeHtml(kpi.hint)}</div>`) +
+        '</div>',
+    )
+    .join('');
+  return `<div class="kpis">${cards}</div>`;
+}
+
+/** One titled card in the grid. */
+export function cardHtml(title: string, body: string, wide = false): string {
+  return `<section class="card${wide ? ' wide' : ''}"><h2>${escapeHtml(title)}</h2>${body}</section>`;
+}
+
+/**
+ * Time series as vertical columns, the shape a reader expects for "per day".
+ *
+ * Two-tone like the horizontal bars: the full column is the original token
+ * total and the accent portion is what compressor removed, so a tall pale
+ * column is a day it barely helped and a tall solid one is a day it did.
+ */
+export function svgColumnChart(rows: readonly SavingsRow[]): string {
+  if (rows.length === 0) {
+    return '<p class="empty">no events in this window</p>';
+  }
+  const colW = Math.max(6, Math.min(26, Math.floor(620 / rows.length)));
+  const gap = Math.max(2, Math.round(colW / 4));
+  const plotH = 170;
+  const axisW = 58;
+  const top = 8;
+  const width = axisW + rows.length * (colW + gap) + 12;
+  const height = plotH + 46;
+  const max = Math.max(...rows.map((r) => r.totalTokens), 1);
+  // At most ~8 x labels: a 30-day window would otherwise overlap into mush.
+  const labelEvery = Math.max(1, Math.ceil(rows.length / 8));
+  const gridlines = [0, 0.5, 1]
+    .map((f) => {
+      const y = top + plotH - f * plotH;
+      return (
+        `<line x1="${axisW}" y1="${y}" x2="${width - 12}" y2="${y}" class="grid"/>` +
+        `<text x="${axisW - 8}" y="${y + 4}" text-anchor="end" class="axis">${escapeHtml(fmt(max * f))}</text>`
+      );
+    })
+    .join('');
+  const columns = rows
+    .map((row, i) => {
+      const x = axisW + i * (colW + gap);
+      const totalH =
+        row.totalTokens <= 0 ? 0 : Math.max(1, Math.round((row.totalTokens / max) * plotH));
+      const savedH =
+        row.savedTokens <= 0 ? 0 : Math.min(totalH, Math.round((row.savedTokens / max) * plotH));
+      const title =
+        `${row.label}: saved ≈${fmt(row.savedTokens)} of ≈${fmt(row.totalTokens)} tok · ` +
+        `${fmt(row.events)} events`;
+      // labels are YYYY-MM-DD and the year is constant across a window
+      const label =
+        i % labelEvery === 0
+          ? `<text x="${x + colW / 2}" y="${top + plotH + 18}" text-anchor="middle" class="axis">${escapeHtml(row.label.slice(5))}</text>`
+          : '';
+      return (
+        `<g><title>${escapeHtml(title)}</title>` +
+        `<rect x="${x}" y="${top + plotH - totalH}" width="${colW}" height="${totalH}" rx="2" class="bar-total"/>` +
+        (savedH > 0
+          ? `<rect x="${x}" y="${top + plotH - savedH}" width="${colW}" height="${savedH}" rx="2" class="bar-saved"/>`
+          : '') +
+        `</g>${label}`
+      );
+    })
+    .join('');
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img">` +
+    `${gridlines}${columns}</svg>`
+  );
+}
+
+/**
+ * Composition as a donut, drawn with dash offsets on one circle per slice
+ * rather than arc paths — fewer places for floating-point drift to open a
+ * visible seam between segments.
+ */
+export function svgDonut(rows: readonly SavingsRow[], centerLabel: string): string {
+  const total = rows.reduce((acc, row) => acc + row.savedTokens, 0);
+  if (rows.length === 0 || total <= 0) {
+    return '<p class="empty">no events in this window</p>';
+  }
+  const size = 168;
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+  const segments = rows
+    .map((row, i) => {
+      const fraction = row.savedTokens / total;
+      const length = fraction * circumference;
+      const segment =
+        `<circle cx="${size / 2}" cy="${size / 2}" r="${radius}" fill="none" ` +
+        `stroke="${PALETTE[i % PALETTE.length]}" stroke-width="26" ` +
+        `stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}">` +
+        `<title>${escapeHtml(`${row.label}: ${fmt(row.savedTokens)} tok (${(fraction * 100).toFixed(1)}%)`)}</title>` +
+        '</circle>';
+      offset += length;
+      return segment;
+    })
+    .join('');
+  const legend = rows
+    .map(
+      (row, i) =>
+        `<li><span class="swatch" style="background:${PALETTE[i % PALETTE.length]}"></span>` +
+        `${escapeHtml(row.label)} <span class="footer">${((row.savedTokens / total) * 100).toFixed(1)}%</span></li>`,
+    )
+    .join('');
+  return (
+    '<div class="donut-row">' +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img">` +
+    `<g transform="rotate(-90 ${size / 2} ${size / 2})">${segments}</g>` +
+    `<text x="${size / 2}" y="${size / 2 + 5}" text-anchor="middle" class="donut-center">${escapeHtml(centerLabel)}</text>` +
+    '</svg>' +
+    `<ul class="legend">${legend}</ul></div>`
+  );
+}
+
+/**
+ * Single-tone daily bars for the valued series. Separate from svgBarChart on
+ * purpose: that chart's two tones mean "saved within total", which has no
+ * counterpart here — a day has one value, and the only comparison worth making
+ * is between days.
+ */
+function svgValueChart(days: Valuation['byDay']): string {
+  if (days.length === 0) {
+    return '<p class="empty">no priced events in this window</p>';
+  }
+  const rowH = 22;
+  const barMax = 300;
+  const barH = 12;
+  const gap = 14;
+  const charW = 7.5;
+  const labelW = 100;
+  const maxUsd = Math.max(...days.map((d) => d.usd), Number.EPSILON);
+  const valueW = Math.ceil(Math.max(...days.map((d) => formatUsd(d.usd).length)) * charW) + 8;
+  const width = labelW + barMax + gap + valueW;
+  const height = days.length * rowH + 10;
+  const parts = days.map((day, i) => {
+    const y = 5 + i * rowH;
+    const cy = y + 13;
+    const barW = day.usd <= 0 ? 0 : Math.max(2, Math.round((day.usd / maxUsd) * barMax));
+    const title = `${day.date}: ≈${formatUsd(day.usd)} (${fmt(day.credits)} credits) from ≈${fmt(day.tokens)} saved tokens`;
+    return (
+      `<g><title>${escapeHtml(title)}</title>` +
+      [
+        `<text x="${labelW - 10}" y="${cy}" text-anchor="end" class="label">${escapeHtml(day.date)}</text>`,
+        `<rect x="${labelW}" y="${y + 2}" width="${barW}" height="${barH}" rx="3" class="bar-saved"/>`,
+        `<text x="${labelW + barMax + gap}" y="${cy}" class="value">${escapeHtml(formatUsd(day.usd))}</text>`,
+      ].join('') +
+      `</g>`
+    );
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img">${parts.join('')}</svg>`;
+}
+
+/**
+ * The valued view: headline, the daily series, and the unvalued remainder.
+ *
+ * Every figure states its rate and where the rate came from. The remainder is
+ * not decoration — without it a reader would take the priced total for the
+ * whole window, when it covers only the agents the rate applies to.
+ */
+export function valuationHtml(valuation: Valuation | undefined): string {
+  if (valuation === undefined || valuation.valued.events === 0) {
+    return '';
+  }
+  const { rate, valued, unvalued } = valuation;
+  const models = rate.models.length === 0 ? 'unknown model' : rate.models.join(', ');
+  // A range when the catalog prices cache reads: saved prompt tokens that would
+  // have been a cache hit are worth the lower figure, and which of the two a
+  // given prompt would have hit is not knowable from the ledger.
+  const headline =
+    valued.usdLow === undefined
+      ? `≈ ${formatUsd(valued.usd)} (${fmt(valued.credits)} AI credits)`
+      : `${formatUsd(valued.usdLow)} – ${formatUsd(valued.usd)} ` +
+        `(${fmt(valued.creditsLow ?? 0)} – ${fmt(valued.credits)} AI credits)`;
+  const rateNote =
+    valued.usdLow === undefined
+      ? `priced at ≈${fmt(rate.creditsPerMillionInput)} credits per 1M prompt tokens`
+      : `priced between the cache-read rate (≈${fmt(rate.cachedCreditsPerMillionInput ?? 0)}) and ` +
+        `the standard input rate (≈${fmt(rate.creditsPerMillionInput)} credits per 1M prompt tokens)`;  const remainder =
+    unvalued.events === 0
+      ? ''
+      : `<p class="footer">not priced: ≈${fmt(unvalued.tokens)} saved tokens from ` +
+        `${unvalued.byAgent.map((a) => escapeHtml(AGENT_LABELS[a.agent] ?? a.agent)).join(', ')} — ` +
+        'those agents are not billed at this rate, so their savings are excluded rather than ' +
+        'converted.</p>';
+  return (
+    '<div class="grid">' +
+    cardHtml(
+      'estimated value',
+      `<p class="totals">${escapeHtml(headline)}</p>\n` +
+        `<p class="footer">from ≈${fmt(valued.tokens)} saved prompt tokens across ` +
+        `${fmt(valued.events)} events. ${escapeHtml(rateNote)} for ${escapeHtml(models)}, from ` +
+        `${escapeHtml(rate.source)}. Saved tokens are estimated, not billable counts. ` +
+        'In a warm agent session almost the whole prompt is a cache read, so the low end of this ' +
+        'range is much closer to the truth than the high end. ' +
+        'Premium-request quotas are unaffected by compression — on a request-metered plan the ' +
+        'cash effect is smaller than this figure.</p>\n' +
+        remainder,
+    ) +
+    cardHtml('value by day', svgValueChart(valuation.byDay)) +
+    '</div>'
+  );
+}
+
 export function renderSavingsHtml(
   events: readonly LedgerEvent[],
   dir: string,
   window: string,
+  /** optional money view; omitted when no rate could be resolved */
+  valuation?: Valuation,
 ): string {
   const { savedChars, savedTokens } = savingsTotals(events);
+  const totalTokens = events.reduce((acc, e) => acc + e.estTokensIn, 0);
+  const kpis: Kpi[] = [
+    { value: fmt(savedChars), label: 'chars removed', hint: 'exact' },
+    { value: fmt(savedTokens), label: 'tokens removed', hint: 'estimated' },
+    {
+      value: totalTokens <= 0 ? '—' : `${((savedTokens / totalTokens) * 100).toFixed(0)}%`,
+      label: 'of tool output',
+      hint: 'gross reduction',
+    },
+    { value: fmt(events.length), label: 'events', hint: escapeHtml(window) },
+  ];
+  if (valuation !== undefined && valuation.valued.events > 0) {
+    kpis.push({
+      value:
+        valuation.valued.usdLow === undefined
+          ? formatUsd(valuation.valued.usd)
+          : `${formatUsd(valuation.valued.usdLow)}–${formatUsd(valuation.valued.usd)}`,
+      label: 'estimated value',
+      hint: 'Copilot agents',
+    });
+  }
   // 'by project' only once something carries a label: otherwise every existing
   // ledger gains a chart with a single "unattributed" bar, which says nothing.
-  const dimensions: SavingsDimension[] = ['day', 'agent', 'tool', 'mode'];
+  const cards = [
+    cardHtml('savings over time', svgColumnChart(chartRows(events, 'day')), true),
+    cardHtml('by tool', svgDonut(chartRows(events, 'tool'), 'tools')),
+    cardHtml('by agent', svgDonut(chartRows(events, 'agent'), 'agents')),
+    cardHtml('by mode', svgBarChart(chartRows(events, 'mode')), true),
+  ];
   if (events.some((event) => event.project !== undefined)) {
-    dimensions.push('project');
+    cards.push(cardHtml('by project', svgBarChart(chartRows(events, 'project')), true));
   }
-  const sections = dimensions
-    .map((by) => {
-      return `<h2>by ${by}</h2>\n${svgBarChart(chartRows(events, by))}`;
-    })
-    .join('\n');
   // Self-contained on purpose: inline CSS, static SVG, no JS, no requests.
   // The window label is mandatory: this artifact is shared standalone and an
   // unqualified headline would read as all-time.
@@ -260,18 +527,45 @@ export function renderSavingsHtml(
 <meta charset="utf-8">
 <title>compressor savings</title>
 <style>
-body { font-family: var(--vscode-editor-font-family, ui-monospace, SFMono-Regular, Menlo, monospace); margin: 2rem auto; max-width: 760px; color: var(--vscode-foreground, #1f2328); background: var(--vscode-editor-background, #ffffff); }
-h1 { font-size: 1.3rem; } h2 { font-size: 1rem; margin-top: 1.6rem; }
-.totals { font-size: 0.95rem; } .footer, .empty { color: var(--vscode-descriptionForeground, #57606a); font-size: 0.8rem; }
+:root { --card-bg: var(--vscode-editorWidget-background, #f6f8fa); --card-br: var(--vscode-widget-border, #d0d7de); --accent: var(--vscode-charts-blue, #4c9aff); }
+body { font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif); margin: 0 auto; padding: 1.6rem; max-width: 1080px; color: var(--vscode-foreground, #1f2328); background: var(--vscode-editor-background, #ffffff); line-height: 1.5; }
+h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.2rem; }
+h2 { font-size: 0.8rem; font-weight: 600; margin: 0 0 0.9rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--vscode-descriptionForeground, #57606a); }
+.sub { color: var(--vscode-descriptionForeground, #57606a); font-size: 0.85rem; margin: 0 0 1.2rem; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
+.kpi { background: var(--card-bg); border: 1px solid var(--card-br); border-radius: 8px; padding: 0.9rem 1rem; }
+.kpi-value { font-size: 1.6rem; font-weight: 650; line-height: 1.15; }
+.kpi-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground, #57606a); margin-top: 0.15rem; }
+.kpi-hint { font-size: 0.72rem; color: var(--vscode-descriptionForeground, #57606a); opacity: 0.85; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+.card { background: var(--card-bg); border: 1px solid var(--card-br); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; }
+.card.wide { grid-column: 1 / -1; }
+.totals { font-size: 0.95rem; margin: 0.2rem 0; }
+.footer, .empty { color: var(--vscode-descriptionForeground, #57606a); font-size: 0.8rem; }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+th { text-align: left; font-weight: 600; color: var(--vscode-descriptionForeground, #57606a); }
+th, td { padding: 0.32rem 0.6rem 0.32rem 0; border-bottom: 1px solid var(--card-br); }
+.donut-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.legend { list-style: none; margin: 0; padding: 0; font-size: 0.82rem; }
+.legend li { margin-bottom: 0.25rem; white-space: nowrap; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 0.45rem; }
+.donut-center { font-size: 12px; fill: var(--vscode-descriptionForeground, #57606a); }
 svg .label, svg .value { font-size: 12px; fill: var(--vscode-foreground, #1f2328); }
+svg .axis { font-size: 11px; fill: var(--vscode-descriptionForeground, #57606a); }
+svg .grid { stroke: var(--vscode-foreground, #1f2328); opacity: 0.12; }
 svg .bar-total { fill: var(--vscode-foreground, #1f2328); opacity: 0.16; }
 svg .bar-saved { fill: var(--vscode-charts-blue, #4c9aff); }
+@media (max-width: 720px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 </style>
 </head>
 <body>
 <h1>compressor savings <span class="footer">(${escapeHtml(window)})</span></h1>
-<p class="totals">saved ${fmt(savedChars)} chars (exact) ≈ ${fmt(savedTokens)} tokens (estimated — cheap estimator, not billable counts) · ${fmt(events.length)} events · ${escapeHtml(window)}</p>
-${sections}
+<p class="sub">saved ${fmt(savedChars)} chars (exact) ≈ ${fmt(savedTokens)} tokens (estimated — cheap estimator, not billable counts) · ${fmt(events.length)} events · ${escapeHtml(window)}</p>
+${kpiHtml(kpis)}
+${valuationHtml(valuation)}
+<div class="grid">
+${cards.join('\n')}
+</div>
 <p class="footer">measured savings come from <code>compressor benchmark</code> — this view is the live estimated ledger.<br>
 ledger: ${escapeHtml(dir)} · disable recording with COMPRESSOR_NO_LEDGER=1</p>
 </body>
